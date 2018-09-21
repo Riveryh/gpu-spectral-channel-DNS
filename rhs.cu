@@ -1,0 +1,23 @@
+#include "rhs.cuh"
+#include "nonlinear.cuh"
+#include "linear.h"
+#include "cuRPCF.h"
+
+
+__host__ int get_rhs_v(problem& pb) {
+	transform(BACKWARD, pb);
+	getNonlinear(pb);//save previous step?
+	size_t tsize = pb.tPitch * (pb.mx / 2 + 1) * pb.my;
+	cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_z.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
+	get_linear_v(pb);
+	return 0;
+}
+
+__host__ int get_rhs_omega(problem& pb) {
+	return get_linear_omega_y(pb);
+	safeCudaFree(pb.dptr_tLamb_x.ptr);
+	safeCudaFree(pb.dptr_tLamb_y.ptr);
+	safeCudaFree(pb.dptr_tLamb_z.ptr);
+}
+
