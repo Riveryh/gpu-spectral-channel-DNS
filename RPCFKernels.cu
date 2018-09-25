@@ -43,12 +43,14 @@ __host__ int initCUDA(problem&  pb) {
 	printf("\nGPU total memory = % .2f MB\n", (float)total / (1.024e6));
 	printf("\nGPU free  memory = % .2f MB\n", (float)free / (1.024e6));
 
-	cudaExtent extent = make_cudaExtent(
+	pb.extent = make_cudaExtent(
 		2*(pb.mx/2+1) * sizeof(real), pb.my, pb.mz);
 
-	cudaExtent tExtent = make_cudaExtent(
+	pb.tExtent = make_cudaExtent(
 		pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
-
+	
+	cudaExtent & extent = pb.extent;
+	cudaExtent & tExtent = pb.tExtent;
 
 	// Get pitch value of the pointer.
 	err = cudaMalloc3D(&(pb.dptr_tu), tExtent);
@@ -66,15 +68,16 @@ __host__ int initCUDA(problem&  pb) {
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
 
-	size_t tsize = pb.tPitch * (pb.mx / 2 + 1) * pb.my;
-	pb.nonlinear_v = (complex*)malloc(tsize);
-	pb.nonlinear_v_p = (complex*)malloc(tsize);
-	pb.nonlinear_omega_y = (complex*)malloc(tsize);
-	pb.nonlinear_omega_y_p = (complex*)malloc(tsize);
-	ASSERT(pb.nonlinear_v != nullptr);
-	ASSERT(pb.nonlinear_v_p != nullptr);
-	ASSERT(pb.nonlinear_omega_y != nullptr);
-	ASSERT(pb.nonlinear_omega_y_p != nullptr);
+	pb.tSize = pb.tPitch * (pb.mx / 2 + 1) * pb.my;
+	size_t& tsize = pb.tSize;
+	//pb.nonlinear_v = (complex*)malloc(tsize);
+	//pb.nonlinear_v_p = (complex*)malloc(tsize);
+	//pb.nonlinear_omega_y = (complex*)malloc(tsize);
+	//pb.nonlinear_omega_y_p = (complex*)malloc(tsize);
+	//ASSERT(pb.nonlinear_v != nullptr);
+	//ASSERT(pb.nonlinear_v_p != nullptr);
+	//ASSERT(pb.nonlinear_omega_y != nullptr);
+	//ASSERT(pb.nonlinear_omega_y_p != nullptr);
 
 	//err = cudaMalloc3D(&(pb.dptr_tv), tExtent);
 	//err = cudaMalloc3D(&(pb.dptr_tw), tExtent);
@@ -86,7 +89,7 @@ __host__ int initCUDA(problem&  pb) {
 	//err = cudaMalloc3D(&(pb.dptr_tLamb_z), tExtent);
 
 	pb.pitch = pb.dptr_u.pitch; 
-
+	pb.size = pb.pitch * pb.my * pb.mz;
 
 	ASSERT(!err);
 
@@ -191,16 +194,16 @@ __host__ int initFlow(problem& pb) {
 	cudaError_t err = cudaDeviceSynchronize(); // CudaErrorLaunchFailure
 	ASSERT(err == cudaSuccess);
 
-	int nthreadx = 16;
-	int nthready = 16;
-	int nDimx = pb.py / nthreadx;
-	int nDimy = pb.pz / nthready;
-	if (pb.py % nthreadx != 0) nDimx++;
-	if (pb.pz % nthready != 0) nDimy++;
-	dim3 nThread(nthreadx, nthready);
-	dim3 nDim(nDimx, nDimy);
+	//int nthreadx = 16;
+	//int nthready = 16;
+	//int nDimx = pb.py / nthreadx;
+	//int nDimy = pb.pz / nthready;
+	//if (pb.py % nthreadx != 0) nDimx++;
+	//if (pb.pz % nthready != 0) nDimy++;
+	//dim3 nThread(nthreadx, nthready);
+	//dim3 nDim(nDimx, nDimy);
 
-	init_flow_kernel <<<nDim, nThread>>> ((real*)pb.dptr_u.ptr,
+	init_flow_kernel <<<pb.npDim, pb.nThread>>> ((real*)pb.dptr_u.ptr,
 		(real*)pb.dptr_v.ptr,		(real*)pb.dptr_w.ptr, 
 		(real*)pb.dptr_omega_x.ptr,	(real*)pb.dptr_omega_y.ptr,
 		(real*)pb.dptr_omega_z.ptr,
@@ -210,8 +213,8 @@ __host__ int initFlow(problem& pb) {
 	ASSERT(err == cudaSuccess);
 
 	real* buffer;
-	size_t size = pb.dptr_u.pitch*pb.my*pb.mz;
-	size_t tSize = pb.tPitch*(pb.mx/2+1)*pb.my;
+	size_t& size = pb.size; //pb.dptr_u.pitch*pb.my*pb.mz;
+	size_t& tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
 
 	buffer = (real*)malloc(size);
 	cuCheck(cudaMemcpy(buffer, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost),"memcpy");
@@ -288,6 +291,18 @@ __host__ __device__ void ddz(complex *u, int N) {
 	u[0] = buffer[0] * 0.5;
 	for (int i = 1; i < N; i++) {
 		u[i] = buffer[i];
+	}
+}
+
+__host__ __device__
+void get_ialpha_ibeta(int kx, int ky, int my,
+	real alpha, real beta,
+	real& ialpha, real& ibeta )
+{
+	ialpha = (real)kx / alpha;
+	ibeta = (real)ky / beta;
+	if (ky >= my / 2 + 1) {
+		ibeta = real(ky - my) / beta;
 	}
 }
 

@@ -4,6 +4,6 @@
 
 int nextStep(problem& pb);
 
-int initSolver(problem& pb);
+int initSolver(problem& pb, bool inversed = true);
 
 int destroySolver(problem& pb);

@@ -12,7 +12,7 @@ using namespace std;
 __host__ int transpose(DIRECTION dir, cudaPitchedPtr input,
 	cudaPitchedPtr output, int* indim, int* outdim);
 
-int main(int args, char** argv) {
+int _main(int args, char** argv) {
 	RPCF_Paras config("parameter.txt");
 	problem pb(config);
 	initCUDA(pb);

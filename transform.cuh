@@ -26,6 +26,9 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr input,
 
 __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor);
 
+__host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
+__host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz);
+
 #define CACHE_SIZE 512
 #define _MIN(x,y) (((x)<(y))?(x):(y))
 

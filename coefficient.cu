@@ -31,7 +31,7 @@ int _get_coefficient_v(complex* mcv, int N, real* U, real* ddU, real* T0, real* 
 		mcv[(N + 1) * 0 + j] = complex(1.0, 0.0);
 		mcv[(N + 1) * 1 + j] = complex((j%2==0)?1.0:-1.0, 0.0);
 		mcv[(N + 1) * 2 + j] = complex(j*j, 0.0);
-		mcv[(N + 1) * 3 + j] = complex(((j % 2 == 0) ? 1.0 : -1.0)*j*j,0.0);
+		mcv[(N + 1) * 3 + j] = complex(((j % 2 == 0) ? -1.0 : 1.0)*j*j,0.0);
 	}
 	return 0;
 }
@@ -151,8 +151,8 @@ int get_U(int N, real * U, real * dU, real * ddU)
 	real PI = 4.0*atan(1.0);
 	for (int i = 0; i < N; i++) {
 		real z = cos((real)i / (N - 1)* PI);
-		U[i] = z;
-		dU[i] = 1.0;
+		U[i] = 0.5*(1+z);
+		dU[i] = 0.5;
 		ddU[i] = 0.0;
 	}
 	return 0;

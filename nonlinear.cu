@@ -10,8 +10,7 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
 	real* pLambX, real* pLambY, real* pLambZ, int mz);
 
-__global__ void addMeanFlowKernel(cudaPitchedPtr ptr, 
-	real* dp_meanU,	int nx, int ny, int nz);
+__global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz);
 __global__ void computeLambVectorKernel(cudaPitchedPtrList pList, 
 	int mx, int my, int mz);
 
@@ -26,7 +25,8 @@ __host__ int getNonlinear(problem& pb) {
 	//transform(BACKWARD, pb);
 
 	// use Ptr in pb
-	//addMeanFlow(pb);
+	addMeanFlow(pb);
+
 	computeLambVector(pb);
 
 	// phys --> spec, Ptr(x,y,z) --> tPtr(z,x,y)
@@ -49,8 +49,19 @@ __host__ int getNonlinear(problem& pb) {
 
 __host__ int addMeanFlow(problem & pb)
 {
-	addMeanFlowKernel <<<1, pb.my*pb.mz >>>(pb.dptr_tu, pb.dp_meanU, 
-		pb.mx, pb.my, pb.mz);
+	cudaError_t err;
+
+	//int nthreadx = 16;
+	//int nthready = 16;
+	//int nDimx = pb.my / nthreadx;
+	//int nDimy = pb.mz / nthready;
+	//if (pb.my % nthreadx != 0) nDimx++;
+	//if (pb.mz % nthready != 0) nDimy++;
+	//dim3 nThread(nthreadx, nthready);
+	//dim3 nDim(nDimx, nDimy);
+	addMeanFlowKernel <<<pb.nDim, pb.nThread>>>(pb.dptr_u, pb.mx, pb.my, pb.mz);
+	err = cudaDeviceSynchronize();
+	ASSERT(err == cudaSuccess);
 	return int();
 }
 
@@ -60,8 +71,9 @@ __host__ int computeLambVector(problem & pb)
 	const int my = pb.my;
 	const int mz = pb.mz;
 
-	cudaExtent extent = make_cudaExtent(
-		2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
+	cudaExtent& extent = pb.extent;
+	//make_cudaExtent(
+	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
@@ -79,16 +91,16 @@ __host__ int computeLambVector(problem & pb)
 
 	cudaError_t err;
 
-	int nthreadx = 16;
-	int nthready = 16;
-	int nDimx = pb.my / nthreadx;
-	int nDimy = pb.mz / nthready;
-	if (pb.my % nthreadx != 0) nDimx++;
-	if (pb.mz % nthready != 0) nDimy++;
-	dim3 nThread(nthreadx, nthready);
-	dim3 nDim(nDimx, nDimy);
+	//int nthreadx = 16;
+	//int nthready = 16;
+	//int nDimx = pb.py / nthreadx;
+	//int nDimy = pb.pz / nthready;
+	//if (pb.py % nthreadx != 0) nDimx++;
+	//if (pb.pz % nthready != 0) nDimy++;
+	//dim3 nThread(nthreadx, nthready);
+	//dim3 nDim(nDimx, nDimy);
 
-	computeLambVectorKernel<<<nDim,nThread>>>(pList, mx, my, mz);
+	computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz);
 	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 
@@ -99,7 +111,7 @@ __host__ int computeLambVector(problem & pb)
 	safeCudaFree(pb.dptr_omega_y.ptr);
 	safeCudaFree(pb.dptr_omega_z.ptr);
 
-	return int();
+	return 0;
 }
 
 __host__ int rhsNonlinear(problem & pb)
@@ -269,17 +281,21 @@ __host__ int addCoriolisForce(problem & pb)
 }
 
 
-__global__ void addMeanFlowKernel(cudaPitchedPtr ptr, real* dp_meanU, 
-	int nx, int ny, int nz) {
-	int id = threadIdx.x;
-	int iz = id%ny;
-	real meanU = dp_meanU[iz];
-	ASSERT(iz <= nz);
+__global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
+	int iy = threadIdx.x + blockDim.x*blockIdx.x;
+	int iz = threadIdx.y + blockDim.y*blockIdx.y;
+	if (iy >= py || iz >= pz) return;
+	size_t id = py*iz + iy;
+
+	const real PI = 4.0*atan(1.0);
+	real z = cos((real)iz / (pz - 1)*PI);
+	real mean_u = z;
+
 	real* dp_u;
 	int pitch = ptr.pitch;
-	dp_u = dp_meanU + pitch / sizeof(real)*id;
-	for (int i = 0; i < nx; i++) {
-		dp_u[i] = dp_u[i] + meanU;
+	dp_u = (real*)ptr.ptr + pitch/sizeof(real) * id;
+	for (int i = 0; i < px; i++) {
+		dp_u[i] = dp_u[i] + mean_u;
 	}
 }
 

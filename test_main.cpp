@@ -9,17 +9,19 @@
 using namespace std;
 #include <cstdio>
 
-int _main() {
+int main() {
 	return main_test();
 }
 
 TestResult main_test(){
 	//RUN_TEST(test_transform(),"test_transform");
-	RUN_TEST(test_nonlinear(), "test nonlinear");
+	//RUN_TEST(test_nonlinear(), "test nonlinear");
 	//RUN_TEST(test_get_T_matrix(), "test chebyshev");
 	//RUN_TEST(test_m_multi_v(), "test matrix inversion");
 	//RUN_TEST(test_inverse(), "test matrix inversion");
 	//RUN_TEST(test_read_para(), "test parameter reading");
+	RUN_TEST(Test_coef_v(), "Test coef v");
+	RUN_TEST(Test_coef_omega(), "Test coef omega");
 	return TestSuccess;
 }
 

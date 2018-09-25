@@ -4,6 +4,7 @@
 #include "matrix_op.h"
 #include "velocity.h"
 #include "coefficient.cuh"
+#include "operation.h"
 
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
@@ -121,13 +122,13 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 //}
 
 
-int initSolver(problem& pb)
+int initSolver(problem& pb, bool inversed)
 {
 	const int nz = pb.nz;
 	const int nx = pb.nx;
 	const int ny = pb.ny;
 
-	size_t tSize = pb.tPitch*(pb.mx/2+1)*pb.my;
+	size_t& tSize = pb.tSize;
 	size_t mSize = pb.nz * pb.nz * (pb.mx / 2 + 1)*pb.my * sizeof(complex);
 
 	pb.matrix_coeff_v = (complex*)malloc(mSize);
@@ -164,20 +165,20 @@ int initSolver(problem& pb)
 	//init coef matrix
 	for (int kx = 0; kx < (pb.mx / 2 +1); kx++) {
 		for (int ky = 0; ky < pb.my; ky++) {
-
+			
 			if (kx == 0 && ky == 0) {
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
 				_get_coef_w0(pb.matrix_coeff_omega, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
-				inverse(pb.matrix_coeff_omega, pb.nz);
-				inverse(pb.matrix_coeff_v, pb.nz);
+				if (inversed) {
+					inverse(pb.matrix_coeff_omega, pb.nz);
+					inverse(pb.matrix_coeff_v, pb.nz);
+				}
 				continue;
 			}
 
-			real ialpha = (real)kx / pb.aphi;
-			real ibeta = (real)ky / pb.beta;
-			if (ky >= pb.my / 2 + 1) {
-				ibeta = real(ky - pb.my) / pb.beta;
-			}
+			real ialpha, ibeta;
+			get_ialpha_ibeta(kx, ky, pb.my, pb.aphi, pb.beta, ialpha, ibeta);
+
 			real kmn = ialpha*ialpha + ibeta*ibeta;
 
 			size_t inc = pb.nz*pb.nz*((pb.mx/2+1)*ky + kx);
@@ -188,8 +189,10 @@ int initSolver(problem& pb)
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
 			_get_coefficient_omega(coe_o, pb.nz-1, pb._U0, 
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
-			inverse(coe_v, pb.nz);
-			inverse(coe_o, pb.nz);
+			if (inversed) {
+				inverse(coe_v, pb.nz);
+				inverse(coe_o, pb.nz);
+			}
 		}
 	}
 

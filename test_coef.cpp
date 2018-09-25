@@ -1,6 +1,10 @@
 #include "test_coef.h"
 #include "coefficient.cuh"
 #include <cassert>
+#include <fstream>
+#include "solver.h"
+using namespace std;
+
 TestResult test_get_T_matrix()
 {
 	real *T0, *T2, *T4;
@@ -26,3 +30,136 @@ TestResult test_get_T_matrix()
 	}
 	return TestSuccess;
 }
+
+TestResult Test_coef_v() {
+	RPCF_Paras para;
+	para.numPara.nx = 64;
+	para.numPara.ny = 64;
+	para.numPara.nz = 51;
+	para.numPara.dt = 0.005;
+	para.numPara.Re = 2600;
+	para.numPara.n_pi_x = 8;
+	para.numPara.n_pi_y = 4;
+	para.numPara.Ro = 0.01;
+	problem pb(para);
+
+	initSolver(pb, false);
+	size_t inc = pb.nz*pb.nz;
+	matrix2d<complex> coef_v((pb.matrix_coeff_v + inc), pb.nz, pb.nz);
+	int nz = pb.nz;
+	char* str;
+	str = "coef_v\\coef_x_001_y_000.dat";
+	ifstream infile;
+	infile.open(str);
+	if (infile.is_open()) {
+		real data;
+		for (int i = 0; i < nz; i++) {
+			for (int j = 0; j < nz; j++) {
+				infile >> data;
+				complex res = coef_v(i, j);
+				assert(isEqual(data, res.re, 1e-6));
+				infile >> data;
+				assert(isEqual(data, res.im, 1e-6));
+			}
+			//cout << "row:" << i << " cleared" << endl;
+		}
+	}
+	else
+	{
+		cerr << "cannot open coef file" << endl;
+		return TestFailed;
+	}
+
+	// test matrix 2;
+	str = "coef_v\\coef_x_017_y_063.dat";
+	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
+	matrix2d<complex> coef_v2((pb.matrix_coeff_v + inc), pb.nz, pb.nz);
+	infile.close();
+	infile.open(str);
+	if (infile.is_open()) {
+		real data;
+		for (int i = 0; i < nz; i++) {
+			for (int j = 0; j < nz; j++) {
+				infile >> data;
+				complex res = coef_v2(i, j);
+				assert(isEqual(data, res.re, 1e-6));
+				infile >> data;
+				assert(isEqual(data, res.im, 1e-6));
+			}
+			//cout << "row:" << i << " cleared" << endl;
+		}
+	}
+	else
+	{
+		cerr << "cannot open coef file" << endl;
+		return TestFailed;
+	}
+	return TestSuccess;
+}
+
+TestResult Test_coef_omega() {
+	RPCF_Paras para;
+	para.numPara.nx = 64;
+	para.numPara.ny = 64;
+	para.numPara.nz = 51;
+	para.numPara.dt = 0.005;
+	para.numPara.Re = 2600;
+	para.numPara.n_pi_x = 8;
+	para.numPara.n_pi_y = 4;
+	para.numPara.Ro = 0.01;
+	problem pb(para);
+
+	initSolver(pb, false);
+	size_t inc = pb.nz*pb.nz;
+	matrix2d<complex> coef_omega((pb.matrix_coeff_omega + inc), pb.nz, pb.nz);
+	int nz = pb.nz;
+	char* str;
+	str = "coef_omega\\coef_x_001_y_000.dat";
+	ifstream infile;
+	infile.open(str);
+	if (infile.is_open()) {
+		real data;
+		for (int i = 0; i < nz; i++) {
+			for (int j = 0; j < nz; j++) {
+				infile >> data;
+				complex res = coef_omega(i, j);
+				assert(isEqual(data, res.re, 1e-6));
+				infile >> data;
+				assert(isEqual(data, res.im, 1e-6));
+			}
+			//cout << "row:" << i << " cleared" << endl;
+		}
+	}
+	else
+	{
+		cerr << "cannot open coef file" << endl;
+		return TestFailed;
+	}
+
+	// test matrix 2;
+	str = "coef_omega\\coef_x_017_y_063.dat";
+	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
+	matrix2d<complex> coef_omega2((pb.matrix_coeff_omega + inc), pb.nz, pb.nz);
+	infile.close();
+	infile.open(str);
+	if (infile.is_open()) {
+		real data;
+		for (int i = 0; i < nz; i++) {
+			for (int j = 0; j < nz; j++) {
+				infile >> data;
+				complex res = coef_omega2(i, j);
+				assert(isEqual(data, res.re, 1e-6));
+				infile >> data;
+				assert(isEqual(data, res.im, 1e-6));
+			}
+			//cout << "row:" << i << " cleared" << endl;
+		}
+	}
+	else
+	{
+		cerr << "cannot open coef file" << endl;
+		return TestFailed;
+	}
+	return TestSuccess;
+}
+

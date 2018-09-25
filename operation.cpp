@@ -97,9 +97,16 @@ bool isEqual(real a, real b, real precision ){
 	}
 	else
 	{
-		return false;
+		if (abs(abs(a/b)-1.0)<1e-4) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 }
+
+
 
 void RPCF_Paras::read_para(char* filename) {
 	ifstream infile;

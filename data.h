@@ -112,19 +112,26 @@ public:
 template<class T>
 class matrix2d {
 	T* mat;
+	bool _isPrivate = false;
 public: 
 	int nx, ny;
 	matrix2d<T>(int i, int j) : nx(i), ny(j) {
 		size_t tsize = sizeof(T)*nx*ny;
 		mat = (T*)malloc(tsize);
+		_isPrivate = true;
 	};
+	matrix2d<T>(T* _mat,int nx, int ny) {
+		this->mat = _mat;
+		this->nx = nx;
+		this->ny = ny;
+	}
 	T& get(int i, int j) {
 		return *(mat + i*(ny) + j );
 	}
 	T& operator()(int i, int j) {
 		return get(i, j);
 	}
-	matrix3d<T>& operator=(T value) {
+	matrix2d<T>& operator=(T value) {
 		for (int i = 0; i < nx; i++)
 			for (int j = 0; j < ny; j++) {
 					(*this)(i, j) = value;
@@ -132,8 +139,9 @@ public:
 		return *this;
 	}
 	~matrix2d() {
-		free(mat);
-		mat = nullptr;
+		if (_isPrivate) {
+			free(mat);
+		}
 	}
 };
 
@@ -175,7 +183,6 @@ struct problem {
 	int nx, ny, nz;	// the number of mesh
 	int mx, my, mz;	// number of allocated memory
 	int px, py, pz; // number of mesh for dealiasing
-	size_t pitch, tPitch;
 	const real PI = 4*atan(1.0l);
 	real aphi;
 	real beta;
@@ -183,6 +190,7 @@ struct problem {
 	real ly;
 	real dt;
 	real Re;
+	real Ro;
 	real *_U0, *_dU0, *_ddU0;
 	//
 	//matrix2d<real> T0;
@@ -190,6 +198,20 @@ struct problem {
 	//matrix2d<real> T4;
 	
 	real* T0, *T2, *T4;
+
+	cudaExtent extent;
+	cudaExtent tExtent;
+
+	size_t size;	// pb.pitch * pb.my * pb.mz
+	size_t tSize;	// pb.tPitch * (pb.mx/2+1) * pb.my
+
+	size_t pitch, tPitch;
+
+	dim3 nThread;
+
+	dim3 nDim;  // mx my mz
+	dim3 ntDim; // mz mx/2+1 my
+	dim3 npDim;	// px py pz
 
 	// device pointer of u,v,w,...
 	cudaPitchedPtr dptr_u;
@@ -278,6 +300,9 @@ struct problem {
 		nz = conf.numPara.nz;
 		aphi = conf.numPara.n_pi_x / 2;
 		beta = conf.numPara.n_pi_y / 2;
+		Ro = conf.numPara.Ro;
+		dt = conf.numPara.dt;
+		Re = conf.numPara.Re;
 		initVars();
 	}
 
@@ -294,6 +319,25 @@ private:
 		px = nx * 3 / 2;
 		py = ny * 3 / 2;
 		pz = (nz - 1) * 2 + 1;
+
+
+		// compute cuda dimensions.
+		nThread.x = 16;
+		nThread.y = 16;
+		nDim.x = my / nThread.x;
+		nDim.y = mz / nThread.y;
+		if (my%nThread.x != 0) nDim.x++;
+		if (mz%nThread.y != 0) nDim.y++;
+
+		ntDim.x = (mx/2+1) / nThread.x;
+		ntDim.y = my / nThread.y;
+		if ((mx / 2 + 1) % nThread.x != 0) ntDim.x++;
+		if (my % nThread.y != 0) ntDim.y++;
+
+		npDim.x = py / nThread.x;
+		npDim.y = pz / nThread.y;
+		if (py%nThread.x != 0) npDim.x++;
+		if (pz%nThread.y != 0) npDim.y++;
 	}
 };
 

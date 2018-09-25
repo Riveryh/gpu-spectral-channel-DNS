@@ -7,8 +7,6 @@
 
 cufftHandle planXYr2c, planXYc2r, planZ;
 
-__host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
-__host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz);
 
 
 
