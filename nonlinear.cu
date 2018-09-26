@@ -189,6 +189,8 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	int pitch = plist.dptr_lamb_x.pitch;
 	int pz = mz / 2 + 1;
 
+	// skip the k=0 mode
+	//if (kx == 0 && ky == 0) return;
 	if (kx >= (mx / 2 + 1) || ky >= my) return;
 
 	real ialpha = real(kx) / alpha;
@@ -213,8 +215,6 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	//temp result v imaginary part part
 	real tres_w_im[MAX_NZ * 4];
 
-	// skip the k=0 mode
-	//if (kmn == 0) return;
 
 	// the following variables are in spectral space
 	//complex* dp_u = (complex*)plist.dptr_u.ptr; //actually dptr_tu, so on...
@@ -289,7 +289,7 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 
 	const real PI = 4.0*atan(1.0);
 	real z = cos((real)iz / (pz - 1)*PI);
-	real mean_u = z;
+	real mean_u = 0.0; z; 0.5*(z + 1);
 
 	real* dp_u;
 	int pitch = ptr.pitch;

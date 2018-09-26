@@ -63,7 +63,7 @@ void problem::memcpy_device_to_host() {
 int RPCF::write_3d_to_file(char* filename,real* pu, int pitch, int nx, int ny, int nz) {
 	ofstream outfile(filename,fstream::out);
 	// skip this part
-	return 0;
+	//return 0;
 	ASSERT(outfile.is_open());
 	for (int k = 0; k < nz; k++) {
 		size_t slice = pitch*ny*k;
@@ -97,7 +97,7 @@ bool isEqual(real a, real b, real precision ){
 	}
 	else
 	{
-		if (abs(abs(a/b)-1.0)<1e-4) {
+		if (abs(a/b-1.0)<1e-4) {
 			return true;
 		}
 		else {

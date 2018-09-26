@@ -23,7 +23,7 @@ int getUVW(problem& pb) {
 	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_y), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_z), tExtent), "allocate");
 
-	cuCheck(cudaMemcpy(pb.dptr_tv.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
+	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
 	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
 
 	//int nthreadx = 16;
@@ -74,8 +74,8 @@ __global__ void getVelocityKernel(
 	//solve the zero wave number case.
 	if (kx == 0 && ky == 0) {
 		for (int i = 0; i < nz; i++) {
-			u[i] = v[i];
-			v[i] = oy[i];
+			u[i] = w[i];
+			v[i] = oz[i];
 			w[i] = 0.0;
 			tdz[i] = u[i];
 			tdz1[i] = v[i];
@@ -87,6 +87,7 @@ __global__ void getVelocityKernel(
 			oy[i] = tdz[i]*(-1.0);
 			oz[i] = 0.0;
 		}
+		return;
 	}
 
 	real kmn1 = 1.0 / kmn;
@@ -100,22 +101,37 @@ __global__ void getVelocityKernel(
 	oz = oz + dist;
 
 	for (int i = 0; i < nz; i++) {
-		tdz[i] = v[i];
+		tdz[i] = w[i];
 	}
 
 	ddz(tdz, nz);
 
 	for (int i = 0; i < nz; i++) {
 		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
-			- complex(0.0, ibeta*kmn1) * oy[i];
+			- complex(0.0, ibeta*kmn1) * oz[i];
 		w[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-			- complex(0.0, ialpha*kmn1) * oy[i];
+			- complex(0.0, ialpha*kmn1) * oz[i];
 	}
+
+	for (int i = 0; i < nz; i++) {
+		tdz[i] = v[i];
+	}
+	ddz(tdz, nz);
+	for (int i = 0; i < nz; i++) {
+		ox[i] = tdz[i] + complex(0.0, -1.0*beta)*w[i];
+	}
+	for (int i = 0; i < nz; i++) {
+		tdz[i] = u[i];
+	}
+	ddz(tdz, nz);
+	for (int i = 0; i < nz; i++) {
+		oy[i] = tdz[i]*(-1.0) + complex(0.0, alpha)*w[i];
+	}
+
 }
 
 void get_velocity_zero(problem & pb)
 {
 	complex* w = pb.rhs_omega_y;
-	complex* u = pb.rhs_v;
-	
+	complex* u = pb.rhs_v;	
 }

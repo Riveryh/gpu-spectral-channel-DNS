@@ -6,12 +6,15 @@
 
 __host__ int get_rhs_v(problem& pb) {
 	transform(BACKWARD, pb);
-	getNonlinear(pb);//save previous step?
+	getNonlinear(pb);
 	
 	// transform the nonlinear term into physical space.
 	cheby_s2p(pb.dptr_tLamb_x, pb.mx/2+1, pb.my, pb.mz);
 	cheby_s2p(pb.dptr_tLamb_z, pb.mx/2+1, pb.my, pb.mz);
 
+	//save previous step
+	swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
+	swap(pb.nonlinear_v, pb.nonlinear_v_p);
 	size_t tsize = pb.tSize;// pb.tPitch * (pb.mx / 2 + 1) * pb.my;
 	cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_z.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");

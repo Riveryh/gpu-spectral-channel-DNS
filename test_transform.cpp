@@ -117,10 +117,10 @@ void compareSpectra(problem& pb) {
 				size_t inc = pitch*((mx / 2 + 1)*j + i) / sizeof(complex) + k;
 				if (i == 0 && j == 0) {
 					if (k == 0) {
-						assert(isEqual(u[inc].re, 0.5*mx*my, PRECISION));
+						assert(isEqual(u[inc].re, 0.5, PRECISION));
 					}
 					else if (k == 2) {
-						assert(isEqual(u[inc].re, -0.5*mx*my, PRECISION));
+						assert(isEqual(u[inc].re, -0.5, PRECISION));
 					}
 					else {
 						assert(isEqual(u[inc].re, 0.0, PRECISION));

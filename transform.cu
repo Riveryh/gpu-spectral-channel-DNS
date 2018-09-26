@@ -145,7 +145,7 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 }
 
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
-	cudaPitchedPtr& tPtr, int* dim, int* tDim) {
+	cudaPitchedPtr& tPtr, int* dim, int* tDim, bool isOutput) {
 
 	//transform in x-y direction
 	cufftResult res;
@@ -184,7 +184,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(err == cudaSuccess);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
-		RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+		if(isOutput) RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
 #endif //DEBUG
 
 		//chebyshev transform in z direction
@@ -203,28 +203,16 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(err == cudaSuccess);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
-		RPCF::write_3d_to_file("afterREV.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+		if (isOutput) RPCF::write_3d_to_file("afterREV.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 #endif //DEBUG
 
-		int nthreadx = 16;
-		int nthready = 16;
-		int nDimx = dim[1] / nthreadx;
-		int nDimy = dim[2] / nthready;
-		if (dim[1] % nthreadx != 0) nDimx++;
-		if (dim[2] % nthready != 0) nDimy++;
-		dim3 dim_num(nDimx, nDimy);
-		dim3 thread_num(nthreadx, nthready);
-		normalize << <dim_num, thread_num >> >
-			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1] );
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
 
 #ifdef DEBUG
 		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
 		ASSERT(err == cudaSuccess);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
-		RPCF::write_3d_to_file("afterNORM.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+		if (isOutput) RPCF::write_3d_to_file("afterNORM.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 #endif //DEBUG
 
 
@@ -252,7 +240,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(err == cudaSuccess);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
-		RPCF::write_3d_to_file("before.txt", buffer, Ptr.pitch, 2*(dim[0]/2+1), dim[1], dim[2]);
+		if (isOutput) RPCF::write_3d_to_file("before.txt", buffer, Ptr.pitch, 2*(dim[0]/2+1), dim[1], dim[2]);
 #endif //DEBUG
 
 		ASSERT(dir == FORWARD);
@@ -265,12 +253,22 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-		RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 #endif // DEBUG
 
-
+		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
+		int nthreadx = 16;
+		int nthready = 16;
+		int nDimx = dim[1] / nthreadx;
+		int nDimy = dim[2] / nthready;
+		if (dim[1] % nthreadx != 0) nDimx++;
+		if (dim[2] % nthready != 0) nDimy++;
+		dim3 dim_num(nDimx, nDimy);
+		dim3 thread_num(nthreadx, nthready);
+		normalize <<< dim_num, thread_num >>>
+			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1]);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
@@ -285,7 +283,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(err == cudaSuccess);
 
 #ifdef DEBUG
-		RPCF::write_3d_to_file("Transposed.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+		if (isOutput) RPCF::write_3d_to_file("Transposed.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
 #endif //DEBUG
 
 		//transform in z direction
@@ -296,7 +294,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(err == cudaSuccess);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
-		RPCF::write_3d_to_file("afterZ.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+		if (isOutput) RPCF::write_3d_to_file("afterZ.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
 #endif //DEBUG
 
 		//setZeros<<<1, threadDim >>>(Ptr, dim[0], dim[1], dim[2]);

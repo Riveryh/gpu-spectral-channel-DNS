@@ -13,7 +13,7 @@ enum DIRECTION {
 	FORWARD,BACKWARD
 };
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& input,
-	cudaPitchedPtr& output, int* indim, int* outdim);
+	cudaPitchedPtr& output, int* indim, int* outdim, bool isOutput = false);
 
 __host__ int initFFT(problem& pb);
 

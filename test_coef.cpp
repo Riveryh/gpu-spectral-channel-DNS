@@ -48,7 +48,7 @@ TestResult Test_coef_v() {
 	matrix2d<complex> coef_v((pb.matrix_coeff_v + inc), pb.nz, pb.nz);
 	int nz = pb.nz;
 	char* str;
-	str = "coef_v\\coef_x_001_y_000.dat";
+	str = "test_data\\coef_v\\coef_x_001_y_000.dat";
 	ifstream infile;
 	infile.open(str);
 	if (infile.is_open()) {
@@ -71,7 +71,7 @@ TestResult Test_coef_v() {
 	}
 
 	// test matrix 2;
-	str = "coef_v\\coef_x_017_y_063.dat";
+	str = "test_data\\coef_v\\coef_x_017_y_063.dat";
 	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
 	matrix2d<complex> coef_v2((pb.matrix_coeff_v + inc), pb.nz, pb.nz);
 	infile.close();
@@ -114,7 +114,7 @@ TestResult Test_coef_omega() {
 	matrix2d<complex> coef_omega((pb.matrix_coeff_omega + inc), pb.nz, pb.nz);
 	int nz = pb.nz;
 	char* str;
-	str = "coef_omega\\coef_x_001_y_000.dat";
+	str = "test_data\\coef_omega\\coef_x_001_y_000.dat";
 	ifstream infile;
 	infile.open(str);
 	if (infile.is_open()) {
@@ -137,7 +137,7 @@ TestResult Test_coef_omega() {
 	}
 
 	// test matrix 2;
-	str = "coef_omega\\coef_x_017_y_063.dat";
+	str = "test_data\\coef_omega\\coef_x_017_y_063.dat";
 	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
 	matrix2d<complex> coef_omega2((pb.matrix_coeff_omega + inc), pb.nz, pb.nz);
 	infile.close();

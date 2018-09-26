@@ -1,6 +1,7 @@
 #pragma once
 
 #define DEBUG
+//#undef DEBUG
 
 #define REAL_DOUBLE
 #undef REAL_FLOAT
@@ -26,7 +27,7 @@
 
 #define MAX_NZ 150
 
-#define safeCudaFree(p); {cudaFree(p);(p)=nullptr;}
+#define safeCudaFree(p); {cuCheck(cudaFree(p),"deallocate");(p)=nullptr;}
 #define safeFree(p); {free(p);(p)=nullptr;}
 
 struct complex {
@@ -280,6 +281,10 @@ struct problem {
 	complex* lambz0;
 	complex* lambx0_p;
 	complex* lambz0_p;
+
+	//zero-wave nubmer velocity in spectral space
+	complex* tv0;
+	complex* tomega_y_0;
 	
 	problem() :
 		nx(128),

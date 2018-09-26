@@ -98,56 +98,86 @@ __host__ int initCUDA(problem&  pb) {
 
 // note : x and y should be normalized by lx and ly.
 // i.e. x = x/lx
+#define EPSILON_INIT 0.005
 __device__ inline real _get_init_u(real x, real y, real z, real lx, real ly) {
 	const real PI = 4*atan(1.0);
+	return EPSILON_INIT*lx*sin(1.5*PI*z)
+		*(cos(2 * PI*x / lx)*sin(2.0*PI*y / ly)
+			+ 0.5*cos(4.0*PI*x / lx)*sin(2 * PI*y / ly)
+			+ cos(2 * PI*x / lx)*sin(4 * PI*y / ly));
 	//return sin(PI*x)*cos(2*PI*y);
-	return (-2.0 / 3.0 *lx *(1.0 + cos(1.5*PI*z))*(sin(2.0*PI*x)
-		*sin(2.0*PI*y) + sin(4.0*PI*x)
-		*sin(2.0*PI*y) + sin(2.0*PI*x)
-		*sin(4.0*PI*y)));
+	//return (-2.0 / 3.0 *lx *(1.0 + cos(1.5*PI*z))*(sin(2.0*PI*x)
+	//	*sin(2.0*PI*y) + sin(4.0*PI*x)
+	//	*sin(2.0*PI*y) + sin(2.0*PI*x)
+	//	*sin(4.0*PI*y)));
 }
 
 __device__ inline real _get_init_v(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
-	return -2.00 / 3.0*(1.0 + cos(1.5*PI*z))*(sin(2.0*PI*x) 
-		*sin(2.0*PI*y) + sin(4.0*PI*x) 
-		*sin(2.0*PI*y) + sin(2.0*PI*x) 
-		*sin(4.0*PI*y));
+	return -EPSILON_INIT*ly*sin(1.5*PI*z)
+		*(0.5*sin(2 * PI*x / lx)*cos(2.0*PI*y / ly)
+			+ 0.5*sin(4.0*PI*x / lx)*cos(2.0 * PI*y / ly)
+			+ 0.25*sin(2.0 * PI*x / lx)*cos(4.0 * PI*y / ly));
+	//return -2.00 / 3.0*(1.0 + cos(1.5*PI*z))*(sin(2.0*PI*x) 
+//		*sin(2.0*PI*y) + sin(4.0*PI*x) 
+	//	*sin(2.0*PI*y) + sin(2.0*PI*x) 
+	//	*sin(4.0*PI*y));
 }
 
 __device__ inline real _get_init_w(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
-	return -ly*sin(1.5*PI*z)*(0.5*sin(2.0*PI*x) 
-		*cos(2.0*PI*y) + 0.5*sin(4.0*PI*x) 
-		*cos(2.0*PI*y) + 0.25*sin(2.0*PI*x) 
-		*cos(4.0*PI*y));
+	return EPSILON_INIT*(-2.0)/3.0*(1.0+cos(1.5*PI*z))
+		*(sin(2*PI*x/lx)*sin(2*PI*y/ly)
+			+sin(4*PI*x/lx)*sin(2*PI*y/ly)
+			+sin(2*PI*x/lx)*sin(4*PI*y/ly));
+
+	//return -ly*sin(1.5*PI*z)*(0.5*sin(2.0*PI*x) 
+	//	*cos(2.0*PI*y) + 0.5*sin(4.0*PI*x) 
+	//	*cos(2.0*PI*y) + 0.25*sin(2.0*PI*x) 
+	//	*cos(4.0*PI*y));
 }
 
 __device__ inline real _get_init_omegax(real x, real y, real z, real lx, real ly) {
 	const real pi = 4 * atan(1.0);
-	return (-ly*1.5*pi*cos(1.5*pi*z)*(0.5*sin(2.0*pi*x) 
-		*cos(2.0*pi*y) + 0.5*sin(4.0*pi*x) 
-		*cos(2.0*pi*y) + 0.25*sin(2.0*pi*x) 
-		*cos(4.0*pi*y)))
+	return (-EPSILON_INIT*ly*1.5*pi*cos(1.5*pi*z)*(0.5*sin(2.0*pi*x/lx) 
+		*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
+		*cos(2.0*pi*y/ly) + 0.25*sin(2.0*pi*x/lx) 
+		*cos(4.0*pi*y/ly)))
 
-		-(2.0 / 3.0*(1.0 + cos(1.5*pi*z))*4.0*pi / ly*(0.5*sin(2.0*pi*x) 
-			*cos(2.0*pi*y) + 0.5*sin(4.0*pi*x) 
-			*cos(2.0*pi*y) + sin(2.0*pi*x) 
-			*cos(4.0*pi*y)));
+		-(2.0 / 3.0*EPSILON_INIT*(1.0 + cos(1.5*pi*z))*4.0*pi / ly*(0.5*sin(2.0*pi*x/lx) 
+			*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
+			*cos(2.0*pi*y/ly) + sin(2.0*pi*x/lx) 
+			*cos(4.0*pi*y/ly)));
 }
+
+__device__ inline real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
+	const real pi = 4 * atan(1.0);
+	return EPSILON_INIT*2.0*pi*sin(1.5*pi*z)*  
+		(lx / ly*(cos(2.0*pi*x/lx)*cos(2.0*pi*y/ly) 
+			+0.5*cos(4.0*pi*x/lx)*cos(2.0*pi*y/ly) 
+			+2.0*cos(2.0*pi*x/lx)*cos(4.0*pi*y/ly)) 
+			+
+			ly / lx*(0.5*cos(2.0*pi*x/lx)*cos(2.0*pi*y/ly) 
+				+cos(4.0*pi*x/lx)*cos(2.0*pi*y/ly) 
+				+0.25*cos(2.0*pi*x/lx)*cos(4.0*pi*y/ly)));
+}
+
 
 __device__ inline real _get_init_omegay(real x, real y, real z, real lx, real ly) {
-	const real pi = 4 * atan(1.0);
-	return 2.0*pi*sin(1.5*pi*z)*  
-		(lx / ly*(cos(2.0*pi*x)*cos(2.0*pi*y) 
-			+0.5*cos(4.0*pi*x)*cos(2.0*pi*y) 
-			+2.0*cos(2.0*pi*x)*cos(4.0*pi*y)) 
-			+
-			ly / lx*(0.5*cos(2.0*pi*x)*cos(2.0*pi*y) 
-				+cos(4.0*pi*x)*cos(2.0*pi*y) 
-				+0.25*cos(2.0*pi*x)*cos(4.0*pi*y)));
+	const real PI = 4 * atan(1.0);
+	return
+		EPSILON_INIT*(-2.0) / 3.0*(1.0 + cos(1.5*PI*z))
+		*2*PI/lx*(
+			     cos(2 * PI*x / lx)*sin(2 * PI*y / ly)
+			+2.0*cos(4 * PI*x / lx)*sin(2 * PI*y / ly)
+			+    cos(2 * PI*x / lx)*sin(4 * PI*y / ly))
+		-
+		EPSILON_INIT*lx*1.5*PI*cos(1.5*PI*z)*(
+		      cos(2 * PI*x / lx)*sin(2 * PI*y / ly)
+		+ 0.5*cos(4 * PI*x / lx)*sin(2 * PI*y / ly)
+		+     cos(2 * PI*x / lx)*sin(4 * PI*y / ly)
+		);
 }
-
 
 // compute initial flow, save the data to pointer defined in pb.
 // assuming the pointer are already initialized by initCUDA.
@@ -165,7 +195,7 @@ __global__ void init_flow_kernel(
 	const real pi = 4 * atan(1.0);
 
 	real xx, yy, zz;
-	real* u_row, *v_row, *w_row, *ox_row, *oy_row;
+	real* u_row, *v_row, *w_row, *ox_row, *oy_row, *oz_row;
 	//ASSERT(pitch > 0);
 	//ASSERT(dptr_u!=nullptr);
 
@@ -176,16 +206,18 @@ __global__ void init_flow_kernel(
 	w_row = dptr_w + inc;
 	ox_row = dptr_ox + inc;
 	oy_row = dptr_oy + inc;
+	oz_row = dptr_oz + inc;
 	
 	for (int x = 0; x < px; x++) {
-		xx = (x*1.0) / px;
-		yy = (y*1.0) / py;
+		xx = (x*1.0) / px * lx;
+		yy = (y*1.0) / py * ly;
 		zz = cos(pi*z / (pz - 1));
 		u_row[x] = _get_init_u(xx, yy, zz, lx, ly);
 		v_row[x] = _get_init_v(xx, yy, zz, lx, ly);
 		w_row[x] = _get_init_w(xx, yy, zz, lx, ly);
 		ox_row[x] = _get_init_omegax(xx, yy, zz, lx, ly);
 		oy_row[x] = _get_init_omegay(xx, yy, zz, lx, ly);
+		oz_row[x] = _get_init_omegaz(xx, yy, zz, lx, ly);
 	}
 }
 

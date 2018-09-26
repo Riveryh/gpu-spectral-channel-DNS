@@ -147,6 +147,8 @@ int initSolver(problem& pb, bool inversed)
 	pb.lambz0 = (complex*)malloc(sizeof(complex)*pb.nz); 
 	pb.lambx0_p = (complex*)malloc(sizeof(complex)*pb.nz);
 	pb.lambz0_p = (complex*)malloc(sizeof(complex)*pb.nz);
+	pb.tv0 = (complex*)malloc(sizeof(complex)*pb.nz);
+	pb.tomega_y_0 = (complex*)malloc(sizeof(complex)*pb.nz);
 
 	pb._U0 = (real*)malloc(sizeof(real)*pb.nz);
 	pb._dU0 = (real*)malloc(sizeof(real)*pb.nz);

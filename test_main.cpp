@@ -4,6 +4,8 @@
 #include "test_coef.h"
 #include "test_inverse.h"
 #include "test_para_reading.h"
+#include "test_getUVW.h"
+#include "test_rhs.h"
 
 #include <iostream>
 using namespace std;
@@ -20,8 +22,10 @@ TestResult main_test(){
 	//RUN_TEST(test_m_multi_v(), "test matrix inversion");
 	//RUN_TEST(test_inverse(), "test matrix inversion");
 	//RUN_TEST(test_read_para(), "test parameter reading");
-	RUN_TEST(Test_coef_v(), "Test coef v");
-	RUN_TEST(Test_coef_omega(), "Test coef omega");
+	//RUN_TEST(Test_coef_v(), "Test coef v");
+	//RUN_TEST(Test_coef_omega(), "Test coef omega");
+	//RUN_TEST(test_getUVW(), "Test UVW");
+	RUN_TEST(test_rhs(), "Test rhs");
 	return TestSuccess;
 }
 

@@ -6,8 +6,12 @@ int get_linear_v(problem & pb)
 	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 		for (int j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) {
-				_get_linear_u0(pb.rhs_v, pb.lambx0, pb.lambx0_p, pb.nz, pb.T0, pb.T2, pb.Re, pb.dt);
-				_get_linear_w0(pb.rhs_omega_y, pb.lambz0, pb.lambz0_p, pb.nz, pb.T0, pb.T2, pb.Re, pb.dt);
+				_get_linear_u0(pb.tv0, pb.lambx0, pb.lambx0_p, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
+				_get_linear_w0(pb.tomega_y_0, pb.lambz0, pb.lambz0_p, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
+				for (int k = 0; k < pb.nz; k++) {
+					pb.rhs_v[k] = pb.tv0[k];
+					pb.rhs_omega_y[k] = pb.tomega_y_0[k];
+				}
 				continue;
 			}
 			size_t inc = pb.tPitch/sizeof(complex)*(j*(pb.mx/2+1)+i);
@@ -23,10 +27,10 @@ int get_linear_v(problem & pb)
 			}
 			real kmn = ialpha*ialpha + ibeta*ibeta;
 
-			_get_linear_v(rhs_v, nonlinear_v, rhs_v_p, pb.nz, pb._U0, pb._ddU0,
+			_get_linear_v(rhs_v, nonlinear_v, rhs_v_p, pb.nz-1, pb._U0, pb._ddU0,
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
 			_get_linear_omega_y(rhs_omega_y, nonlinear_omega_y, rhs_v, rhs_v_p,
-				pb.nz, pb._U0, pb._dU0,
+				pb.nz-1, pb._U0, pb._dU0,
 				pb.T0, pb.T2, pb.Re, pb.dt, kmn, ialpha, ibeta);
 			
 		}
