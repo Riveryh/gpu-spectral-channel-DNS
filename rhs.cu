@@ -20,6 +20,7 @@ __host__ int get_rhs_v(problem& pb) {
 	cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_z.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 	get_linear_v(pb);
 	return 0;
+
 }
 
 __host__ int get_rhs_omega(problem& pb) {
