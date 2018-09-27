@@ -9,8 +9,8 @@ __host__ int get_rhs_v(problem& pb) {
 	getNonlinear(pb);
 	
 	// transform the nonlinear term into physical space.
-	cheby_s2p(pb.dptr_tLamb_x, pb.mx/2+1, pb.my, pb.mz);
-	cheby_s2p(pb.dptr_tLamb_z, pb.mx/2+1, pb.my, pb.mz);
+	cheby_s2p(pb.dptr_tLamb_x, pb.mx/2+1, pb.my, pb.mz, No_Padding);
+	cheby_s2p(pb.dptr_tLamb_z, pb.mx/2+1, pb.my, pb.mz, No_Padding);
 
 	//save previous step
 	swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);

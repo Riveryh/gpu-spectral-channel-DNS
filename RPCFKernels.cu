@@ -271,10 +271,16 @@ __host__ int initFlow(problem& pb) {
 	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
 	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
-
+	
+	//copy initial rhs_v and rhs_omeag_y
 	cuCheck(cudaMemcpy(pb.rhs_v, pb.dptr_tw.ptr, tSize, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.rhs_omega_y, pb.dptr_tomega_z.ptr, tSize, cudaMemcpyDeviceToHost), "memcpy");
 	
+	for (int k = 0; k < pb.nz; k++) {
+		pb.tv0[k] = pb.rhs_v[k];
+		pb.tomega_y_0[k] = pb.rhs_omega_y[k];
+	}
+
 	for (int j = 0; j < pb.my; j++) {
 		for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 			for (int k = 0; k < pb.mz; k++) {

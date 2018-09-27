@@ -5,21 +5,24 @@
 #include "cufft.h"
 #include "RPCFKernels.cuh"
 
-extern cufftHandle planXYr2c, planXYc2r, planZ;
+extern cufftHandle planXYr2c, planXYc2r, planZ_pad;
 
 __global__ void investigate(cudaPitchedPtr p);
 
 enum DIRECTION {
 	FORWARD,BACKWARD
 };
-__host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& input,
-	cudaPitchedPtr& output, int* indim, int* outdim, bool isOutput = false);
+enum Padding_mode { Padding, No_Padding };
+
+__host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
+	cudaPitchedPtr& tPtr, int* dim, int* tDim, 
+	Padding_mode pd = Padding, bool isOutput = false);
 
 __host__ int initFFT(problem& pb);
 
 __host__ int transform(DIRECTION dir,problem& pb);
 
-__global__ void setZeros(cudaPitchedPtr p, int mx, int my, int mz);
+__global__ void setZeros(complex* ptr, size_t pitch, int mx, int my, int mz);
 
 __host__ int transpose(DIRECTION dir, cudaPitchedPtr input,
 	cudaPitchedPtr output, int* indim, int* outdim);
@@ -27,7 +30,7 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr input,
 __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor);
 
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
-__host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz);
+__host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);
 
 #define CACHE_SIZE 512
 #define _MIN(x,y) (((x)<(y))?(x):(y))

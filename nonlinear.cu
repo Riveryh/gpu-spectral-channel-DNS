@@ -144,10 +144,10 @@ __host__ int rhsNonlinear(problem & pb)
 
 	/*
 	//data type mismatch here!
-	res = CUFFTEXEC_C2C(planZ, (CUFFTCOMPLEX*)pb.dptr_tLamb_x.ptr,
+	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)pb.dptr_tLamb_x.ptr,
 		(CUFFTCOMPLEX*)pb.dptr_tLamb_x.ptr,CUFFT_INVERSE); 
 	ASSERT(res == CUFFT_SUCCESS);
-	res = CUFFTEXEC_C2C(planZ, (CUFFTCOMPLEX*)pb.dptr_tLamb_z.ptr,
+	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)pb.dptr_tLamb_z.ptr,
 		(CUFFTCOMPLEX*)pb.dptr_tLamb_z.ptr,CUFFT_INVERSE);
 	ASSERT(res == CUFFT_SUCCESS);
 
@@ -289,7 +289,7 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 
 	const real PI = 4.0*atan(1.0);
 	real z = cos((real)iz / (pz - 1)*PI);
-	real mean_u = 0.0; z; 0.5*(z + 1);
+	real mean_u = 0.5*(z + 1);
 
 	real* dp_u;
 	int pitch = ptr.pitch;

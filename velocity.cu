@@ -25,7 +25,7 @@ int getUVW(problem& pb) {
 
 	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
 	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
-
+	cuCheck(cudaDeviceSynchronize(),"Mem copy");
 	//int nthreadx = 16;
 	//int nthready = 16;
 	//int nDimx = (pb.mx / 2 + 1) / nthreadx;
@@ -61,15 +61,6 @@ __global__ void getVelocityKernel(
 	complex tdz[MAX_NZ];
 	complex tdz1[MAX_NZ];
 
-	if (kx >= (mx / 2 + 1) || ky >= my) return;
-
-	real ialpha = real(kx) / alpha;
-	real ibeta = real(ky) / beta;
-	if (ky >= my / 2 + 1) {
-		ibeta = real(ky - my) / beta;
-	}
-
-	real kmn = ialpha*ialpha + ibeta*ibeta;
 	
 	//solve the zero wave number case.
 	if (kx == 0 && ky == 0) {
@@ -90,6 +81,15 @@ __global__ void getVelocityKernel(
 		return;
 	}
 
+	if (kx >= (mx / 2 + 1) || ky >= my) return;
+
+	real ialpha = real(kx) / alpha;
+	real ibeta = real(ky) / beta;
+	if (ky >= my / 2 + 1) {
+		ibeta = real(ky - my) / beta;
+	}
+
+	real kmn = ialpha*ialpha + ibeta*ibeta;
 	real kmn1 = 1.0 / kmn;
 
 	size_t dist = (kx + (mx / 2 + 1)*ky)*tPitch/ sizeof(complex);
@@ -109,7 +109,7 @@ __global__ void getVelocityKernel(
 	for (int i = 0; i < nz; i++) {
 		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
 			- complex(0.0, ibeta*kmn1) * oz[i];
-		w[i] = complex(0.0, ibeta*kmn1) * tdz[i]
+		v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
 			- complex(0.0, ialpha*kmn1) * oz[i];
 	}
 
@@ -127,7 +127,6 @@ __global__ void getVelocityKernel(
 	for (int i = 0; i < nz; i++) {
 		oy[i] = tdz[i]*(-1.0) + complex(0.0, alpha)*w[i];
 	}
-
 }
 
 void get_velocity_zero(problem & pb)
