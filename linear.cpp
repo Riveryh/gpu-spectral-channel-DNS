@@ -88,7 +88,7 @@ int _get_linear_v(complex* rhs_v, complex* nonlinear_v, complex* rhs_v_p,
 	//save new rhs data and add nonlinear part to it.
 	for (int i = 0; i <= N; i++) {
 		rhs_v_p[i] = rhs_v[i];	// save previous step v_hat data
-		rhs_v[i] = rhs_temp[i] + nonlinear_v[i];
+		rhs_v[i] = rhs_temp[i] + nonlinear_v[i]*dt;
 	}
 
 	//boundary conditions
@@ -128,11 +128,12 @@ int _get_linear_omega_y(complex* rhs_omega_y, complex* nonlinear_omega_y,
 		}
 	}
 
+	写一个测试dt=0时候，输入输出一致的子程序
 	
 
 	//save new rhs data and add nonlinear part to it.
 	for (int i = 0; i <= N; i++) {
-		rhs_omega_y[i] = rhs_temp[i] + nonlinear_omega_y[i];
+		rhs_omega_y[i] = rhs_temp[i] +nonlinear_omega_y[i]*dt;
 	}
 	
 	//boundary conditions
@@ -161,7 +162,7 @@ int _get_linear_u0(complex* rhs_u0, complex* lambx0, complex* lambx0_p,
 
 	//save new rhs data and add nonlinear part to it.
 	for (int i = 2; i <= N; i++) {
-		rhs_u0[i] = rhs_temp[i] - (lambx0[i]*1.5 - lambx0_p[i]*0.5);
+		rhs_u0[i] = rhs_temp[i] - (lambx0[i] * 1.5 - lambx0_p[i] * 0.5) * dt;
 	}
 
 	//boundary conditions

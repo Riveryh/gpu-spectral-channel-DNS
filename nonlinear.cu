@@ -36,7 +36,8 @@ __host__ int getNonlinear(problem& pb) {
 
 	addCoriolisForce(pb);
 
-	saveZeroWaveLamb(pb);
+	// this operation will be finished in get_rhs_v;
+	//saveZeroWaveLamb(pb);
 
 	// Get the right hand side (RHS) part of the equation.
 	// transform the nonlinear RHS part into phys space
@@ -192,6 +193,7 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	// skip the k=0 mode
 	//if (kx == 0 && ky == 0) return;
 	if (kx >= (mx / 2 + 1) || ky >= my) return;
+	if (kx == 0 && ky == 0) return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;	
@@ -269,8 +271,8 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	for (int i = 0; i < pz; i++) {
 		dp_lamb_x[i].re = tres_u_re[i];
 		dp_lamb_x[i].im = tres_u_im[i];
-		dp_lamb_z[i].re = tres_w_re[i];
-		dp_lamb_z[i].im = tres_w_im[i];
+		dp_lamb_y[i].re = tres_w_re[i];
+		dp_lamb_y[i].im = tres_w_im[i];
 	}
 }
 
@@ -345,6 +347,7 @@ __host__ void saveZeroWaveLamb(problem & pb)
 	ASSERT(err == cudaSuccess); 
 	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
+	
 }
 
 __device__ void computeLambDevice(real* pU, real* pV, real* pW,

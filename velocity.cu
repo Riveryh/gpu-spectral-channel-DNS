@@ -35,7 +35,8 @@ int getUVW(problem& pb) {
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
 
-	getVelocityKernel <<<pb.ntDim,pb.nThread>>>((complex*)pb.dptr_tu.ptr, (complex*)pb.dptr_tv.ptr,
+	getVelocityKernel <<<pb.ntDim,pb.nThread>>>(
+		(complex*)pb.dptr_tu.ptr, (complex*)pb.dptr_tv.ptr,
 		(complex*)pb.dptr_tw.ptr, (complex*)pb.dptr_tomega_x.ptr, 
 		(complex*)pb.dptr_tomega_y.ptr, (complex*)pb.dptr_tomega_z.ptr,
 		pb.tPitch, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
@@ -118,14 +119,14 @@ __global__ void getVelocityKernel(
 	}
 	ddz(tdz, nz);
 	for (int i = 0; i < nz; i++) {
-		ox[i] = tdz[i] + complex(0.0, -1.0*beta)*w[i];
+		ox[i] = tdz[i] + complex(0.0, -1.0*ibeta)*w[i];
 	}
 	for (int i = 0; i < nz; i++) {
 		tdz[i] = u[i];
 	}
 	ddz(tdz, nz);
 	for (int i = 0; i < nz; i++) {
-		oy[i] = tdz[i]*(-1.0) + complex(0.0, alpha)*w[i];
+		oy[i] = tdz[i]*(-1.0) + complex(0.0, ialpha)*w[i];
 	}
 }
 

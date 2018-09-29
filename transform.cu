@@ -488,6 +488,7 @@ __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int mx, con
 	u[0].re = u[0].re*0.5;
 	u[0].im = u[0].im*0.5;
 }
+
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	const size_t pitch = tPtr.pitch;
 	const int px = cmx;
@@ -549,7 +550,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
-			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_INVERSE);
+			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 
 		//err = cudaDeviceSynchronize();
@@ -561,7 +562,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,
-			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_INVERSE);
+			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 
 		//err = cudaDeviceSynchronize();

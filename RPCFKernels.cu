@@ -190,7 +190,7 @@ __global__ void init_flow_kernel(
 	int y = threadIdx.x + blockDim.x*blockIdx.x;
 	int z = threadIdx.y + blockDim.y*blockIdx.y;
 
-	if (y >= py || y >= pz) return;
+	if (y >= py || z >= pz) return;
 
 	const real pi = 4 * atan(1.0);
 
@@ -317,13 +317,13 @@ __host__ __device__ void ddz(real* u, int N) {
 }
 
 __host__ __device__ void ddz(complex *u, int N) {
-	complex buffer[MAX_NZ * 4];
-	complex dmat;
+	complex buffer[MAX_NZ];
+	real dmat;
 	for (int i = 0; i < N; i++) {
-		buffer[i] = 0;
+		buffer[i] = complex(0.0,0.0);
 		for (int j = i + 1; j < N; j = j + 2) {
 			dmat = 2 * real(j);
-			buffer[i] = buffer[i] + dmat * u[j];
+			buffer[i] = buffer[i] + u[j] * dmat;
 		}
 	}
 	u[0] = buffer[0] * 0.5;

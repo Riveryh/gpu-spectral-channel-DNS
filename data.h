@@ -25,7 +25,7 @@
 #define ASSERT(x)
 #endif
 
-#define MAX_NZ 150
+#define MAX_NZ 100
 
 #define safeCudaFree(p); {cuCheck(cudaFree(p),"deallocate");(p)=nullptr;}
 #define safeFree(p); {free(p);(p)=nullptr;}

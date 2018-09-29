@@ -20,18 +20,21 @@
 //	real* U0, real* dU0, real* ddU0, const real dt, const real Re);
 int solveEq(complex* inv_coef, complex* rhs, int N, 
 	int pitch, int nx, int ny);
+void save_0_v_omega_y(problem& pb);
 
 int nextStep(problem& pb) {
 	get_rhs_v(pb);
 
 	//solve equation of v from (0,0) to (nx,ny)
 	solveEq(pb.matrix_coeff_v, pb.rhs_v, 
-		pb.nz, pb.tPitch, pb.nx, pb.ny);//check the dimension of data??
+		pb.nz, pb.tPitch, pb.mx, pb.my);//check the dimension of data??
 
 	get_rhs_omega(pb);
 	//solve equation of omega from (0,0) to (nx,ny)
 	solveEq(pb.matrix_coeff_omega, pb.rhs_omega_y, 
-		pb.nz, pb.tPitch, pb.nx, pb.ny);
+		pb.nz, pb.tPitch, pb.mx, pb.my);
+	
+	save_0_v_omega_y(pb);
 
 	getUVW(pb);
 	return 0;
@@ -42,11 +45,11 @@ int startLoop(problem& pb) {
 }
 
 int solveEq(complex* inv_coef, complex* rhs, int N,
-			int pitch, int nx, int ny) {
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			size_t inc_m = N*N*(nx*j + i);
-			size_t inc_rhs = pitch / sizeof(complex) * (nx*j + i);
+			int pitch, int mx, int my) {
+	for (int i = 0; i < mx/2+1; i++) {
+		for (int j = 0; j < my; j++) {
+			size_t inc_m = N*N*((mx/2+1)*j + i);
+			size_t inc_rhs = pitch / sizeof(complex) * ((mx/2+1)*j + i);
 			m_multi_v(inv_coef + inc_m, rhs + inc_rhs, N);
 		}
 	}
@@ -209,4 +212,12 @@ int destroySolver(problem& pb) {
 	free(pb.nonlinear_v_p);
 	free(pb.nonlinear_omega_y_p);
 	return 0;
+}
+
+void save_0_v_omega_y(problem& pb) {
+	const int nz = pb.nz;
+	for (int i = 0; i < pb.nz; i++) {
+		pb.tv0[i] = pb.rhs_v[i];
+		pb.tomega_y_0[i] = pb.rhs_omega_y[i];
+	}
 }
