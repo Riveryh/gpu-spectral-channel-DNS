@@ -61,7 +61,7 @@ __host__ int addMeanFlow(problem & pb)
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
 	addMeanFlowKernel <<<pb.nDim, pb.nThread>>>(pb.dptr_u, pb.mx, pb.my, pb.mz);
-	err = cudaDeviceSynchronize();
+	//DEBUG: err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 	return int();
 }
@@ -106,7 +106,7 @@ __host__ int computeLambVector(problem & pb)
 	//dim3 nDim(nDimx, nDimy);
 
 	computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz);
-	err = cudaDeviceSynchronize();
+	//DEBUG: err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 
 	safeCudaFree(pb.dptr_u.ptr);
@@ -198,6 +198,12 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	//if (kx == 0 && ky == 0) return;
 	if (kx >= (mx / 2 + 1) || ky >= my) return;
 	if (kx == 0 && ky == 0) return;
+
+	//skip non-necessary wave numbers.
+	const int nx = mx / 3 * 2;
+	const int ny = my / 3 * 2;
+	if (kx > nx / 2 + 1)return;
+	if (ky > ny&& ky < my - ny) return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;	
@@ -310,7 +316,11 @@ __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 	//可以合并几个lamb矢量计算到一个kernel中
 	int ky = threadIdx.x + blockDim.x*blockIdx.x;
 	int kz = threadIdx.y + blockDim.y*blockIdx.y;
-	if (ky >= my || kz >= mz) return;
+	//const int py = my * 2 / 3;
+	const int pz = mz / 2 + 1;
+	if (ky >= my || kz >= pz) return;
+
+
 	int id = my*kz + ky;
 	cudaPitchedPtr& ptrU = ptrList.dptr_u;
 	cudaPitchedPtr& ptrV = ptrList.dptr_v;

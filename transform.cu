@@ -119,13 +119,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 nDim(nDimx, nDimy);
 		setZeros<<<nDim,nThread>>>((complex*)Ptr.ptr, Ptr.pitch, 
 			dim[0], dim[1], dim[2]);
-		cuCheck(cudaDeviceSynchronize(),"set zeros");
+		//DEBUG:cuCheck(cudaDeviceSynchronize(),"set zeros");
 
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
 			(CUFFTREAL*)Ptr.ptr);
 		ASSERT(res == CUFFT_SUCCESS);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
+		//DEBUG:err = cudaDeviceSynchronize();
+		//DEBUG:ASSERT(err == cudaSuccess);
 
 //#ifdef DEBUG
 //		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
@@ -183,8 +183,8 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 //#endif // DEBUG
 
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
+//DEBUG:err = cudaDeviceSynchronize();
+//DEBUG:ASSERT(err == cudaSuccess);
 
 		int nthreadx = 16;
 		int nthready = 16;
@@ -196,13 +196,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 thread_num(nthreadx, nthready);
 		normalize <<< dim_num, thread_num >>>
 			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1]);
-		err = cudaDeviceSynchronize();
+		//DEBUG:err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 
-		err = cudaDeviceSynchronize();
+		//DEBUG:err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
 		//err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
@@ -318,7 +318,13 @@ __global__ void cheby_pre_p2s(complex* u, const size_t pitch, const int mx, cons
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= mx || iy >= my)return;
-    size_t dist = pitch*(px*iy + ix)/sizeof(complex);
+    
+	const int nx = (mx-1) / 3 * 2 + 1;
+	const int ny = my / 3 * 2;
+	if (ix > nx) return;
+	if (iy > ny && iy < my - ny) return;
+	
+	size_t dist = pitch*(px*iy + ix)/sizeof(complex);
 	u = u + dist;
 	for (int i = 1; i < pz - 1; i++) {
 		u[mz - i].re = u[i].re;
@@ -335,6 +341,12 @@ __global__ void cheby_pre_s2p_pad(complex* u, const size_t pitch, const int mx, 
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= mx || iy >= my)return;
+	
+	const int nx = (mx - 1) / 3 * 2 + 1;
+	const int ny = my / 3 * 2;
+	if (ix > nx) return;
+	if (iy > ny && iy < my - ny) return; 
+	
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;
 	for (int i = nz; i < pz; i++) {
@@ -361,6 +373,12 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int mx
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= mx || iy >= my)return;
+	
+	const int nx = (mx - 1) / 3 * 2 + 1;
+	const int ny = my / 3 * 2;
+	if (ix > nx) return;
+	if (iy > ny && iy < my - ny) return;
+
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;
 	//for (int i = nz; i < pz; i++) {
@@ -386,6 +404,12 @@ __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int mx, con
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= mx || iy >= my)return;
+	
+	const int nx = (mx - 1) / 3 * 2 + 1;
+	const int ny = my / 3 * 2;
+	if (ix > nx) return;
+	if (iy > ny && iy < my - ny) return;
+	
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;
 	real factor = (1.0 / (pz - 1)) ;
@@ -418,7 +442,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	cufftResult res;
 	cudaError_t err;
 	cheby_pre_p2s<<<nBlock,nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
-	err = cudaDeviceSynchronize();
+	//DEBUG:err = cudaDeviceSynchronize();
 	assert(err == cudaSuccess);
 
 	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
@@ -429,7 +453,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	//assert(err == cudaSuccess);
 
 	cheby_post_p2s<<<nBlock, nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
-	err = cudaDeviceSynchronize();
+	//DEBUG:err = cudaDeviceSynchronize();
 	assert(err == cudaSuccess);
 }
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode doPadding) {
@@ -454,7 +478,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	if(doPadding == Padding){
 		cheby_pre_s2p_pad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
 
-		err = cudaDeviceSynchronize();
+		//DEBUG:err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
@@ -466,7 +490,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	}
 	else if(doPadding == No_Padding){
 		cheby_pre_s2p_noPad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
-		err = cudaDeviceSynchronize();
+		//DEBUG:err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,

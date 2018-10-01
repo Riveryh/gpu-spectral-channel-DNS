@@ -108,20 +108,25 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 
 __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	cudaPitchedPtr tPtr, int* dim, int* tDim) {
-	int nThread = 512;
-	int nBlock = dim[1] / nThread;
-	if (dim[1] % nThread != 0)nBlock++;
+	int nthreadx = 16;
+	int nthready = 16;
+	int nBlockx = dim[0] / nthreadx;
+	int nBlocky = dim[1] / nthready;
+	if (dim[0] % nthreadx != 0) nBlockx++;
+	if (dim[1] % nthready != 0) nBlocky++;
+	dim3 nBlock(nBlockx, nBlocky);
+	dim3 nThread(nthreadx, nthready);
 
 	dim3 dims(dim[0], dim[1], dim[2]);
 	if (dir == FORWARD) {
 		transpose_forward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
-		cuCheck(cudaDeviceSynchronize(),"Transpose kernel");
+		//DEBUG:cuCheck(cudaDeviceSynchronize(),"Transpose kernel");
 	}
 	else if (dir == BACKWARD) {
 		transpose_backward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
-		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		//DEBUG:cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
 	}
 	else {
 		std::cerr << "Wrong tranpose type!" << std::endl;
@@ -131,32 +136,34 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 
 __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	int ky = threadIdx.x + blockDim.x*blockIdx.x;
+	int kx = threadIdx.x + blockDim.x*blockIdx.x;
+	int ky = threadIdx.y + blockDim.y*blockIdx.y;
+
 	int mx = dim.x;
 	int my = dim.y;
 	int mz = dim.z;
+	if (kx >= mx / 2 + 1) return;
 	if (ky >= my) return;
-	for (int kz = 0; kz < mz; kz++) {
-		for (int kx = 0; kx < mx/2+1; kx++) {
-			size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
-			size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
-			tu[tInc] = u[inc];
-		}
+	for (int kz = 0; kz < mz/2+1; kz++) {
+		size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
+		size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
+		tu[tInc] = u[inc];
 	}
 }
 
 __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	int ky = threadIdx.x + blockDim.x*blockIdx.x;
+	int kx = threadIdx.x + blockDim.x*blockIdx.x;
+	int ky = threadIdx.y + blockDim.y*blockIdx.y;
+
 	int mx = dim.x;
 	int my = dim.y;
 	int mz = dim.z;
+	if (kx >= mx / 2 + 1) return;
 	if (ky >= my) return;
-	for (int kz = 0; kz < mz; kz++) {
-		for (int kx = 0; kx < mx/2+1; kx++) {
-			size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
-			size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
-			u[inc] = tu[tInc];
-		}
+	for (int kz = 0; kz < mz/2+1; kz++) {
+		size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
+		size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
+		u[inc] = tu[tInc];
 	}
 }

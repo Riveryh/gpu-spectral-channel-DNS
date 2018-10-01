@@ -47,7 +47,7 @@ int getUVW(problem& pb) {
 		(complex*)pb.dptr_tw.ptr, (complex*)pb.dptr_tomega_x.ptr, 
 		(complex*)pb.dptr_tomega_y.ptr, (complex*)pb.dptr_tomega_z.ptr,
 		pb.tPitch, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
-	cuCheck(cudaDeviceSynchronize(), "get velocity kernel");
+	//DEBUG: cuCheck(cudaDeviceSynchronize(), "get velocity kernel");
 
 	//the zeros wave number velocity 
 	// is computed inside the kernel function above.
