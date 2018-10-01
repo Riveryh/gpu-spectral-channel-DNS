@@ -5,7 +5,7 @@
 #include "velocity.h"
 #include "coefficient.cuh"
 #include "operation.h"
-
+#include <cassert>
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
 //
@@ -19,7 +19,7 @@
 //	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4,
 //	real* U0, real* dU0, real* ddU0, const real dt, const real Re);
 int solveEq(complex* inv_coef, complex* rhs, int N, 
-	int pitch, int nx, int ny);
+	size_t pitch, int nx, int ny);
 void save_0_v_omega_y(problem& pb);
 
 int nextStep(problem& pb) {
@@ -37,6 +37,7 @@ int nextStep(problem& pb) {
 	save_0_v_omega_y(pb);
 
 	getUVW(pb);
+	pb.currenStep++;
 	return 0;
 }
 
@@ -45,7 +46,7 @@ int startLoop(problem& pb) {
 }
 
 int solveEq(complex* inv_coef, complex* rhs, int N,
-			int pitch, int mx, int my) {
+			size_t pitch, int mx, int my) {
 	for (int i = 0; i < mx/2+1; i++) {
 		for (int j = 0; j < my; j++) {
 			size_t inc_m = N*N*((mx/2+1)*j + i);
@@ -175,8 +176,11 @@ int initSolver(problem& pb, bool inversed)
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
 				_get_coef_w0(pb.matrix_coeff_omega, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
 				if (inversed) {
-					inverse(pb.matrix_coeff_omega, pb.nz);
-					inverse(pb.matrix_coeff_v, pb.nz);
+					int ret;
+					ret=inverse(pb.matrix_coeff_omega, pb.nz);
+					ASSERT(ret == 0);
+					ret=inverse(pb.matrix_coeff_v, pb.nz);
+					ASSERT(ret == 0);
 				}
 				continue;
 			}
@@ -195,11 +199,16 @@ int initSolver(problem& pb, bool inversed)
 			_get_coefficient_omega(coe_o, pb.nz-1, pb._U0, 
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
 			if (inversed) {
-				inverse(coe_v, pb.nz);
-				inverse(coe_o, pb.nz);
+				int ret;
+				ret = inverse(coe_v, pb.nz);
+				ASSERT(ret == 0);
+				ret = inverse(coe_o, pb.nz);
+				ASSERT(ret == 0);
 			}
 		}
 	}
+
+	pb.currenStep = pb.para.stepPara.start_step;
 
 	return 0;
 }
@@ -221,3 +230,4 @@ void save_0_v_omega_y(problem& pb) {
 		pb.tomega_y_0[i] = pb.rhs_omega_y[i];
 	}
 }
+

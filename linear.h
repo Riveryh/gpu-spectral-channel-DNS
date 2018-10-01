@@ -4,13 +4,13 @@
 int get_linear_v(problem&pb);
 int get_linear_omega_y(problem&pb);
 
-int _get_linear_v(complex* rhs_v, complex* nonlinear_v,
+int _get_linear_v(complex* rhs_v, complex* nonlinear_v, complex* nonlinear_v_p,
 	complex* rhs_v_p,
 	int N, real* U, real* ddU,
 	real* T0, real* T2, real* T4,
 	real Re, real dt, real kmn, real alpha);
 
-int _get_linear_omega_y(complex* rhs_omega_y, complex* nonlinear_omega_y,
+int _get_linear_omega_y(complex* rhs_omega_y, complex* nonlinear_omega_y, complex* nonlinear_omega_y_p,
 				complex* rhs_v, complex* rhs_v_p,
 				int N, real*U, real*dU, 
 				real*T0, real*T2, 

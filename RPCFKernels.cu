@@ -55,7 +55,7 @@ __host__ int initCUDA(problem&  pb) {
 	// Get pitch value of the pointer.
 	err = cudaMalloc3D(&(pb.dptr_tu), tExtent);
 	pb.tPitch = pb.dptr_tu.pitch;
-	cudaFree(pb.dptr_tu.ptr);
+	safeCudaFree(pb.dptr_tu.ptr);
 	pb.dptr_tu.ptr = nullptr;
 
 	cuCheck(cudaMalloc3D(&(pb.dptr_u), extent),"allocate");
@@ -87,6 +87,18 @@ __host__ int initCUDA(problem&  pb) {
 	//err = cudaMalloc3D(&(pb.dptr_tLamb_x), tExtent);
 	//err = cudaMalloc3D(&(pb.dptr_tLamb_y), tExtent);
 	//err = cudaMalloc3D(&(pb.dptr_tLamb_z), tExtent);
+	pb.dptr_tu.ptr = nullptr;
+	pb.dptr_tv.ptr = nullptr;
+	pb.dptr_tw.ptr = nullptr;
+	pb.dptr_tomega_x.ptr = nullptr;
+	pb.dptr_tomega_y.ptr = nullptr;
+	pb.dptr_tomega_z.ptr = nullptr;
+	pb.dptr_lamb_x.ptr = nullptr;
+	pb.dptr_lamb_y.ptr = nullptr;
+	pb.dptr_lamb_z.ptr = nullptr;
+	pb.dptr_tLamb_x.ptr = nullptr;
+	pb.dptr_tLamb_y.ptr = nullptr;
+	pb.dptr_tLamb_z.ptr = nullptr;
 
 	pb.pitch = pb.dptr_u.pitch; 
 	pb.size = pb.pitch * pb.my * pb.mz;
@@ -99,7 +111,7 @@ __host__ int initCUDA(problem&  pb) {
 // note : x and y should be normalized by lx and ly.
 // i.e. x = x/lx
 #define EPSILON_INIT 0.005
-__device__ inline real _get_init_u(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
 	const real PI = 4*atan(1.0);
 	return EPSILON_INIT*lx*sin(1.5*PI*z)
 		*(cos(2 * PI*x / lx)*sin(2.0*PI*y / ly)
@@ -112,7 +124,7 @@ __device__ inline real _get_init_u(real x, real y, real z, real lx, real ly) {
 	//	*sin(4.0*PI*y)));
 }
 
-__device__ inline real _get_init_v(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
 	return -EPSILON_INIT*ly*sin(1.5*PI*z)
 		*(0.5*sin(2 * PI*x / lx)*cos(2.0*PI*y / ly)
@@ -124,7 +136,7 @@ __device__ inline real _get_init_v(real x, real y, real z, real lx, real ly) {
 	//	*sin(4.0*PI*y));
 }
 
-__device__ inline real _get_init_w(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
 	return EPSILON_INIT*(-2.0)/3.0*(1.0+cos(1.5*PI*z))
 		*(sin(2*PI*x/lx)*sin(2*PI*y/ly)
@@ -137,7 +149,7 @@ __device__ inline real _get_init_w(real x, real y, real z, real lx, real ly) {
 	//	*cos(4.0*PI*y));
 }
 
-__device__ inline real _get_init_omegax(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
 	const real pi = 4 * atan(1.0);
 	return (-EPSILON_INIT*ly*1.5*pi*cos(1.5*pi*z)*(0.5*sin(2.0*pi*x/lx) 
 		*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
@@ -150,7 +162,7 @@ __device__ inline real _get_init_omegax(real x, real y, real z, real lx, real ly
 			*cos(4.0*pi*y/ly)));
 }
 
-__device__ inline real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
 	const real pi = 4 * atan(1.0);
 	return EPSILON_INIT*2.0*pi*sin(1.5*pi*z)*  
 		(lx / ly*(cos(2.0*pi*x/lx)*cos(2.0*pi*y/ly) 
@@ -163,7 +175,7 @@ __device__ inline real _get_init_omegaz(real x, real y, real z, real lx, real ly
 }
 
 
-__device__ inline real _get_init_omegay(real x, real y, real z, real lx, real ly) {
+__device__ real _get_init_omegay(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
 	return
 		EPSILON_INIT*(-2.0) / 3.0*(1.0 + cos(1.5*PI*z))
@@ -249,9 +261,9 @@ __host__ int initFlow(problem& pb) {
 	size_t& tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
 
 	buffer = (real*)malloc(size);
-	cuCheck(cudaMemcpy(buffer, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost),"memcpy");
-	err = cudaDeviceSynchronize();
-	ASSERT(err == cudaSuccess);
+	//cuCheck(cudaMemcpy(buffer, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost),"memcpy");
+	//err = cudaDeviceSynchronize();
+	//ASSERT(err == cudaSuccess);
 	//RPCF::write_3d_to_file("init.txt", buffer, pb.dptr_u.pitch, (pb.mx), pb.my, pb.mz);
 	
 
@@ -284,7 +296,7 @@ __host__ int initFlow(problem& pb) {
 	for (int j = 0; j < pb.my; j++) {
 		for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 			for (int k = 0; k < pb.mz; k++) {
-				size_t inc = pb.tPitch/sizeof(complex)*(j*(pb.mx / 2 + 1) + i) + k;
+				size_t inc = k+pb.tPitch/sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
 				pb.rhs_v_p[inc] = pb.rhs_v[inc];
 			}
 		}

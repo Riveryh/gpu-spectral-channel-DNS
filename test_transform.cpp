@@ -10,58 +10,62 @@ void setFlowForSpectra(problem& pb);
 void compareSpectra(problem& pb);
 
 TestResult test_transform() {
-	//problem pb;
-	//initcuda(pb);
-	//initfft(pb);
+	problem pb;
+	initCUDA(pb);
+	initFFT(pb);
 
-	//int mx = pb.mx;
-	//int my = pb.my;
-	//int mz = pb.mz;
-	//int pitch = pb.pitch;
+	int mx = pb.mx;
+	int my = pb.my;
+	int mz = pb.mz;
+	int pitch = pb.pitch;
 
-	//size_t size = pitch * my * mz;
-	////memory allocation
-	//pb.hptr_u = (real*)malloc(size);
-	//assert(pb.hptr_u != nullptr);
-	//pb.hptr_v = (real*)malloc(size);
-	//assert(pb.hptr_v != nullptr);
-	//pb.hptr_w = (real*)malloc(size);
-	//assert(pb.hptr_w != nullptr);
-	//pb.hptr_omega_x = (real*)malloc(size);
-	//assert(pb.hptr_omega_x != nullptr);
-	//pb.hptr_omega_y = (real*)malloc(size);
-	//assert(pb.hptr_omega_y != nullptr);
-	//pb.hptr_omega_z = (real*)malloc(size);
-	//assert(pb.hptr_omega_z != nullptr);
-
-	//setflow(pb);
-
-	//int dim[3] = { pb.mx,pb.my,pb.mz };
-	//int tdim[3] = { pb.mz,pb.mx,pb.my };
-	//transform_3d_one(forward, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	//transform_3d_one(backward, pb.dptr_u, pb.dptr_tu, dim, tdim);
-
-	////-------------------------------
-	//compareflow(pb);
-
-	problem pb2;
-	initCUDA(pb2);
-	initFFT(pb2);
-	int mx = pb2.mx;
-	int my = pb2.my;
-	int mz = pb2.mz;
-	int pitch = pb2.pitch;
-	size_t size2 = pitch * my * mz;
+	size_t size = pitch * my * mz;
 	//memory allocation
-	pb2.hptr_u = (real*)malloc(size2);
-	assert(pb2.hptr_u != nullptr);
-	int dim2[3] = { pb2.mx,pb2.my,pb2.mz };
-	int tdim2[3] = { pb2.mz,pb2.mx,pb2.my };
-	setFlowForSpectra(pb2);
-	transform_3d_one(FORWARD, pb2.dptr_u, pb2.dptr_tu, dim2, tdim2);
-	compareSpectra(pb2);
+	pb.hptr_u = (real*)malloc(size);
+	assert(pb.hptr_u != nullptr);
+	pb.hptr_v = (real*)malloc(size);
+	assert(pb.hptr_v != nullptr);
+	pb.hptr_w = (real*)malloc(size);
+	assert(pb.hptr_w != nullptr);
+	pb.hptr_omega_x = (real*)malloc(size);
+	assert(pb.hptr_omega_x != nullptr);
+	pb.hptr_omega_y = (real*)malloc(size);
+	assert(pb.hptr_omega_y != nullptr);
+	pb.hptr_omega_z = (real*)malloc(size);
+	assert(pb.hptr_omega_z != nullptr);
 
-	
+	setFlow(pb);
+
+	int dim[3] = { pb.mx,pb.my,pb.mz };
+	int tdim[3] = { pb.mz,pb.mx,pb.my };
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+
+	//-------------------------------
+	compareFlow(pb);
+
+	//problem pb2;
+	//initCUDA(pb2);
+	//initFFT(pb2);
+	//int mx = pb2.mx;
+	//int my = pb2.my;
+	//int mz = pb2.mz;
+	//int pitch = pb2.pitch;
+	//size_t size2 = pitch * my * mz;
+	////memory allocation
+	//pb2.hptr_u = (real*)malloc(size2);
+	//assert(pb2.hptr_u != nullptr);
+	//int dim2[3] = { pb2.mx,pb2.my,pb2.mz };
+	//int tdim2[3] = { pb2.mz,pb2.mx,pb2.my };
+	//setFlowForSpectra(pb2);
+	//transform_3d_one(FORWARD, pb2.dptr_u, pb2.dptr_tu, dim2, tdim2);
+	//compareSpectra(pb2);
+
+	//
 
 	return TestSuccess;
 }

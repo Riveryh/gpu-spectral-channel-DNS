@@ -49,7 +49,7 @@ __host__ int initFFT(problem &pb) {
 		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my);
 	assert(res == CUFFT_SUCCESS);
 	res = cufftPlanMany(&planZ_no_pad, 1, dim1_no_pad, onembed, ostride, odist,
-		onembed, ostride, odist, myCUFFT_C2C, (mx / 2 + 1)*my);
+		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my);
 	assert(res == CUFFT_SUCCESS);
 	return 0;
 }
@@ -174,6 +174,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 	// tPtr -> Ptr
 	if (dir == BACKWARD) {
+		ASSERT(Ptr.ptr == nullptr);
 		cuCheck( cudaMalloc3D(&(Ptr), extent),"cuMalloc");
 
 		size_t size = Ptr.pitch*dim[1] * dim[2];
@@ -185,13 +186,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		//setZeros <<<1, threadDim >>> (Ptr, dim[0], dim[1], dim[2]);
 
-#ifdef DEBUG
-		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-		if(isOutput) RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//		if(isOutput) RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+//#endif //DEBUG
 
 		//chebyshev transform in z direction
 		cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1], dim[2]);
@@ -216,32 +217,30 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-#ifdef DEBUG
-		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-		if (isOutput) RPCF::write_3d_to_file("afterREV.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//		if (isOutput) RPCF::write_3d_to_file("afterREV.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+//#endif //DEBUG
 
 
-#ifdef DEBUG
-		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-		if (isOutput) RPCF::write_3d_to_file("afterNORM.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//		if (isOutput) RPCF::write_3d_to_file("afterNORM.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+//#endif //DEBUG
 
 
-		err = cudaFree(tPtr.ptr);
-		ASSERT(err == cudaSuccess);
-		tPtr.ptr = nullptr;
+		safeCudaFree(tPtr.ptr);
 	}
 	else
 	{
 		// Ptr -> tPtr
-
+		ASSERT(tPtr.ptr == nullptr);
 		cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
 
 		size_t size = Ptr.pitch*dim[1] * dim[2];
@@ -253,26 +252,26 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		//ASSERT(err == cudaSuccess);
 
-#ifdef DEBUG
-		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-		if (isOutput) RPCF::write_3d_to_file("before.txt", buffer, Ptr.pitch, 2*(dim[0]/2+1), dim[1], dim[2]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//		if (isOutput) RPCF::write_3d_to_file("before.txt", buffer, Ptr.pitch, 2*(dim[0]/2+1), dim[1], dim[2]);
+//#endif //DEBUG
 
 		ASSERT(dir == FORWARD);
 		res = CUFFTEXEC_R2C(planXYr2c, (CUFFTREAL*)Ptr.ptr,
 			(CUFFTCOMPLEX*)Ptr.ptr);
 
-#ifdef DEBUG
-		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-
-		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
-#endif // DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//
+//		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
+//#endif // DEBUG
 
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
@@ -295,33 +294,31 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
+		//err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
+		//ASSERT(err == cudaSuccess);
+		//err = cudaDeviceSynchronize();
+		//ASSERT(err == cudaSuccess);
 
-#ifdef DEBUG
-		if (isOutput) RPCF::write_3d_to_file("Transposed.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		if (isOutput) RPCF::write_3d_to_file("Transposed.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+//#endif //DEBUG
 
 		//transform in z direction
 		cheby_p2s(tPtr, dim[0] / 2 + 1, dim[1], dim[2]);
 
-#ifdef DEBUG
-		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
-		ASSERT(err == cudaSuccess);
-		err = cudaDeviceSynchronize();
-		ASSERT(err == cudaSuccess);
-		if (isOutput) RPCF::write_3d_to_file("afterZ.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
-#endif //DEBUG
+//#ifdef DEBUG
+//		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
+//		ASSERT(err == cudaSuccess);
+//		err = cudaDeviceSynchronize();
+//		ASSERT(err == cudaSuccess);
+//		if (isOutput) RPCF::write_3d_to_file("afterZ.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
+//#endif //DEBUG
 
 		//setZeros<<<1, threadDim >>>(Ptr, dim[0], dim[1], dim[2]);
 		//err = cudaDeviceSynchronize();
 		//ASSERT(err == cudaSuccess);
 
-		err = cudaFree(Ptr.ptr);
-		ASSERT(err == cudaSuccess);
-		Ptr.ptr = nullptr;
+		safeCudaFree(Ptr.ptr);
 	}
 	free(buffer);
 	free(tbuffer);

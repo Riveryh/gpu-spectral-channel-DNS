@@ -75,6 +75,10 @@ __host__ int computeLambVector(problem & pb)
 	cudaExtent& extent = pb.extent;
 	//make_cudaExtent(
 	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
+
+	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
+	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
+	ASSERT(pb.dptr_lamb_z.ptr == nullptr);
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");

@@ -2,6 +2,7 @@
 #include "cuRPCF.h"
 #include "device_launch_parameters.h"
 #include "cuda_runtime.h"
+#include <cassert>
 
 __global__ void getVelocityKernel(
 	complex* u, complex* v, complex*w,
@@ -15,7 +16,13 @@ int getUVW(problem& pb) {
 	cudaExtent tExtent = pb.tExtent;
 	//make_cudaExtent(
 	//	pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
-
+	//cuCheck(cudaDeviceReset(),"reset");
+	ASSERT(pb.dptr_tu.ptr == nullptr);
+	ASSERT(pb.dptr_tv.ptr == nullptr);
+	ASSERT(pb.dptr_tw.ptr == nullptr);
+	ASSERT(pb.dptr_tomega_x.ptr == nullptr);
+	ASSERT(pb.dptr_tomega_y.ptr == nullptr);
+	ASSERT(pb.dptr_tomega_z.ptr == nullptr);
 	cuCheck(cudaMalloc3D(&(pb.dptr_tu), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tv), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tw), tExtent), "allocate");
@@ -25,7 +32,7 @@ int getUVW(problem& pb) {
 
 	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
 	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
-	cuCheck(cudaDeviceSynchronize(),"Mem copy");
+	//cuCheck(cudaDeviceSynchronize(),"Mem copy");
 	//int nthreadx = 16;
 	//int nthready = 16;
 	//int nDimx = (pb.mx / 2 + 1) / nthreadx;
@@ -110,8 +117,10 @@ __global__ void getVelocityKernel(
 	for (int i = 0; i < nz; i++) {
 		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
 			- complex(0.0, ibeta*kmn1) * oz[i];
-		v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
+			v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
 			- complex(0.0, ialpha*kmn1) * oz[i];
+		//u[i] = w[i];
+		//v[i] = w[i];
 	}
 
 	for (int i = 0; i < nz; i++) {

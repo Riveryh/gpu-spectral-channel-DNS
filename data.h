@@ -193,6 +193,8 @@ struct problem {
 	real Re;
 	real Ro;
 	real *_U0, *_dU0, *_ddU0;
+	int currenStep;
+	RPCF_Paras para;
 	//
 	//matrix2d<real> T0;
 	//matrix2d<real> T2;
@@ -308,6 +310,7 @@ struct problem {
 		Ro = conf.numPara.Ro;
 		dt = conf.numPara.dt;
 		Re = conf.numPara.Re;
+		para = conf;
 		initVars();
 	}
 

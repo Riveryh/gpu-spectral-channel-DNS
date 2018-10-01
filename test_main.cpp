@@ -6,7 +6,7 @@
 #include "test_para_reading.h"
 #include "test_getUVW.h"
 #include "test_rhs.h"
-
+#include "test_dt_0.h"
 #include <iostream>
 using namespace std;
 #include <cstdio>
@@ -25,7 +25,8 @@ TestResult main_test(){
 	//RUN_TEST(Test_coef_v(), "Test coef v");
 	//RUN_TEST(Test_coef_omega(), "Test coef omega");
 	//RUN_TEST(test_getUVW(), "Test UVW");
-	RUN_TEST(test_rhs(), "Test rhs");
+	//RUN_TEST(test_rhs(), "Test rhs");
+	RUN_TEST(test_dt_0(), "Test equality of dt = 0");
 	return TestSuccess;
 }
 

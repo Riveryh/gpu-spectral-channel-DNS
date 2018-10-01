@@ -27,10 +27,11 @@ __host__ int get_rhs_v(problem& pb) {
 }
 
 __host__ int get_rhs_omega(problem& pb) {
-	return get_linear_omega_y(pb);
+	get_linear_omega_y(pb);
 	safeCudaFree(pb.dptr_tLamb_x.ptr);
 	safeCudaFree(pb.dptr_tLamb_y.ptr);
 	safeCudaFree(pb.dptr_tLamb_z.ptr);
+	return 0;
 }
 
 void save_zero_wave_number_lamb(problem& pb) {
