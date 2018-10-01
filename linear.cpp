@@ -1,8 +1,10 @@
 #include "linear.h"
 #include <cassert>
+#include <omp.h>
 
 int get_linear_v(problem & pb)
 {
+	#pragma omp parallel for
 	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 		for (int j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) {
@@ -41,6 +43,7 @@ int get_linear_v(problem & pb)
 
 int get_linear_omega_y(problem& pb)
 {
+	#pragma omp parallel for
 	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 		for (int j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) continue;

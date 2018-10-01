@@ -6,6 +6,7 @@
 #include "coefficient.cuh"
 #include "operation.h"
 #include <cassert>
+#include <omp.h>
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
 //
@@ -47,6 +48,8 @@ int startLoop(problem& pb) {
 
 int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
+	
+	#pragma omp parallel for
 	for (int i = 0; i < mx/2+1; i++) {
 		for (int j = 0; j < my; j++) {
 			size_t inc_m = N*N*((mx/2+1)*j + i);
