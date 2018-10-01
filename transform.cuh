@@ -4,14 +4,12 @@
 #include "data.h"
 #include "cufft.h"
 #include "RPCFKernels.cuh"
-
+#include "transpose.cuh"
 extern cufftHandle planXYr2c, planXYc2r, planZ_pad;
 
 __global__ void investigate(cudaPitchedPtr p);
 
-enum DIRECTION {
-	FORWARD,BACKWARD
-};
+
 enum Padding_mode { Padding, No_Padding };
 
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
@@ -24,8 +22,6 @@ __host__ int transform(DIRECTION dir,problem& pb);
 
 __global__ void setZeros(complex* ptr, size_t pitch, int mx, int my, int mz);
 
-__host__ int transpose(DIRECTION dir, cudaPitchedPtr input,
-	cudaPitchedPtr output, int* indim, int* outdim);
 
 __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor);
 

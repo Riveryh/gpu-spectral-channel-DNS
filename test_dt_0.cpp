@@ -29,7 +29,7 @@ TestResult test_dt_0() {
 	complex* tv2 = (complex*)malloc(pb.tSize);
 	cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 	
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 1000; i++) {
 		std::cout << "step: " << i << std::endl;
 		nextStep(pb);
 		statistics(pb);
