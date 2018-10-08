@@ -18,6 +18,8 @@
 #include "device_launch_parameters.h"
 #include "parameters.h"
 #include <cmath>
+#include <malloc.h>
+#include <cstdlib>
 
 #ifdef DEBUG
 #define ASSERT(x) assert(x)

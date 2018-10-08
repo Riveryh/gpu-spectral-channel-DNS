@@ -1,5 +1,5 @@
 #include "nonlinear.cuh"
-#include "ASSERT.h"
+#include "assert.h"
 #include "cuRPCF.h"
 
 __host__ int addMeanFlow(problem& pb);

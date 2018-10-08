@@ -113,7 +113,8 @@ void RPCF_Paras::read_para(char* filename) {
 	infile.open(filename, ios::in);
 	if (!infile.is_open()) {
 		cerr << "Error in opening file" << endl;
-		exit(-1);
+		//exit(-1);
+		return;
 	}
 	RPCF_Numerical_Para& np = this->numPara;
 	

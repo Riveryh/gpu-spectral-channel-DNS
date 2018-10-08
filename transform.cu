@@ -1,6 +1,6 @@
 #include "transform.cuh"
 #include <malloc.h>
-#include <ASSERT.h>
+#include <assert.h>
 #include <stdio.h>
 #include "operation.h"
 #include "cuRPCF.h"
@@ -119,13 +119,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 nDim(nDimx, nDimy);
 		setZeros<<<nDim,nThread>>>((complex*)Ptr.ptr, Ptr.pitch, 
 			dim[0], dim[1], dim[2]);
-		//DEBUG:cuCheck(cudaDeviceSynchronize(),"set zeros");
+		cuCheck(cudaDeviceSynchronize(),"set zeros");
 
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
 			(CUFFTREAL*)Ptr.ptr);
 		ASSERT(res == CUFFT_SUCCESS);
-		//DEBUG:err = cudaDeviceSynchronize();
-		//DEBUG:ASSERT(err == cudaSuccess);
+		err = cudaDeviceSynchronize();
+		ASSERT(err == cudaSuccess);
 
 //#ifdef DEBUG
 //		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
@@ -183,8 +183,8 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 //#endif // DEBUG
 
-//DEBUG:err = cudaDeviceSynchronize();
-//DEBUG:ASSERT(err == cudaSuccess);
+err = cudaDeviceSynchronize();
+ASSERT(err == cudaSuccess);
 
 		int nthreadx = 16;
 		int nthready = 16;
@@ -196,13 +196,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 thread_num(nthreadx, nthready);
 		normalize <<< dim_num, thread_num >>>
 			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1]);
-		//DEBUG:err = cudaDeviceSynchronize();
+		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 
-		//DEBUG:err = cudaDeviceSynchronize();
+		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
 		//err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
@@ -442,7 +442,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	cufftResult res;
 	cudaError_t err;
 	cheby_pre_p2s<<<nBlock,nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
-	//DEBUG:err = cudaDeviceSynchronize();
+	err = cudaDeviceSynchronize();
 	assert(err == cudaSuccess);
 
 	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
@@ -453,7 +453,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	//assert(err == cudaSuccess);
 
 	cheby_post_p2s<<<nBlock, nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
-	//DEBUG:err = cudaDeviceSynchronize();
+	err = cudaDeviceSynchronize();
 	assert(err == cudaSuccess);
 }
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode doPadding) {
@@ -478,7 +478,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	if(doPadding == Padding){
 		cheby_pre_s2p_pad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
 
-		//DEBUG:err = cudaDeviceSynchronize();
+		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
@@ -490,7 +490,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	}
 	else if(doPadding == No_Padding){
 		cheby_pre_s2p_noPad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
-		//DEBUG:err = cudaDeviceSynchronize();
+		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,
