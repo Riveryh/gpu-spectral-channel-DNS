@@ -30,6 +30,8 @@
 #define safeCudaFree(p); {cuCheck(cudaFree(p),"deallocate");(p)=nullptr;}
 #define safeFree(p); {free(p);(p)=nullptr;}
 
+#define nullptr NULL
+
 struct complex {
 	real re;
 	real im;
@@ -113,7 +115,7 @@ public:
 template<class T>
 class matrix2d {
 	T* mat;
-	bool _isPrivate = false;
+	bool _isPrivate;
 public: 
 	int nx, ny;
 	matrix2d<T>(int i, int j) : nx(i), ny(j) {
@@ -125,6 +127,7 @@ public:
 		this->mat = _mat;
 		this->nx = nx;
 		this->ny = ny;
+		_isPrivate = false;
 	}
 	T& get(int i, int j) {
 		return *(mat + i*(ny) + j );
@@ -184,7 +187,7 @@ struct problem {
 	int nx, ny, nz;	// the number of mesh
 	int mx, my, mz;	// number of allocated memory
 	int px, py, pz; // number of mesh for dealiasing
-	const real PI = 4*atan(1.0l);
+	//const real PI = 4*atan(1.0l);
 	real aphi;
 	real beta;
 	real lx;
@@ -318,6 +321,7 @@ struct problem {
 
 private:
 	void initVars() {
+		const real PI = 4.0*atan(1.0);
 		lx = 2 * PI*aphi;
 		ly = 2 * PI*beta;
 		hptr_omega_z = nullptr;
