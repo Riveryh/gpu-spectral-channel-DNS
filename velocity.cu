@@ -61,14 +61,13 @@ __global__ void getVelocityKernel(
 	complex* ox, complex* oy, complex* oz,
 	int tPitch, int mx, int my, int mz, real alpha, real beta)
 {
-	int kx = threadIdx.x + blockDim.x*blockIdx.x;
-	int ky = threadIdx.y + blockDim.y*blockIdx.y;
-	int pz = mz / 2 + 1;
-	int nz = mz / 4 + 1;
+	const int kx = threadIdx.x + blockDim.x*blockIdx.x;
+	const int ky = threadIdx.y + blockDim.y*blockIdx.y;
+	const int pz = mz / 2 + 1;
+	const int nz = mz / 4 + 1;
 
 	complex tdz[MAX_NZ];
 	complex tdz1[MAX_NZ];
-
 	
 	//solve the zero wave number case.
 	if (kx == 0 && ky == 0) {
@@ -90,6 +89,12 @@ __global__ void getVelocityKernel(
 	}
 
 	if (kx >= (mx / 2 + 1) || ky >= my) return;
+
+	//skip empty wave numbers
+	const int nx = mx / 3 * 2;
+	const int ny = mx / 3 * 2;
+	if (kx > nx/2+1) return;
+	if (ky > ny&&ky < my - ny)return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;

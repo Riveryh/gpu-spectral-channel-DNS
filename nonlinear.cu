@@ -193,6 +193,7 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	int ky = threadIdx.y + blockDim.y*blockIdx.y; 
 	int pitch = plist.dptr_lamb_x.pitch;
 	int pz = mz / 2 + 1;
+	int nz = mz / 4 + 1;
 
 	// skip the k=0 mode
 	//if (kx == 0 && ky == 0) return;
@@ -246,28 +247,28 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	dp_lamb_y = dp_lamb_y + dist;
 	dp_lamb_z = dp_lamb_z + dist;
 
-	for (int i = 0; i < pz; i++) {
+	for (int i = 0; i < nz; i++) {
 		tdz_re[i] = dp_lamb_x[i].re;
 		tdz_im[i] = dp_lamb_x[i].im;
 	}
 
-	ddz(tdz_re, pz);
-	ddz(tdz_im, pz);
+	ddz(tdz_re, nz);
+	ddz(tdz_im, nz);
 
-	for (int i = 0; i < pz; i++) {
+	for (int i = 0; i < nz; i++) {
 		tres_u_re[i] = kmn*dp_lamb_z[i].re - ialpha * tdz_im[i];
 		tres_u_im[i] = kmn*dp_lamb_z[i].im + ialpha * tdz_re[i];
 	}
 
-	for (int i = 0; i < pz; i++) {
+	for (int i = 0; i < nz; i++) {
 		tdz_re[i] = dp_lamb_y[i].re;
 		tdz_im[i] = dp_lamb_y[i].im;
 	}
 
-	ddz(tdz_re, pz);
-	ddz(tdz_im, pz);
+	ddz(tdz_re, nz);
+	ddz(tdz_im, nz);
 
-	for (int i = 0; i < pz; i++) {
+	for (int i = 0; i < nz; i++) {
 		tres_u_re[i] = tres_u_re[i] - ibeta*tdz_im[i];
 		tres_u_im[i] = tres_u_im[i] + ibeta*tdz_re[i];
 
@@ -278,7 +279,7 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 
 
 	// the results are stored in lamb_x and lamb_z in spectral space
-	for (int i = 0; i < pz; i++) {
+	for (int i = 0; i < nz; i++) {
 		dp_lamb_x[i].re = tres_u_re[i];
 		dp_lamb_x[i].im = tres_u_im[i];
 		dp_lamb_y[i].re = tres_w_re[i];
