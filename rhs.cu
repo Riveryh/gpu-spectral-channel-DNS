@@ -5,6 +5,7 @@
 #include "transform.cuh"
 #include <pthread.h>
 #include <iostream>
+#include <time.h>  
 
 pthread_cond_t cond_v;
 pthread_mutex_t mutex_v;
@@ -15,7 +16,10 @@ void save_zero_wave_number_lamb(problem& pb);
 
 
 void* func(void* _pb) {
+	clock_t start_time, end_time;
+	double cost;
 	problem& pb = *((problem*)_pb);
+	start_time = clock();
 	transform(BACKWARD, pb);
 	getNonlinear(pb);
 
@@ -30,7 +34,11 @@ void* func(void* _pb) {
 	cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 	//TODO: NONLINEAR TIME SCHEME
-	save_zero_wave_number_lamb(pb);
+	save_zero_wave_number_lamb(pb); 
+	
+	end_time = clock();
+	cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+	std::cout << "get nonlinear time = " << cost << std::endl;
 
 	// synchronize with main thread.
 	pthread_mutex_lock(&mutex_v);

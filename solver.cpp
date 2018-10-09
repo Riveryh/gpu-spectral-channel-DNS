@@ -53,7 +53,7 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 	
 	#pragma omp parallel for firstprivate(mx,my)
 	for (int i = 0; i < mx/2+1; i++) {
-		cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
+		//cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
 		for (int j = 0; j < my; j++) {			
 			if (i > mx/3 + 1) continue;
 			if (j > my/3 && j < my*2/3-1) continue;

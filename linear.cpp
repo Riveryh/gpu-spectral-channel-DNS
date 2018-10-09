@@ -12,7 +12,7 @@ int get_linear_v(problem & _pb)
 	#pragma omp parallel for firstprivate(pb,cmx,my)
 	for (int i = 0; i < cmx; i++) {
 
-		cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
+		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < my; j++) {
 			if (i == 0 && j == 0) {
 				
@@ -60,7 +60,7 @@ int get_linear_omega_y(problem& _pb)
 	problem pb = _pb;
 	#pragma omp parallel for private(j),firstprivate(pb,cmx,my)
 	for (i = 0; i < cmx; i++) {
-		cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
+		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (j = 0; j < my; j++) {
 			if (i == 0 && j == 0) continue;
 			size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
