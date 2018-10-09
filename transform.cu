@@ -9,7 +9,7 @@
 
 cufftHandle planXYr2c, planXYc2r, planZ_pad, planZ_no_pad;
 
-
+#define KERNEL_SYNCHRONIZED
 
 
 __host__ int initFFT(problem &pb) {
@@ -48,10 +48,10 @@ __host__ int initFFT(problem &pb) {
 		inembed, istride, idist, myCUFFT_C2R, pb.pz);
 	assert(res == CUFFT_SUCCESS);
 	res = cufftPlanMany(&planZ_pad, 1, dim1, onembed, ostride, odist,
-		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my);
+		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my/3);
 	assert(res == CUFFT_SUCCESS);
 	res = cufftPlanMany(&planZ_no_pad, 1, dim1_no_pad, onembed, ostride, odist,
-		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my);
+		onembed, ostride, odist, myCUFFT_C2C, (mx/2+1)*my/3);
 	assert(res == CUFFT_SUCCESS);
 	return 0;
 }
@@ -119,8 +119,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 nDim(nDimx, nDimy);
 		setZeros<<<nDim,nThread>>>((complex*)Ptr.ptr, Ptr.pitch, 
 			dim[0], dim[1], dim[2]);
+#ifdef KERNEL_SYNCHRONIZED
 		cuCheck(cudaDeviceSynchronize(),"set zeros");
-
+#endif
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
 			(CUFFTREAL*)Ptr.ptr);
 		ASSERT(res == CUFFT_SUCCESS);
@@ -183,8 +184,8 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if (isOutput) RPCF::write_3d_to_file("afterXY.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 //#endif // DEBUG
 
-err = cudaDeviceSynchronize();
-ASSERT(err == cudaSuccess);
+		err = cudaDeviceSynchronize();
+		ASSERT(err == cudaSuccess);
 
 		int nthreadx = 16;
 		int nthready = 16;
@@ -196,7 +197,9 @@ ASSERT(err == cudaSuccess);
 		dim3 thread_num(nthreadx, nthready);
 		normalize <<< dim_num, thread_num >>>
 			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1]);
+#ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
+#endif
 		ASSERT(err == cudaSuccess);
 
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
@@ -298,7 +301,8 @@ __global__ void setZeros(complex* ptr,size_t pitch, int mx, int my, int mz) {
 __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor) {
 	const int iy = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iz = threadIdx.y + blockIdx.y*blockDim.y;
-	if (iy >= my || iz >= mz)return;
+	if (iy >= my || iz >= mz/2+1)return;
+	if (iy > my / 3  && iy < my / 3 * 2 - 1) return;
 
 	size_t pitch = p.pitch; 
 	size_t dist = pitch*(my*iz + iy) / sizeof(real);
@@ -442,18 +446,28 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int cmx, int my, int mz) {
 	cufftResult res;
 	cudaError_t err;
 	cheby_pre_p2s<<<nBlock,nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
+#ifdef KERNEL_SYNCHRONIZED
 	err = cudaDeviceSynchronize();
+#endif
 	assert(err == cudaSuccess);
 
 	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
 		(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 	assert(res == CUFFT_SUCCESS);
-	
+
+	size_t inc = cmx*(my/3*2)* tPtr.pitch / sizeof(CUFFTCOMPLEX);
+
+	res = CUFFTEXEC_C2C(planZ_pad, ((CUFFTCOMPLEX*)tPtr.ptr)+inc,
+		((CUFFTCOMPLEX*)tPtr.ptr) + inc, CUFFT_FORWARD);
+	assert(res == CUFFT_SUCCESS);
+
 	//err = cudaDeviceSynchronize();
 	//assert(err == cudaSuccess);
 
 	cheby_post_p2s<<<nBlock, nthread>>>((complex*)tPtr.ptr, tPtr.pitch, cmx, my, mz);
+#ifdef KERNEL_SYNCHRONIZED
 	err = cudaDeviceSynchronize();
+#endif
 	assert(err == cudaSuccess);
 }
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode doPadding) {
@@ -477,12 +491,19 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	cudaError_t err;
 	if(doPadding == Padding){
 		cheby_pre_s2p_pad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
-
+#ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
+#endif
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
+		ASSERT(res == CUFFT_SUCCESS);
+
+		size_t inc = mx*(my / 3 * 2)* tPtr.pitch / sizeof(CUFFTCOMPLEX);
+		
+		res = CUFFTEXEC_C2C(planZ_pad, ((CUFFTCOMPLEX*)tPtr.ptr) + inc,
+			((CUFFTCOMPLEX*)tPtr.ptr) + inc, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 
 		//err = cudaDeviceSynchronize();
@@ -490,13 +511,20 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 	}
 	else if(doPadding == No_Padding){
 		cheby_pre_s2p_noPad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, mx, my, mz);
+#ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
+#endif
 		assert(err == cudaSuccess);
 
 		res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 
+		size_t inc = mx*(my / 3 * 2)* tPtr.pitch / sizeof(CUFFTCOMPLEX);
+
+		res = CUFFTEXEC_C2C(planZ_no_pad, ((CUFFTCOMPLEX*)tPtr.ptr) + inc,
+			((CUFFTCOMPLEX*)tPtr.ptr) + inc, CUFFT_FORWARD);
+		ASSERT(res == CUFFT_SUCCESS);
 		//err = cudaDeviceSynchronize();
 		//ASSERT(err == cudaSuccess);
 	}

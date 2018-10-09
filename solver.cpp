@@ -49,12 +49,16 @@ int startLoop(problem& pb) {
 int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
 	
-	#pragma omp parallel for
+	#pragma omp parallel for private(j,mx,my,N,pitch,inv_coef,rhs)
 	for (int i = 0; i < mx/2+1; i++) {
 		for (int j = 0; j < my; j++) {
+			if (i > mx/3 + 1) continue;
+			if (j > my/3 && j < my*2/3-1) continue;
 			size_t inc_m = N*N*((mx/2+1)*j + i);
 			size_t inc_rhs = pitch / sizeof(complex) * ((mx/2+1)*j + i);
-			m_multi_v(inv_coef + inc_m, rhs + inc_rhs, N);
+			complex* _inv_coef_ = inv_coef + inc_m;
+			complex* _rhs_ = rhs + inc_rhs;
+			m_multi_v(_inv_coef_, _rhs_ , N);
 		}
 	}
 	return 0;
@@ -212,6 +216,8 @@ int initSolver(problem& pb, bool inversed)
 	}
 
 	pb.currenStep = pb.para.stepPara.start_step;
+
+	//omp_set_num_threads(24);
 
 	return 0;
 }

@@ -2,18 +2,14 @@
 #include <cassert>
 #include <omp.h>
 
+
 int get_linear_v(problem & pb)
 {
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
 		for (int j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) {
-				_get_linear_u0(pb.tv0, pb.lambx0, pb.lambx0_p, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
-				_get_linear_w0(pb.tomega_y_0, pb.lambz0, pb.lambz0_p, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
-				for (int k = 0; k < pb.nz; k++) {
-					pb.rhs_v[k] = pb.tv0[k];
-					pb.rhs_omega_y[k] = pb.tomega_y_0[k];
-				}
+				
 				continue;
 			}
 			size_t inc = pb.tPitch/sizeof(complex)*(j*(pb.mx/2+1)+i);
@@ -41,11 +37,21 @@ int get_linear_v(problem & pb)
 	return 0;
 }
 
+void get_linear_zero_wave_u_w(problem& pb) {
+	_get_linear_u0(pb.tv0, pb.lambx0, pb.lambx0_p, pb.nz - 1, pb.T0, pb.T2, pb.Re, pb.dt);
+	_get_linear_w0(pb.tomega_y_0, pb.lambz0, pb.lambz0_p, pb.nz - 1, pb.T0, pb.T2, pb.Re, pb.dt);
+	for (int k = 0; k < pb.nz; k++) {
+		pb.rhs_v[k] = pb.tv0[k];
+		pb.rhs_omega_y[k] = pb.tomega_y_0[k];
+	}
+}
+
 int get_linear_omega_y(problem& pb)
 {
-	#pragma omp parallel for
-	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
-		for (int j = 0; j < pb.my; j++) {
+	int i,j;
+	#pragma omp parallel for private(j)
+	for (i = 0; i < (pb.mx / 2 + 1); i++) {
+		for (j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) continue;
 			size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
 			complex* rhs_v = pb.rhs_v + inc;
@@ -96,7 +102,7 @@ int _get_linear_v(complex* rhs_v,
 	//save new rhs data and add nonlinear part to it.
 	for (int i = 0; i <= N; i++) {
 		rhs_v_p[i] = rhs_v[i];	// save previous step v_hat data
-		rhs_v[i] = rhs_temp[i] + (nonlinear_v[i-2]*1.5-nonlinear_v_p[i-2]*0.5)*dt;
+		rhs_v[i] = rhs_temp[i];// +(nonlinear_v[i - 2] * 1.5 - nonlinear_v_p[i - 2] * 0.5)*dt;
 	}
 
 	//boundary conditions

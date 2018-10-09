@@ -336,8 +336,8 @@ private:
 
 
 		// compute cuda dimensions.
-		nThread.x = 16;
-		nThread.y = 16;
+		nThread.x = 8;
+		nThread.y = 8;
 		nDim.x = my / nThread.x;
 		nDim.y = mz / nThread.y;
 		if (my%nThread.x != 0) nDim.x++;

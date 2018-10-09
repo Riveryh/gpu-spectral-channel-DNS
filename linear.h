@@ -3,6 +3,7 @@
 
 int get_linear_v(problem&pb);
 int get_linear_omega_y(problem&pb);
+void get_linear_zero_wave_u_w(problem& pb);
 
 int _get_linear_v(complex* rhs_v, complex* nonlinear_v, complex* nonlinear_v_p,
 	complex* rhs_v_p,
