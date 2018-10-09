@@ -4,20 +4,18 @@
 #include <iostream>
 using namespace std;
 
-int get_linear_v(problem & _pb)
+int get_linear_v(problem & pb)
 {
-	problem pb = _pb;
 	int cmx = pb.mx / 2 + 1;
 	int my = pb.my;
-	#pragma omp parallel for firstprivate(pb,cmx,my)
+	#pragma omp parallel for// firstprivate(pb,cmx,my)
 	for (int i = 0; i < cmx; i++) {
-
 		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < my; j++) {
-			if (i == 0 && j == 0) {
-				
-				continue;
-			}
+			if (i == 0 && j == 0) continue;
+			if (i > pb.mx / 3 + 1) continue;
+			if (j > pb.ny / 2 && j < pb.my - pb.ny) continue;
+
 			size_t inc = pb.tPitch/sizeof(complex)*(j*(pb.mx/2+1)+i);
 			complex* rhs_v = pb.rhs_v + inc;
 			complex* nonlinear_v = pb.nonlinear_v + inc;
@@ -52,17 +50,17 @@ void get_linear_zero_wave_u_w(problem& pb) {
 	}
 }
 
-int get_linear_omega_y(problem& _pb)
+int get_linear_omega_y(problem& pb)
 {
-	int i,j;
-	const int cmx = _pb.mx / 2 + 1;
-	const int my = _pb.my;
-	problem pb = _pb;
-	#pragma omp parallel for private(j),firstprivate(pb,cmx,my)
-	for (i = 0; i < cmx; i++) {
+	//problem pb = _pb; 
+	
+	#pragma omp parallel for //firstprivate(cmx,my,pb)
+	for (int i = 0; i < pb.mx/2+1; i++) {
 		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
-		for (j = 0; j < my; j++) {
+		for (int j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) continue;
+			if (i > pb.mx / 3 + 1) continue;
+			if (j > pb.ny / 2 && j < pb.my - pb.ny) continue;
 			size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
 			complex* rhs_v = pb.rhs_v + inc;
 			complex* nonlinear_v = pb.nonlinear_v + inc;

@@ -8,6 +8,7 @@
 #include <cassert>
 #include <omp.h>
 #include <iostream>
+#include <time.h> 
 using namespace std;
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
@@ -26,19 +27,44 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 void save_0_v_omega_y(problem& pb);
 
 int nextStep(problem& pb) {
-	get_rhs_v(pb);
 
+	clock_t start_time, end_time;
+	double cost_eq = 0.0;
+	double cost_rhs_omega = 0.0;
+
+	get_rhs_v(pb);
+	//cout << "solve eq v" << endl;
 	//solve equation of v from (0,0) to (nx,ny)
+	start_time = clock();
+
 	solveEq(pb.matrix_coeff_v, pb.rhs_v, 
 		pb.nz, pb.tPitch, pb.mx, pb.my);//check the dimension of data??
+	
+	end_time = clock();
+	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
+	//cout << "get rhs omega" << endl;
+	start_time = clock(); 
+	
 	get_rhs_omega(pb);
+
+	end_time = clock();
+	cost_rhs_omega += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+	std::cout << "rhs omega time = " << cost_rhs_omega << std::endl;
+	//cout << "solve eq omega" << endl;
 	//solve equation of omega from (0,0) to (nx,ny)
+	start_time = clock();
+
 	solveEq(pb.matrix_coeff_omega, pb.rhs_omega_y, 
 		pb.nz, pb.tPitch, pb.mx, pb.my);
 	
-	save_0_v_omega_y(pb);
+	end_time = clock();
+	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
+	std::cout << "solve equation time = " << cost_eq << std::endl;
 
+	//cout << "save 0 v,oy" << endl;
+	save_0_v_omega_y(pb);
+	//cout << "get velocity" << endl;
 	getUVW(pb);
 	pb.currenStep++;
 	return 0;
@@ -138,7 +164,7 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 
 int initSolver(problem& pb, bool inversed)
 {
-	omp_set_num_threads(12);
+	//omp_set_num_threads(12);
 	
 	#pragma omp parallel
 	{
