@@ -6,26 +6,48 @@
 #include "statistics.h"
 #include <time.h>  
 #include <stdio.h>  
+#include <iostream>
+using namespace std;
 
 TestResult test_dt_0() {
 	RPCF_Paras paras("parameter.txt");
 	//paras.numPara.dt = 0.0;
 	problem pb(paras);
+	cout << "init cuda" << endl;
 	initCUDA(pb);
+	cout << "init fft" << endl;
 	initFFT(pb);
+	cout << "init solver" << endl;
 	initSolver(pb);
+	cout << "init flow" << endl;
 	initFlow(pb);
 
-	output_velocity(pb);
+	cout << "output flow" << endl;
+	//output_velocity(pb);
 
 	complex* tv = (complex*)malloc(pb.tSize);
-	
+
+
+	cout << "first step" << endl;
 	nextStep(pb);
+	safeCudaFree(pb.dptr_tu.ptr);
+	safeCudaFree(pb.dptr_tv.ptr);
+	safeCudaFree(pb.dptr_tw.ptr);
+	safeCudaFree(pb.dptr_tomega_x.ptr);
+	safeCudaFree(pb.dptr_tomega_y.ptr);
+	safeCudaFree(pb.dptr_tomega_z.ptr);
+
 	//nextStep(pb);
+
+	cout << "init cuda" << endl;
 	initCUDA(pb);
+
+	cout << "init flow" << endl;
 	initFlow(pb);
+
+	cout << "init second step" << endl;
 	nextStep(pb);
-	output_velocity(pb);
+	//output_velocity(pb);
 
 	//complex* tv2 = pb.rhs_v;
 	complex* tv2 = (complex*)malloc(pb.tSize);

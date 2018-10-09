@@ -19,18 +19,18 @@ void output_velocity(problem & pb)
 	transform_3d_one(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
 
-	pb.hptr_u = (real*)malloc(pb.size);
-	pb.hptr_v = (real*)malloc(pb.size);
-	pb.hptr_w = (real*)malloc(pb.size);
-	pb.hptr_omega_x = (real*)malloc(pb.size);
-	pb.hptr_omega_y = (real*)malloc(pb.size);
-	pb.hptr_omega_z = (real*)malloc(pb.size);
-	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.size, cudaMemcpyDeviceToHost),"memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
+	pb.hptr_u = (real*)malloc(pb.pSize);
+	pb.hptr_v = (real*)malloc(pb.pSize);
+	pb.hptr_w = (real*)malloc(pb.pSize);
+	pb.hptr_omega_x = (real*)malloc(pb.pSize);
+	pb.hptr_omega_y = (real*)malloc(pb.pSize);
+	pb.hptr_omega_z = (real*)malloc(pb.pSize);
+	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.pSize, cudaMemcpyDeviceToHost),"memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
 
 	write_velocity("velocity.dat", pb.hptr_u, pb.hptr_v, pb.hptr_w,
 		pb.pitch, pb.px, pb.py, pb.pz); 

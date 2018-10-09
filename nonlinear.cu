@@ -60,8 +60,8 @@ __host__ int addMeanFlow(problem & pb)
 	//if (pb.mz % nthready != 0) nDimy++;
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
-	addMeanFlowKernel <<<pb.nDim, pb.nThread>>>(pb.dptr_u, pb.mx, pb.my, pb.mz);
-	//DEBUG: err = cudaDeviceSynchronize();
+	addMeanFlowKernel <<<pb.nDim, pb.nThread>>>(pb.dptr_u, pb.px, pb.py, pb.pz);
+	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 	return int();
 }
@@ -72,16 +72,16 @@ __host__ int computeLambVector(problem & pb)
 	const int my = pb.my;
 	const int mz = pb.mz;
 
-	cudaExtent& extent = pb.extent;
+	cudaExtent& pExtent = pb.pExtent;
 	//make_cudaExtent(
 	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
 
 	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
 	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
 	ASSERT(pb.dptr_lamb_z.ptr == nullptr);
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), pExtent), "allocate");
 
 	cudaPitchedPtrList pList;
 	pList.dptr_u = pb.dptr_u;
@@ -106,7 +106,7 @@ __host__ int computeLambVector(problem & pb)
 	//dim3 nDim(nDimx, nDimy);
 
 	computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz);
-	//DEBUG: err = cudaDeviceSynchronize();
+	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 
 	safeCudaFree(pb.dptr_u.ptr);

@@ -3,8 +3,9 @@
 #define DEBUG
 //#undef DEBUG
 
-#define REAL_DOUBLE
-#undef REAL_FLOAT
+//#define REAL_DOUBLE
+#define REAL_FLOAT
+//#undef REAL_FLOAT
 
 #ifdef REAL_DOUBLE
 #define real double
@@ -209,9 +210,11 @@ struct problem {
 
 	cudaExtent extent;
 	cudaExtent tExtent;
+	cudaExtent pExtent;
 
 	size_t size;	// pb.pitch * pb.my * pb.mz
 	size_t tSize;	// pb.tPitch * (pb.mx/2+1) * pb.my
+	size_t pSize;   // pb.pitch * pb.my * pb.pz
 
 	size_t pitch, tPitch;
 

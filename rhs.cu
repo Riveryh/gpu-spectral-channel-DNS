@@ -4,6 +4,7 @@
 #include "cuRPCF.h"
 #include "transform.cuh"
 #include <pthread.h>
+#include <iostream>
 
 pthread_cond_t cond_v;
 pthread_mutex_t mutex_v;

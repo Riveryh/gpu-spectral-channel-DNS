@@ -7,6 +7,8 @@
 #include "operation.h"
 #include <cassert>
 #include <omp.h>
+#include <iostream>
+using namespace std;
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
 //
@@ -49,7 +51,7 @@ int startLoop(problem& pb) {
 int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
 	
-	#pragma omp parallel for private(j,mx,my,N,pitch,inv_coef,rhs)
+	#pragma omp parallel for private(j,inc_m,inc_rhs,_inv_coef_,_rhs_)
 	for (int i = 0; i < mx/2+1; i++) {
 		for (int j = 0; j < my; j++) {
 			if (i > mx/3 + 1) continue;
@@ -135,6 +137,12 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 
 int initSolver(problem& pb, bool inversed)
 {
+	omp_set_num_threads(12);
+#pragma omp parallel
+	{
+		cout << omp_get_thread_num() << endl;
+	}
+
 	const int nz = pb.nz;
 	const int nx = pb.nx;
 	const int ny = pb.ny;
@@ -142,18 +150,23 @@ int initSolver(problem& pb, bool inversed)
 	size_t& tSize = pb.tSize;
 	size_t mSize = pb.nz * pb.nz * (pb.mx / 2 + 1)*pb.my * sizeof(complex);
 
+	cout << "malloc matrix memory" << endl;
 	pb.matrix_coeff_v = (complex*)malloc(mSize);
 	pb.matrix_coeff_omega = (complex*)malloc(mSize);
 
+	cout << "malloc nonlinear memory" << endl;
 	pb.nonlinear_v = (complex*)malloc(tSize);
 	pb.nonlinear_omega_y = (complex*)malloc(tSize);
 	pb.nonlinear_v_p = (complex*)malloc(tSize);
 	pb.nonlinear_omega_y_p = (complex*)malloc(tSize);
 
+	cout << "malloc rhs memory" << endl;
 	pb.rhs_v = (complex*)malloc(tSize);
 	pb.rhs_omega_y = (complex*)malloc(tSize);
 	pb.rhs_v_p = (complex*)malloc(tSize);
 
+
+	cout << "malloc zerowave number memory" << endl;
 	pb.lambx0 = (complex*)malloc(sizeof(complex)*pb.nz);
 	pb.lambz0 = (complex*)malloc(sizeof(complex)*pb.nz); 
 	pb.lambx0_p = (complex*)malloc(sizeof(complex)*pb.nz);
@@ -161,10 +174,12 @@ int initSolver(problem& pb, bool inversed)
 	pb.tv0 = (complex*)malloc(sizeof(complex)*pb.nz);
 	pb.tomega_y_0 = (complex*)malloc(sizeof(complex)*pb.nz);
 
+	cout << "malloc U memory" << endl;
 	pb._U0 = (real*)malloc(sizeof(real)*pb.nz);
 	pb._dU0 = (real*)malloc(sizeof(real)*pb.nz);
 	pb._ddU0 = (real*)malloc(sizeof(real)*pb.nz);
 
+	cout << "malloc T memory" << endl;
 	pb.T0 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
 	pb.T2 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
 	pb.T4 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
@@ -176,8 +191,12 @@ int initSolver(problem& pb, bool inversed)
 	get_U(pb.nz, pb._U0, pb._dU0, pb._ddU0);
 
 	//init coef matrix
-	for (int kx = 0; kx < (pb.mx / 2 +1); kx++) {
-		for (int ky = 0; ky < pb.my; ky++) {
+	const int cmx = pb.mx / 2 + 1;
+	int ky = 0;
+	#pragma omp parallel for private(ky)
+	for (int kx = 0; kx < cmx; kx++) {
+		cout << "omp id:" << omp_get_thread_num() << endl;
+		for (ky = 0; ky < pb.my; ky++) {
 			
 			if (kx == 0 && ky == 0) {
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
@@ -217,7 +236,6 @@ int initSolver(problem& pb, bool inversed)
 
 	pb.currenStep = pb.para.stepPara.start_step;
 
-	//omp_set_num_threads(24);
 
 	return 0;
 }

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cassert>
 
-int _get_coefficient_v(complex* mcv, int N, real* U, real* ddU, real* T0, real* T2,
+__host__ __device__ int _get_coefficient_v(complex* mcv, int N, real* U, real* ddU, real* T0, real* T2,
 	real* T4, real Re, real dt, real kmn, real alpha)
 {
 	assert(mcv != nullptr);
@@ -36,7 +36,7 @@ int _get_coefficient_v(complex* mcv, int N, real* U, real* ddU, real* T0, real* 
 	return 0;
 }
 
-int _get_coefficient_omega(complex* mcv, int N, real* U, real* T0, real* T2,
+__host__ __device__ int _get_coefficient_omega(complex* mcv, int N, real* U, real* T0, real* T2,
 	real* T4, real Re, real dt, real kmn, real alpha)
 {
 	assert(mcv != nullptr);
@@ -63,7 +63,7 @@ int _get_coefficient_omega(complex* mcv, int N, real* U, real* T0, real* T2,
 	return 0;
 }
 
-int _get_coef_u0(complex* coef_u0, int N, real* T0, real* T2, real Re, real dt) {
+__host__ __device__ int _get_coef_u0(complex* coef_u0, int N, real* T0, real* T2, real Re, real dt) {
 	for (int i = 2; i <= N; i++) {
 		for (int j = 0; j <= N; j++) {
 			size_t inc = (N + 1)*i + j;
@@ -80,12 +80,12 @@ int _get_coef_u0(complex* coef_u0, int N, real* T0, real* T2, real Re, real dt) 
 	return 0;
 }
 
-int _get_coef_w0(complex* coef_w0, int N, real* T0, real* T2, real Re, real dt) {
+__host__ __device__ int _get_coef_w0(complex* coef_w0, int N, real* T0, real* T2, real Re, real dt) {
 	return 
 		_get_coef_u0(coef_w0, N, T0, T2, Re, dt);
 }
 
-int get_T_matrix(int N, real* T0, real* T2, real* T4) {
+__host__ __device__ int get_T_matrix(int N, real* T0, real* T2, real* T4) {
 	real PI = 4.0*atan(1.0);
 	real* T1;
 	real* T3;
@@ -146,7 +146,7 @@ int get_T_matrix(int N, real* T0, real* T2, real* T4) {
 	return 0;
 }
 
-int get_U(int N, real * U, real * dU, real * ddU)
+__host__ __device__ int get_U(int N, real * U, real * dU, real * ddU)
 {
 	real PI = 4.0*atan(1.0);
 	for (int i = 0; i < N; i++) {

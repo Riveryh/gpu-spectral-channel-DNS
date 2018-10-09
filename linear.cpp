@@ -4,10 +4,11 @@
 
 
 int get_linear_v(problem & pb)
-{
-	//#pragma omp parallel for
+{	
+	int j;
+	#pragma omp parallel for private(j)
 	for (int i = 0; i < (pb.mx / 2 + 1); i++) {
-		for (int j = 0; j < pb.my; j++) {
+		for (j = 0; j < pb.my; j++) {
 			if (i == 0 && j == 0) {
 				
 				continue;

@@ -16,11 +16,11 @@ int inverse(complex* mat, const int N) {
 	const int lwork = (N) * 64 * sizeof(MKL_COMPLEX);
 	MKL_COMPLEX* work = (MKL_COMPLEX*)malloc(lwork);
 	int info;
-	MKL_FACTOR(&N, &N, (MKL_Complex16*)mat, &N, ipiv, &info);
+	MKL_FACTOR(&N, &N, (MKL_COMPLEX*)mat, &N, ipiv, &info);
 	if (info != 0) {
 		return info;
 	}
-	MKL_INV(&N, (MKL_Complex16*)mat, &N, ipiv, work, &lwork, &info);
+	MKL_INV(&N, (MKL_COMPLEX*)mat, &N, ipiv, work, &lwork, &info);
 	if (info != 0) {
 		return info;
 	}

@@ -48,9 +48,13 @@ __host__ int initCUDA(problem&  pb) {
 
 	pb.tExtent = make_cudaExtent(
 		pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
+
+	pb.pExtent = make_cudaExtent(
+		2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.pz);
 	
 	cudaExtent & extent = pb.extent;
 	cudaExtent & tExtent = pb.tExtent;
+	cudaExtent & pExtent = pb.pExtent;
 
 	// Get pitch value of the pointer.
 	err = cudaMalloc3D(&(pb.dptr_tu), tExtent);
@@ -58,12 +62,12 @@ __host__ int initCUDA(problem&  pb) {
 	safeCudaFree(pb.dptr_tu.ptr);
 	pb.dptr_tu.ptr = nullptr;
 
-	cuCheck(cudaMalloc3D(&(pb.dptr_u), extent),"allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_v), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_w), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_x), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_y), extent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_z), extent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_u), pExtent),"allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_v), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_w), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_omega_x), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_omega_y), pExtent), "allocate");
+	cuCheck(cudaMalloc3D(&(pb.dptr_omega_z), pExtent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
@@ -102,6 +106,7 @@ __host__ int initCUDA(problem&  pb) {
 
 	pb.pitch = pb.dptr_u.pitch; 
 	pb.size = pb.pitch * pb.my * pb.mz;
+	pb.pSize = pb.pitch * pb.my * pb.pz;
 
 	ASSERT(!err);
 
