@@ -328,7 +328,7 @@ __global__ void cheby_pre_p2s(complex* u, const size_t pitch, const int mx, cons
 	const int nx = (mx-1) / 3 * 2 + 1;
 	const int ny = my / 3 * 2;
 	if (ix > nx) return;
-	if (iy > ny && iy < my - ny) return;
+	if (iy > ny / 2 && iy < my - ny / 2) return;
 	
 	size_t dist = pitch*(px*iy + ix)/sizeof(complex);
 	u = u + dist;
@@ -351,7 +351,7 @@ __global__ void cheby_pre_s2p_pad(complex* u, const size_t pitch, const int mx, 
 	const int nx = (mx - 1) / 3 * 2 + 1;
 	const int ny = my / 3 * 2;
 	if (ix > nx) return;
-	if (iy > ny && iy < my - ny) return; 
+	if (iy > ny / 2 && iy < my - ny / 2) return;
 	
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;
@@ -383,7 +383,7 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int mx
 	const int nx = (mx - 1) / 3 * 2 + 1;
 	const int ny = my / 3 * 2;
 	if (ix > nx) return;
-	if (iy > ny && iy < my - ny) return;
+	if (iy > ny/2 && iy < my - ny/2) return;
 
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;
@@ -414,7 +414,7 @@ __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int mx, con
 	const int nx = (mx - 1) / 3 * 2 + 1;
 	const int ny = my / 3 * 2;
 	if (ix > nx) return;
-	if (iy > ny && iy < my - ny) return;
+	if (iy > ny / 2 && iy < my - ny / 2) return;
 	
 	size_t dist = pitch*(px*iy + ix) / sizeof(complex);
 	u = u + dist;

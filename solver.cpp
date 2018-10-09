@@ -166,10 +166,6 @@ int initSolver(problem& pb, bool inversed)
 {
 	//omp_set_num_threads(12);
 	
-	#pragma omp parallel
-	{
-		cout << omp_get_thread_num() << endl;
-	}
 
 	const int nz = pb.nz;
 	const int nx = pb.nx;
@@ -224,7 +220,7 @@ int initSolver(problem& pb, bool inversed)
 
 	#pragma omp parallel for private(ky)
 	for (int kx = 0; kx < cmx; kx++){
-		cout << "omp id:" << omp_get_thread_num() << endl;
+		//cout << "omp id:" << omp_get_thread_num() << endl;
 		for (ky = 0; ky < pb.my; ky++) {			
 			if (kx == 0 && ky == 0) {
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
