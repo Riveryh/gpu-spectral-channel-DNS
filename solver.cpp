@@ -51,9 +51,10 @@ int startLoop(problem& pb) {
 int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
 	
-	#pragma omp parallel for private(j,inc_m,inc_rhs,_inv_coef_,_rhs_)
+	#pragma omp parallel for firstprivate(mx,my)
 	for (int i = 0; i < mx/2+1; i++) {
-		for (int j = 0; j < my; j++) {
+		cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
+		for (int j = 0; j < my; j++) {			
 			if (i > mx/3 + 1) continue;
 			if (j > my/3 && j < my*2/3-1) continue;
 			size_t inc_m = N*N*((mx/2+1)*j + i);
@@ -138,7 +139,8 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 int initSolver(problem& pb, bool inversed)
 {
 	omp_set_num_threads(12);
-#pragma omp parallel
+	
+	#pragma omp parallel
 	{
 		cout << omp_get_thread_num() << endl;
 	}
@@ -193,11 +195,11 @@ int initSolver(problem& pb, bool inversed)
 	//init coef matrix
 	const int cmx = pb.mx / 2 + 1;
 	int ky = 0;
+
 	#pragma omp parallel for private(ky)
-	for (int kx = 0; kx < cmx; kx++) {
+	for (int kx = 0; kx < cmx; kx++){
 		cout << "omp id:" << omp_get_thread_num() << endl;
-		for (ky = 0; ky < pb.my; ky++) {
-			
+		for (ky = 0; ky < pb.my; ky++) {			
 			if (kx == 0 && ky == 0) {
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
 				_get_coef_w0(pb.matrix_coeff_omega, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);

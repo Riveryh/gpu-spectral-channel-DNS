@@ -3,9 +3,9 @@
 #define DEBUG
 //#undef DEBUG
 
-//#define REAL_DOUBLE
-#define REAL_FLOAT
-//#undef REAL_FLOAT
+#define REAL_DOUBLE
+//#define REAL_FLOAT
+#undef REAL_FLOAT
 
 #ifdef REAL_DOUBLE
 #define real double
