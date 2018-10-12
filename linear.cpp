@@ -6,17 +6,16 @@ using namespace std;
 
 int get_linear_v(problem & pb)
 {
-	int cmx = pb.mx / 2 + 1;
 	int my = pb.my;
+	const int hnx = pb.mx / 3 + 1;
+	const int ny = pb.my / 3 * 2;
 	#pragma omp parallel for// firstprivate(pb,cmx,my)
-	for (int i = 0; i < cmx; i++) {
+	for (int i = 0; i < hnx; i++) {
 		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
-		for (int j = 0; j < my; j++) {
+		for (int j = 0; j < ny; j++) {
 			if (i == 0 && j == 0) continue;
-			if (i > pb.mx / 3 + 1) continue;
-			if (j > pb.ny / 2 && j < pb.my - pb.ny) continue;
 
-			size_t inc = pb.tPitch/sizeof(complex)*(j*(pb.mx/2+1)+i);
+			size_t inc = pb.tPitch/sizeof(complex)*(j*hnx+i);
 			complex* rhs_v = pb.rhs_v + inc;
 			complex* nonlinear_v = pb.nonlinear_v + inc;
 			complex* nonlinear_v_p = pb.nonlinear_v_p + inc;
@@ -25,8 +24,8 @@ int get_linear_v(problem & pb)
 			//complex* nonlinear_omega_y = pb.nonlinear_omega_y + inc;
 			real ialpha = (real)i / pb.aphi;
 			real ibeta = (real)j / pb.beta;
-			if(j>= pb.my / 2 + 1) {
-				ibeta = real(j - pb.my) / pb.beta;
+			if(j>= ny / 2 + 1) {
+				ibeta = real(j - ny) / pb.beta;
 			}
 			real kmn = ialpha*ialpha + ibeta*ibeta;
 
@@ -53,15 +52,15 @@ void get_linear_zero_wave_u_w(problem& pb) {
 int get_linear_omega_y(problem& pb)
 {
 	//problem pb = _pb; 
-	
+	const int hnx = pb.mx / 3 + 1;
+	const int ny = pb.my / 3 * 2;
 	#pragma omp parallel for //firstprivate(cmx,my,pb)
-	for (int i = 0; i < pb.mx/2+1; i++) {
+	for (int i = 0; i < hnx; i++) {
 		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
-		for (int j = 0; j < pb.my; j++) {
+		for (int j = 0; j < ny; j++) {
 			if (i == 0 && j == 0) continue;
-			if (i > pb.mx / 3 + 1) continue;
-			if (j > pb.ny / 2 && j < pb.my - pb.ny) continue;
-			size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
+			
+			size_t inc = pb.tPitch / sizeof(complex)*(j*hnx + i);
 			complex* rhs_v = pb.rhs_v + inc;
 			complex* nonlinear_v = pb.nonlinear_v + inc;
 			complex* rhs_v_p = pb.rhs_v_p + inc;
@@ -70,8 +69,8 @@ int get_linear_omega_y(problem& pb)
 			complex* nonlinear_omega_y_p = pb.nonlinear_omega_y_p + inc;
 			real ialpha = (real)i / pb.aphi;
 			real ibeta = (real)j / pb.beta;
-			if (j >= pb.my / 2 + 1) {
-				ibeta = real(j - pb.my) / pb.beta;
+			if (j >= ny / 2 + 1) {
+				ibeta = real(j - ny) / pb.beta;
 			}
 			real kmn = ialpha*ialpha + ibeta*ibeta;
 

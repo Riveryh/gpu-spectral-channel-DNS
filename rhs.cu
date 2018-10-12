@@ -63,11 +63,11 @@ __host__ int get_rhs_v(problem& pb) {
 	pthread_cond_wait(&cond_v, &mutex_v);
 	pthread_mutex_unlock(&mutex_v);
 
-	for (int i = 0; i < pb.mx / 2 + 1; i++) {
-		for (int j = 0; j < pb.my; j++) {
+	for (int i = 0; i < pb.nx / 2 + 1; i++) {
+		for (int j = 0; j < pb.ny; j++) {
 			for (int k = 4; k < pb.nz; k++) {
 				if (i == 0 && j == 0) continue;
-				size_t inc = pb.tPitch/sizeof(complex)*((pb.mx/2+1)*j+i)+k;
+				size_t inc = pb.tPitch/sizeof(complex)*((pb.nx/2+1)*j+i)+k;
 				pb.rhs_v[inc] = pb.rhs_v[inc] + (pb.nonlinear_v[inc-2]*1.5 - pb.nonlinear_v_p[inc-2]*0.5)*pb.dt;
 			}
 		}

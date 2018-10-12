@@ -72,7 +72,7 @@ __host__ int initCUDA(problem&  pb) {
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
 
-	pb.tSize = pb.tPitch * (pb.mx / 2 + 1) * pb.my;
+	pb.tSize = pb.tPitch * (pb.nx / 2 + 1) * pb.ny;
 	size_t& tsize = pb.tSize;
 	//pb.nonlinear_v = (complex*)malloc(tsize);
 	//pb.nonlinear_v_p = (complex*)malloc(tsize);
@@ -262,7 +262,7 @@ __host__ int initFlow(problem& pb) {
 	ASSERT(err == cudaSuccess);
 
 	real* buffer;
-	size_t& size = pb.size; //pb.dptr_u.pitch*pb.my*pb.mz;
+	size_t& size = pb.pSize; //pb.dptr_u.pitch*pb.my*pb.mz;
 	size_t& tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
 
 	buffer = (real*)malloc(size);
@@ -298,10 +298,10 @@ __host__ int initFlow(problem& pb) {
 		pb.tomega_y_0[k] = pb.rhs_omega_y[k];
 	}
 
-	for (int j = 0; j < pb.my; j++) {
-		for (int i = 0; i < (pb.mx / 2 + 1); i++) {
+	for (int j = 0; j < pb.ny; j++) {
+		for (int i = 0; i < (pb.nx / 2 + 1); i++) {
 			for (int k = 0; k < pb.mz; k++) {
-				size_t inc = k+pb.tPitch/sizeof(complex)*(j*(pb.mx / 2 + 1) + i);
+				size_t inc = k+pb.tPitch/sizeof(complex)*(j*(pb.nx / 2 + 1) + i);
 				pb.rhs_v_p[inc] = pb.rhs_v[inc];
 			}
 		}
@@ -350,14 +350,14 @@ __host__ __device__ void ddz(complex *u, int N) {
 }
 
 __host__ __device__
-void get_ialpha_ibeta(int kx, int ky, int my,
+void get_ialpha_ibeta(int kx, int ky, int ny,
 	real alpha, real beta,
 	real& ialpha, real& ibeta )
 {
 	ialpha = (real)kx / alpha;
 	ibeta = (real)ky / beta;
-	if (ky >= my / 2 + 1) {
-		ibeta = real(ky - my) / beta;
+	if (ky >= ny / 2 + 1) {
+		ibeta = real(ky - ny) / beta;
 	}
 }
 

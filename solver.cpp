@@ -76,15 +76,14 @@ int startLoop(problem& pb) {
 
 int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
-	
+	int nx = mx / 3 * 2;
+	int ny = my / 3 * 2;
 	#pragma omp parallel for firstprivate(mx,my)
-	for (int i = 0; i < mx/2+1; i++) {
+	for (int i = 0; i < nx/2+1; i++) {
 		//cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
-		for (int j = 0; j < my; j++) {			
-			if (i > mx/3 + 1) continue;
-			if (j > my/3 && j < my*2/3-1) continue;
-			size_t inc_m = N*N*((mx/2+1)*j + i);
-			size_t inc_rhs = pitch / sizeof(complex) * ((mx/2+1)*j + i);
+		for (int j = 0; j < ny; j++) {			
+			size_t inc_m = N*N*((nx/2+1)*j + i);
+			size_t inc_rhs = pitch / sizeof(complex) * ((nx/2+1)*j + i);
 			complex* _inv_coef_ = inv_coef + inc_m;
 			complex* _rhs_ = rhs + inc_rhs;
 			m_multi_v(_inv_coef_, _rhs_ , N);
@@ -172,23 +171,22 @@ int initSolver(problem& pb, bool inversed)
 	const int ny = pb.ny;
 
 	size_t& tSize = pb.tSize;
-	size_t mSize = pb.nz * pb.nz * (pb.mx / 2 + 1)*pb.my * sizeof(complex);
+	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(complex);
 
 	cout << "malloc matrix memory" << endl;
 	pb.matrix_coeff_v = (complex*)malloc(mSize);
 	pb.matrix_coeff_omega = (complex*)malloc(mSize);
 
 	cout << "malloc nonlinear memory" << endl;
-	pb.nonlinear_v = (complex*)malloc(tSize);
-	pb.nonlinear_omega_y = (complex*)malloc(tSize);
-	pb.nonlinear_v_p = (complex*)malloc(tSize);
-	pb.nonlinear_omega_y_p = (complex*)malloc(tSize);
+	cudaMallocHost(&pb.nonlinear_v, tSize);
+	cudaMallocHost(&pb.nonlinear_v_p, tSize);
+	cudaMallocHost(&pb.nonlinear_omega_y, tSize);
+	cudaMallocHost(&pb.nonlinear_omega_y_p, tSize);
 
 	cout << "malloc rhs memory" << endl;
-	pb.rhs_v = (complex*)malloc(tSize);
-	pb.rhs_omega_y = (complex*)malloc(tSize);
-	pb.rhs_v_p = (complex*)malloc(tSize);
-
+	cudaMallocHost(&pb.rhs_v, tSize); 
+	cudaMallocHost(&pb.rhs_v_p, tSize);
+	cudaMallocHost(&pb.rhs_omega_y, tSize);
 
 	cout << "malloc zerowave number memory" << endl;
 	pb.lambx0 = (complex*)malloc(sizeof(complex)*pb.nz);
@@ -215,13 +213,13 @@ int initSolver(problem& pb, bool inversed)
 	get_U(pb.nz, pb._U0, pb._dU0, pb._ddU0);
 
 	//init coef matrix
-	const int cmx = pb.mx / 2 + 1;
+	const int hnx = pb.nx / 2 + 1;
 	int ky = 0;
 
 	#pragma omp parallel for private(ky)
-	for (int kx = 0; kx < cmx; kx++){
+	for (int kx = 0; kx < hnx; kx++){
 		//cout << "omp id:" << omp_get_thread_num() << endl;
-		for (ky = 0; ky < pb.my; ky++) {			
+		for (ky = 0; ky < ny; ky++) {			
 			if (kx == 0 && ky == 0) {
 				_get_coef_u0(pb.matrix_coeff_v, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
 				_get_coef_w0(pb.matrix_coeff_omega, pb.nz-1, pb.T0, pb.T2, pb.Re, pb.dt);
@@ -236,11 +234,11 @@ int initSolver(problem& pb, bool inversed)
 			}
 
 			real ialpha, ibeta;
-			get_ialpha_ibeta(kx, ky, pb.my, pb.aphi, pb.beta, ialpha, ibeta);
+			get_ialpha_ibeta(kx, ky, ny, pb.aphi, pb.beta, ialpha, ibeta);
 
 			real kmn = ialpha*ialpha + ibeta*ibeta;
 
-			size_t inc = pb.nz*pb.nz*((pb.mx/2+1)*ky + kx);
+			size_t inc = pb.nz*pb.nz*(hnx*ky + kx);
 			complex* coe_v = pb.matrix_coeff_v + inc;
 			complex* coe_o = pb.matrix_coeff_omega + inc;
 
@@ -267,10 +265,10 @@ int initSolver(problem& pb, bool inversed)
 int destroySolver(problem& pb) {
 	free(pb.matrix_coeff_omega);
 	free(pb.matrix_coeff_v);
-	free(pb.nonlinear_v);
-	free(pb.nonlinear_omega_y);
-	free(pb.nonlinear_v_p);
-	free(pb.nonlinear_omega_y_p);
+	cudaFreeHost(pb.nonlinear_v);
+	cudaFreeHost(pb.nonlinear_omega_y);
+	cudaFreeHost(pb.nonlinear_v_p);
+	cudaFreeHost(pb.nonlinear_omega_y_p);
 	return 0;
 }
 

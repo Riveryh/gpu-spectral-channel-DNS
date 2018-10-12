@@ -66,7 +66,7 @@ TestResult test_dt_0() {
 		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		total_cost += cost;
 		count++;
-		if (i % 10 == 0) output_velocity(pb);
+		if (i % 100 == 0) output_velocity(pb);
 		std::cout << "time_cost:" << cost << std::endl;
 		std::cout << "mean time cost:" << total_cost / count << std::endl;
 	}

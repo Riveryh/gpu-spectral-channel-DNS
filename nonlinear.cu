@@ -136,10 +136,12 @@ __host__ int rhsNonlinear(problem & pb)
 	cudaError_t err;
 	int nthreadx = 16;
 	int nthready = 16;
-	int nDimx = (pb.mx / 2 + 1) / nthreadx;
-	int nDimy = pb.my / nthready;
-	if ((pb.mx / 2 + 1) % nthreadx != 0) nDimx++;
-	if (pb.my%nthready != 0)nDimy++;
+	const int hnx = pb.mx / 3+1;
+	const int ny = pb.my / 3 * 2;
+	int nDimx = hnx / nthreadx;
+	int nDimy = ny / nthready;
+	if (hnx % nthreadx != 0) nDimx++;
+	if (ny%nthready != 0)nDimy++;
 	dim3 nThread(nthreadx, nthready);
 	dim3 nDim(nDimx, nDimy);
 
@@ -197,19 +199,19 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 
 	// skip the k=0 mode
 	//if (kx == 0 && ky == 0) return;
-	if (kx >= (mx / 2 + 1) || ky >= my) return;
+
 	if (kx == 0 && ky == 0) return;
 
 	//skip non-necessary wave numbers.
 	const int nx = mx / 3 * 2;
 	const int ny = my / 3 * 2;
-	if (kx > nx / 2 + 1)return;
-	if (ky > ny&& ky < my - ny) return;
+	if (kx >= nx / 2 + 1)return;
+	if (ky >= ny) return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;	
-	if (ky >= my / 2 + 1) {
-		ibeta = real(ky - my) / beta;
+	if (ky >= ny / 2 + 1) {
+		ibeta = real(ky - ny) / beta;
 	}
 
 	real kmn = ialpha*ialpha + ibeta*ibeta;
@@ -239,7 +241,7 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	complex* dp_lamb_z = (complex*)plist.dptr_lamb_z.ptr;
 
 	// change location of pointers.
-	size_t dist = (kx + (mx/2+1)*ky)*pitch / sizeof(complex);
+	size_t dist = (kx + (nx/2+1)*ky)*pitch / sizeof(complex);
 	//dp_u = dp_u + dist;
 	//dp_v = dp_v + dist;
 	//dp_w = dp_w + dist;

@@ -23,12 +23,24 @@ int getUVW(problem& pb) {
 	ASSERT(pb.dptr_tomega_x.ptr == nullptr);
 	ASSERT(pb.dptr_tomega_y.ptr == nullptr);
 	ASSERT(pb.dptr_tomega_z.ptr == nullptr);
+
+	cudaExtent tExtent_X6 = make_cudaExtent(
+		sizeof(complex)*(pb.nx / 2 + 1), pb.ny, pb.mz * 6
+	);
+
 	cuCheck(cudaMalloc3D(&(pb.dptr_tu), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tv), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tw), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_x), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_y), tExtent), "allocate");
 	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_z), tExtent), "allocate");
+
+
+	/*pb.dptr_tv = pb.dptr_tu; pb.dptr_tv.ptr = (char*)pb.dptr_tv.ptr + pb.size;
+	pb.dptr_tw = pb.dptr_tu; pb.dptr_tw.ptr = (char*)pb.dptr_tw.ptr + pb.size;
+	pb.dptr_tomega_x = pb.dptr_tu; pb.dptr_tomega_x.ptr = (char*)pb.dptr_tomega_x.ptr + pb.size;
+	pb.dptr_tomega_y = pb.dptr_tu; pb.dptr_tomega_y.ptr = (char*)pb.dptr_tomega_x.ptr + pb.size;
+	pb.dptr_tomega_z = pb.dptr_tu; pb.dptr_tomega_z.ptr = (char*)pb.dptr_tomega_x.ptr + pb.size;*/
 
 	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
 	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
@@ -88,24 +100,22 @@ __global__ void getVelocityKernel(
 		return;
 	}
 
-	if (kx >= (mx / 2 + 1) || ky >= my) return;
 
 	//skip empty wave numbers
 	const int nx = mx / 3 * 2;
 	const int ny = mx / 3 * 2;
-	if (kx > nx/2+1) return;
-	if (ky > ny&&ky < my - ny)return;
+	if (kx >= (nx / 2 + 1) || ky >= ny) return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;
-	if (ky >= my / 2 + 1) {
-		ibeta = real(ky - my) / beta;
+	if (ky >= ny / 2 + 1) {
+		ibeta = real(ky - ny) / beta;
 	}
 
 	real kmn = ialpha*ialpha + ibeta*ibeta;
 	real kmn1 = 1.0 / kmn;
 
-	size_t dist = (kx + (mx / 2 + 1)*ky)*tPitch/ sizeof(complex);
+	size_t dist = (kx + (nx / 2 + 1)*ky)*tPitch/ sizeof(complex);
 	u = u + dist;
 	v = v + dist;
 	w = w + dist;

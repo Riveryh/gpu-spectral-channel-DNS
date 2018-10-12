@@ -20,10 +20,10 @@ void problem::initVars() {
 	if (my%nThread.x != 0) nDim.x++;
 	if (mz%nThread.y != 0) nDim.y++;
 
-	ntDim.x = (mx / 2 + 1) / nThread.x;
-	ntDim.y = my / nThread.y;
-	if ((mx / 2 + 1) % nThread.x != 0) ntDim.x++;
-	if (my % nThread.y != 0) ntDim.y++;
+	ntDim.x = (nx / 2 + 1) / nThread.x;
+	ntDim.y = ny / nThread.y;
+	if ((nx / 2 + 1) % nThread.x != 0) ntDim.x++;
+	if (ny % nThread.y != 0) ntDim.y++;
 
 	npDim.x = py / nThread.x;
 	npDim.y = pz / nThread.y;

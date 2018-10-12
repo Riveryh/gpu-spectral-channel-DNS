@@ -108,15 +108,17 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 
 __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	cudaPitchedPtr tPtr, int* dim, int* tDim) {
+	const int hnx = dim[0] / 3 + 1;
+	const int ny = dim[1] / 3 * 2;
 	int nthreadx = 16;
 	int nthready = 16;
 	
 	dim3 dims(dim[0], dim[1], dim[2]);
 	if (dir == FORWARD) {
-		int nBlockx = dim[0] / nthreadx;
-		int nBlocky = dim[1] / nthready;
-		if (dim[0] % nthreadx != 0) nBlockx++;
-		if (dim[1] % nthready != 0) nBlocky++;
+		int nBlockx = hnx / nthreadx;
+		int nBlocky = ny / nthready;
+		if (hnx % nthreadx != 0) nBlockx++;
+		if (ny % nthready != 0) nBlocky++;
 		dim3 nBlock(nBlockx, nBlocky);
 		dim3 nThread(nthreadx, nthready);
 
@@ -150,13 +152,30 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	int mx = dim.x;
 	int my = dim.y;
 	int mz = dim.z;
-	if (kx >= mx / 2 + 1) return;
-	if (ky >= my) return;
+	int nx = mx / 3 * 2;
+	int ny = my / 3 * 2;
+	int hnx = nx / 2 + 1;
+	if (kx >= hnx) return;
+	if (ky >= ny) return;
+	
+	int old_ky = ky;
+	if (ky > ny / 2) old_ky = ky + ny/2;
+
 	for (int kz = 0; kz < mz/2+1; kz++) {
-		size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
-		size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
+		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
+		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
 		tu[tInc] = u[inc];
 	}
+
+	// NO NEED to set zeros here, 
+	// because it will be covered by later setZero kernels.
+
+	//if (ky == ny / 2 || kx == hnx - 1) {
+	//	for (int kz = 0; kz < mz / 2 + 1; kz++) {
+	//		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
+	//		tu[tInc] = 0.0;
+	//	}
+	//}
 }
 
 __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
@@ -167,11 +186,18 @@ __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	int mx = dim.x;
 	int my = dim.y;
 	int mz = dim.z;
+	int ny = my / 3 * 2;
+	int nx = mx / 3 * 2;
+	int hnx = nx / 2 + 1;
 	if (kz >= mz / 2 + 1) return;
-	if (ky >= my) return;
-	for (int kx = 0; kx < mx/2+1; kx++) {
-		size_t inc = pitch / sizeof(complex)*(kz*my + ky) + kx;
-		size_t tInc = tPitch / sizeof(complex)*(ky*((mx / 2) + 1) + kx) + kz;
+	if (ky >= ny) return;
+	
+	int old_ky = ky;
+	if (ky > ny / 2) old_ky = ky + ny / 2;
+
+	for (int kx = 0; kx < nx/2+1; kx++) {
+		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
+		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
 		u[inc] = tu[tInc];
 	}
 }
