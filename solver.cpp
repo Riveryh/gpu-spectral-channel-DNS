@@ -9,6 +9,7 @@
 #include <omp.h>
 #include <iostream>
 #include <time.h> 
+#include "pthread.h"
 using namespace std;
 //// compute multiply of matrix and vector
 //void multiplyMatrix(complex* mul, complex* v, const int n);
@@ -25,6 +26,9 @@ using namespace std;
 int solveEq(complex* inv_coef, complex* rhs, int N, 
 	size_t pitch, int nx, int ny);
 void save_0_v_omega_y(problem& pb);
+
+extern pthread_cond_t cond_malloc;
+extern pthread_mutex_t mutex_malloc;
 
 int nextStep(problem& pb) {
 
@@ -65,6 +69,11 @@ int nextStep(problem& pb) {
 	//cout << "save 0 v,oy" << endl;
 	save_0_v_omega_y(pb);
 	//cout << "get velocity" << endl;
+
+	//pthread_mutex_lock(&mutex_malloc);
+	pthread_cond_wait(&cond_malloc, &mutex_malloc);
+	pthread_mutex_unlock(&mutex_malloc);
+
 	getUVW(pb);
 	pb.currenStep++;
 	return 0;

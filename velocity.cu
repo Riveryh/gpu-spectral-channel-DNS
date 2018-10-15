@@ -17,24 +17,19 @@ int getUVW(problem& pb) {
 	//make_cudaExtent(
 	//	pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
 	//cuCheck(cudaDeviceReset(),"reset");
-	ASSERT(pb.dptr_tu.ptr == nullptr);
-	ASSERT(pb.dptr_tv.ptr == nullptr);
-	ASSERT(pb.dptr_tw.ptr == nullptr);
-	ASSERT(pb.dptr_tomega_x.ptr == nullptr);
-	ASSERT(pb.dptr_tomega_y.ptr == nullptr);
-	ASSERT(pb.dptr_tomega_z.ptr == nullptr);
+	ASSERT(pb.dptr_tu.ptr != nullptr);
+	ASSERT(pb.dptr_tv.ptr != nullptr);
+	ASSERT(pb.dptr_tw.ptr != nullptr);
+	ASSERT(pb.dptr_tomega_x.ptr != nullptr);
+	ASSERT(pb.dptr_tomega_y.ptr != nullptr);
+	ASSERT(pb.dptr_tomega_z.ptr != nullptr);
 
-	cudaExtent tExtent_X6 = make_cudaExtent(
-		sizeof(complex)*(pb.nx / 2 + 1), pb.ny, pb.mz * 6
-	);
-
-	cuCheck(cudaMalloc3D(&(pb.dptr_tu), tExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_tv), tExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_tw), tExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_x), tExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_y), tExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_tomega_z), tExtent), "allocate");
-
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tu), tExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tv), tExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tw), tExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_x), tExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_y), tExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_z), tExtent), "allocate");
 
 	/*pb.dptr_tv = pb.dptr_tu; pb.dptr_tv.ptr = (char*)pb.dptr_tv.ptr + pb.size;
 	pb.dptr_tw = pb.dptr_tu; pb.dptr_tw.ptr = (char*)pb.dptr_tw.ptr + pb.size;

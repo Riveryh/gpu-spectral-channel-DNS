@@ -30,12 +30,13 @@ TestResult test_dt_0() {
 
 	cout << "first step" << endl;
 	nextStep(pb);
-	safeCudaFree(pb.dptr_tu.ptr);
-	safeCudaFree(pb.dptr_tv.ptr);
-	safeCudaFree(pb.dptr_tw.ptr);
-	safeCudaFree(pb.dptr_tomega_x.ptr);
-	safeCudaFree(pb.dptr_tomega_y.ptr);
-	safeCudaFree(pb.dptr_tomega_z.ptr);
+	//safeCudaFree(pb.dptr_tu.ptr);
+	//safeCudaFree(pb.dptr_tv.ptr);
+	//safeCudaFree(pb.dptr_tw.ptr);
+	//safeCudaFree(pb.dptr_tomega_x.ptr);
+	//safeCudaFree(pb.dptr_tomega_y.ptr);
+	//safeCudaFree(pb.dptr_tomega_z.ptr);
+	destroyMyCudaMalloc();
 
 	//nextStep(pb);
 
@@ -57,7 +58,7 @@ TestResult test_dt_0() {
 	double cost;
 	double total_cost = 0.0;
 	int count = 0;
-	for (int i = 0; i < 1000; i++) {
+	for (int i = 0; i < 31; i++) {
 		std::cout << "step: " << i << std::endl;
 		start_time = clock();
 		nextStep(pb);
@@ -66,7 +67,7 @@ TestResult test_dt_0() {
 		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		total_cost += cost;
 		count++;
-		if (i % 100 == 0) output_velocity(pb);
+		if (i % 30 == 0) output_velocity(pb);
 		std::cout << "time_cost:" << cost << std::endl;
 		std::cout << "mean time cost:" << total_cost / count << std::endl;
 	}

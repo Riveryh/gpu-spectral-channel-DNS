@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <math.h>
 #include <cassert>
-
+#include "rhs.cuh"
 
 __global__ void vKernel(cudaPitchedPtr dpPtr,
 	int width, int height, int depth) {
@@ -33,6 +33,7 @@ __host__ int initCUDA(problem&  pb) {
 	cudaError_t err;
 	size_t free;
 	size_t total;
+	init_pthread(pb);
 	cudaGetDevice(&dev_num);
 	cudaGetDeviceProperties(&prop, dev_num);
 	cudaMemGetInfo(&free, &total);
@@ -62,12 +63,22 @@ __host__ int initCUDA(problem&  pb) {
 	safeCudaFree(pb.dptr_tu.ptr);
 	pb.dptr_tu.ptr = nullptr;
 
-	cuCheck(cudaMalloc3D(&(pb.dptr_u), pExtent),"allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_v), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_w), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_x), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_y), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_omega_z), pExtent), "allocate");
+	initMyCudaMalloc(dim3(pb.mx, pb.my, pb.mz));
+
+	//cuCheck(cudaMalloc3D(&(pb.dptr_u), pExtent),"allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_v), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_w), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_omega_x), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_omega_y), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_omega_z), pExtent), "allocate");
+
+	cuCheck(myCudaMalloc(pb.dptr_u, XYZ_3D), "allocate");
+	cuCheck(myCudaMalloc(pb.dptr_v, XYZ_3D), "allocate");
+	cuCheck(myCudaMalloc(pb.dptr_w, XYZ_3D), "allocate");
+	cuCheck(myCudaMalloc(pb.dptr_omega_x, XYZ_3D), "allocate");
+	cuCheck(myCudaMalloc(pb.dptr_omega_y, XYZ_3D), "allocate");
+	cuCheck(myCudaMalloc(pb.dptr_omega_z, XYZ_3D), "allocate");
+
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
@@ -282,12 +293,12 @@ __host__ int initFlow(problem& pb) {
 	tDim[1] = pb.mx;
 	tDim[2] = pb.my;
 	
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
 	
 	//copy initial rhs_v and rhs_omeag_y
 	cuCheck(cudaMemcpy(pb.rhs_v, pb.dptr_tw.ptr, tSize, cudaMemcpyDeviceToHost), "memcpy");

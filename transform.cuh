@@ -9,7 +9,6 @@ extern cufftHandle planXYr2c, planXYc2r, planZ_pad;
 
 __global__ void investigate(cudaPitchedPtr p);
 
-
 enum Padding_mode { Padding, No_Padding };
 
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
@@ -28,8 +27,14 @@ __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor)
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);
 
+__host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int mx, int my, int mz);
+__host__ void cheby_s2p_X6(cudaPitchedPtr tPtr, int mx, int my, int mz);
+
 #define CACHE_SIZE 512
 #define _MIN(x,y) (((x)<(y))?(x):(y))
+
+__host__ void transform_backward_X6(problem& pb);
+__host__ void transform_forward_X3(problem& pb);
 
 #ifdef REAL_FLOAT
 #define CUFFTEXEC_R2C cufftExecR2C

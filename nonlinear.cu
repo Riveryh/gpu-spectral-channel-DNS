@@ -79,9 +79,12 @@ __host__ int computeLambVector(problem & pb)
 	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
 	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
 	ASSERT(pb.dptr_lamb_z.ptr == nullptr);
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), pExtent), "allocate");
-	cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), pExtent), "allocate");
+	pb.dptr_lamb_x = pb.dptr_u;
+	pb.dptr_lamb_y = pb.dptr_v;
+	pb.dptr_lamb_z = pb.dptr_w;
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), pExtent), "allocate");
 
 	cudaPitchedPtrList pList;
 	pList.dptr_u = pb.dptr_u;
@@ -109,12 +112,18 @@ __host__ int computeLambVector(problem & pb)
 	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 
-	safeCudaFree(pb.dptr_u.ptr);
-	safeCudaFree(pb.dptr_v.ptr);
-	safeCudaFree(pb.dptr_w.ptr);
-	safeCudaFree(pb.dptr_omega_x.ptr);
-	safeCudaFree(pb.dptr_omega_y.ptr);
-	safeCudaFree(pb.dptr_omega_z.ptr);
+	//safeCudaFree(pb.dptr_u.ptr);
+	//safeCudaFree(pb.dptr_v.ptr);
+	//safeCudaFree(pb.dptr_w.ptr);
+	//safeCudaFree(pb.dptr_omega_x.ptr);
+	//safeCudaFree(pb.dptr_omega_y.ptr);
+	//safeCudaFree(pb.dptr_omega_z.ptr);
+	pb.dptr_u.ptr = NULL;
+	pb.dptr_v.ptr = NULL;
+	pb.dptr_w.ptr = NULL;
+	myCudaFree(pb.dptr_omega_z, XYZ_3D);
+	myCudaFree(pb.dptr_omega_y, XYZ_3D);
+	myCudaFree(pb.dptr_omega_x, XYZ_3D);
 
 	return 0;
 }

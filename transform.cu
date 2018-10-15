@@ -8,6 +8,7 @@
 #include "transpose.cuh"
 
 cufftHandle planXYr2c, planXYc2r, planZ_pad, planZ_no_pad;
+cufftHandle planXYr2c_X3, planXYc2r_X6, planZ_X6, planZ_X3;
 
 #define KERNEL_SYNCHRONIZED
 
@@ -55,6 +56,23 @@ __host__ int initFFT(problem &pb) {
 	res = cufftPlanMany(&planZ_no_pad, 1, dim1_no_pad, onembed, ostride, odist,
 		onembed, ostride, odist, myCUFFT_C2C, (nx/2+1)*ny);
 	assert(res == CUFFT_SUCCESS);
+
+	//res = cufftPlanMany(&planXYr2c_X3, 2, dim2, inembed, istride, idist,
+	//	inembed2, istride, idist2, myCUFFT_R2C, pb.pz*3);
+	//assert(res == CUFFT_SUCCESS);
+	//res = cufftPlanMany(&planXYc2r_X6, 2, dim2, inembed2, istride, idist2,
+	//	inembed, istride, idist, myCUFFT_C2R, pb.pz*6);
+
+	//res = cufftPlanMany(&planZ_X3, 1, dim1, onembed, ostride, odist,
+	//	onembed, ostride, odist, myCUFFT_C2C, (nx / 2 + 1)*ny*3);
+	//res = cufftPlanMany(&planZ_X6, 1, dim1, onembed, ostride, odist,
+	//	onembed, ostride, odist, myCUFFT_C2C, (nx / 2 + 1)*ny * 6);
+
+
+	assert(res == CUFFT_SUCCESS);
+
+	assert(res == CUFFT_SUCCESS);
+
 	return 0;
 }
 
@@ -90,10 +108,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 	// tPtr -> Ptr
 	if (dir == BACKWARD) {
-		ASSERT(Ptr.ptr == nullptr);
-		cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
 
 		size_t size = Ptr.pitch*dim[1] * dim[2];
+		size_t pSize = Ptr.pitch*dim[1] * (dim[2]/2+1);
 		size_t tSize = tPtr.pitch*(nx / 2 + 1)*ny;
 //		buffer = (real*)malloc(size);
 //		tbuffer = (real*)malloc(tSize);
@@ -129,8 +146,12 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 #ifdef KERNEL_SYNCHRONIZED
 		cuCheck(cudaDeviceSynchronize(),"set zeros");
 #endif
+		void* dev_buffer = get_fft_buffer_ptr();
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
-			(CUFFTREAL*)Ptr.ptr);
+			//(CUFFTREAL*)Ptr.ptr);
+			(CUFFTREAL*)dev_buffer);
+		cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
+
 		ASSERT(res == CUFFT_SUCCESS);
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
@@ -152,16 +173,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if (isOutput) RPCF::write_3d_to_file("afterNORM.txt", buffer, Ptr.pitch, 2 * (dim[0] / 2 + 1), dim[1], dim[2]);
 //#endif //DEBUG
 
-
-		safeCudaFree(tPtr.ptr);
 	}
 	else
 	{
 		// Ptr -> tPtr
-		ASSERT(tPtr.ptr == nullptr);
-		cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
 
 		size_t size = Ptr.pitch*dim[1] * dim[2];
+		size_t pSize = Ptr.pitch*dim[1] * (dim[2] / 2 + 1);
 		size_t tSize = tPtr.pitch*(dim[0] / 2 + 1)*dim[1];
 //		buffer = (real*)malloc(size);
 //		tbuffer = (real*)malloc(tSize);
@@ -179,9 +197,11 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //#endif //DEBUG
 
 		ASSERT(dir == FORWARD);
+		void* dev_buffer = get_fft_buffer_ptr();
 		res = CUFFTEXEC_R2C(planXYr2c, (CUFFTREAL*)Ptr.ptr,
-			(CUFFTCOMPLEX*)Ptr.ptr);
-
+			//(CUFFTCOMPLEX*)Ptr.ptr);
+			(CUFFTCOMPLEX*)dev_buffer);
+		cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice), "mem move");
 //#ifdef DEBUG
 //		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
 //		ASSERT(err == cudaSuccess);
@@ -238,8 +258,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//setZeros<<<1, threadDim >>>(Ptr, dim[0], dim[1], dim[2]);
 		//err = cudaDeviceSynchronize();
 		//ASSERT(err == cudaSuccess);
-
-		safeCudaFree(Ptr.ptr);
+		
 	}
 //	free(buffer);
 //	free(tbuffer);
@@ -266,6 +285,8 @@ __host__ int transform(DIRECTION dir, problem& pb) {
 	outdim[2] = pb.my;
 
 	if (dir == BACKWARD) {
+		//transform_backward_X6(pb);
+		//return 0;
 		transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, indim, outdim, Padding);
 		transform_3d_one(BACKWARD, pb.dptr_v, pb.dptr_tv, indim, outdim, Padding);
 		transform_3d_one(BACKWARD, pb.dptr_w, pb.dptr_tw, indim, outdim, Padding);
@@ -274,9 +295,11 @@ __host__ int transform(DIRECTION dir, problem& pb) {
 		transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, indim, outdim, Padding);
 	}
 	if (dir == FORWARD) {
-		transform_3d_one(FORWARD, pb.dptr_lamb_x, pb.dptr_tLamb_x, indim, outdim);
-		transform_3d_one(FORWARD, pb.dptr_lamb_y, pb.dptr_tLamb_y, indim, outdim);
+		//transform_forward_X3(pb);
+		//return 0;
 		transform_3d_one(FORWARD, pb.dptr_lamb_z, pb.dptr_tLamb_z, indim, outdim);
+		transform_3d_one(FORWARD, pb.dptr_lamb_y, pb.dptr_tLamb_y, indim, outdim);
+		transform_3d_one(FORWARD, pb.dptr_lamb_x, pb.dptr_tLamb_x, indim, outdim);
 	}
 	return 0;
 }
@@ -510,4 +533,144 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	{
 		assert(false);		
 	}
+}
+
+__host__ void transform_backward_X6(problem& pb) {
+	int dim[3] = { pb.mx,pb.my,pb.mz };
+	int tDim[3] = { pb.mz,pb.mx,pb.my };
+
+	cheby_s2p_X6(pb.dptr_tu, dim[0] / 2 + 1, dim[1], dim[2]);
+
+	//transpose(dir, Ptr, tPtr, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
+	cuda_transpose(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
+
+	cudaPitchedPtr& Ptr = pb.dptr_u;
+
+	int nThreadx = 16;
+	int nThready = 16;
+	dim3 nThread(nThreadx, nThready);
+	int nDimx = dim[1] / nThreadx;
+	int nDimy = (dim[2] / 2 + 1)*6 / nThready;
+	if (dim[1] % nThreadx != 0) nDimx++;
+	if ((dim[2] / 2 + 1)*6 % nThready != 0) nDimy++;
+	dim3 nDim(nDimx, nDimy);
+	setZeros <<<nDim, nThread >>>((complex*)Ptr.ptr, Ptr.pitch,
+		dim[0], dim[1], dim[2]*6);
+#ifdef KERNEL_SYNCHRONIZED
+	cuCheck(cudaDeviceSynchronize(), "set zeros");
+#endif
+	cufftResult_t res;
+	res = CUFFTEXEC_C2R(planXYc2r_X6, (CUFFTCOMPLEX*)pb.dptr_u.ptr,
+		(CUFFTREAL*)pb.dptr_u.ptr);
+	ASSERT(res == CUFFT_SUCCESS);
+	cuCheck(cudaDeviceSynchronize(),"fft");
+}
+
+__host__ void transform_forward_X3(problem& pb) {
+	cufftResult_t res;
+	cudaPitchedPtr Ptr = pb.dptr_lamb_x;
+	res = CUFFTEXEC_R2C(planXYr2c_X3, (CUFFTREAL*)Ptr.ptr,
+		(CUFFTCOMPLEX*)Ptr.ptr);
+	
+	int dim[3] = { pb.mx, pb.my, pb.mz };
+	int tDim[3] = { pb.mz, pb.mx, pb.my };
+	//normalize;
+	int nthreadx = 16;
+	int nthready = 16;
+	int nDimx = dim[1] / nthreadx;
+	int nDimy = (dim[2] / 2 + 1) * 3/ nthready;
+	if (dim[1] % nthreadx != 0) nDimx++;
+	if ((dim[2] / 2 + 1)*3 % nthready != 0) nDimy++;
+	dim3 dim_num(nDimx, nDimy);
+	dim3 thread_num(nthreadx, nthready);
+	normalize <<< dim_num, thread_num >>>
+		(Ptr, dim[0], dim[1], dim[2]*3, 1.0 / dim[0] / dim[1]);
+	cuCheck(cudaDeviceSynchronize(),"normalize X3");
+
+
+	cuda_transpose(FORWARD, pb.dptr_lamb_z, pb.dptr_tLamb_z, dim, tDim);
+	cuda_transpose(FORWARD, pb.dptr_lamb_y, pb.dptr_tLamb_y, dim, tDim);
+	cuda_transpose(FORWARD, pb.dptr_lamb_x, pb.dptr_tLamb_x, dim, tDim);
+	
+	cheby_p2s_X3(pb.dptr_tLamb_x, dim[0] / 2 + 1, dim[1], dim[2]);
+}
+
+__host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
+	const size_t pitch = tPtr.pitch;
+	const int nx = (hmx - 1) * 2 * 2 / 3;
+	const int ny = my * 2 / 3;
+	const int hnx = nx / 2 + 1;
+
+	int threadDimx = 16;
+	int threadDimy = 16;
+
+	int blockDimx = hnx / threadDimx;
+	int blockDimy = ny*3 / threadDimy;
+
+	if (hnx%threadDimx != 0) blockDimx++;
+	if (ny*3%threadDimy != 0) blockDimy++;
+
+	dim3 nthread(threadDimx, threadDimy);
+	dim3 nBlock(blockDimx, blockDimy);
+
+	cufftResult res;
+	cudaError_t err;
+	cheby_pre_p2s <<<nBlock, nthread >> >((complex*)tPtr.ptr, tPtr.pitch, hmx, my*3, mz);
+#ifdef KERNEL_SYNCHRONIZED
+	err = cudaDeviceSynchronize();
+	assert(err == cudaSuccess);
+#endif
+
+	res = CUFFTEXEC_C2C(planZ_X3, (CUFFTCOMPLEX*)tPtr.ptr,
+		(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
+	assert(res == CUFFT_SUCCESS);
+
+	//err = cudaDeviceSynchronize();
+	//assert(err == cudaSuccess);
+
+	cheby_post_p2s <<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my*3, mz);
+#ifdef KERNEL_SYNCHRONIZED
+	err = cudaDeviceSynchronize();
+	assert(err == cudaSuccess);
+#endif
+}
+
+
+__host__ void cheby_s2p_X6(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
+	const size_t pitch = tPtr.pitch;
+	const int pz = mz / 2 + 1;
+	const int nx = (hmx - 1) * 2 * 2 / 3;
+	const int ny = my * 2 / 3;
+	const int hnx = nx / 2 + 1;
+
+	int threadDimx = 16;
+	int threadDimy = 16;
+
+	int blockDimx = hnx / threadDimx;
+	int blockDimy = 6*ny / threadDimy;
+
+	if (hnx%threadDimx != 0) blockDimx++;
+	if (6*ny%threadDimy != 0) blockDimy++;
+
+	dim3 nthread(threadDimx, threadDimy);
+	dim3 nBlock(blockDimx, blockDimy);
+	cufftResult res;
+	cudaError_t err;
+	cheby_pre_s2p_pad <<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, 6*my, mz);
+#ifdef KERNEL_SYNCHRONIZED
+	err = cudaDeviceSynchronize();
+	assert(err == cudaSuccess);
+#endif		
+
+	res = CUFFTEXEC_C2C(planZ_X6, (CUFFTCOMPLEX*)tPtr.ptr,
+		(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
+	ASSERT(res == CUFFT_SUCCESS);
+
+	//err = cudaDeviceSynchronize();
+	//ASSERT(err == cudaSuccess);	
 }

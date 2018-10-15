@@ -60,10 +60,10 @@ void statistics(problem& pb) {
 	safeFree(pb.hptr_omega_x);
 	safeFree(pb.hptr_omega_y);
 	safeFree(pb.hptr_omega_z);
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
 }

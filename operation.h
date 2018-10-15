@@ -11,3 +11,16 @@ __host__ __device__
 void get_ialpha_ibeta(int kx, int ky, int my,
 	real alpha, real beta,
 	real& ialpha, real& ibeta);
+
+enum myCudaMemType {
+	XYZ_3D,
+	ZXY_3D,
+	FREE_3D
+};
+
+
+__host__ void initMyCudaMalloc(dim3 dims);
+__host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type);
+__host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type);
+__host__ void destroyMyCudaMalloc();
+__host__ void* get_fft_buffer_ptr();

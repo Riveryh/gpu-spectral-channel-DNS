@@ -10,5 +10,5 @@ enum DIRECTION {
 __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	cudaPitchedPtr tPtr, int* dim, int* tDim);
 
-__host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr input,
-	cudaPitchedPtr tPtr, int* dim, int* tDim);
+__host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& input,
+	cudaPitchedPtr& tPtr, int* dim, int* tDim);
