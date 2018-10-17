@@ -24,7 +24,7 @@ TestResult test_dt_0() {
 
 	cout << "output flow" << endl;
 
-	output_velocity(pb);
+	//output_velocity(pb);
 	//output_velocity(pb);
 
 	complex* tv = (complex*)malloc(pb.tSize);
@@ -50,7 +50,7 @@ TestResult test_dt_0() {
 
 	cout << "init second step" << endl;
 	nextStep(pb);
-	output_velocity(pb);
+	//output_velocity(pb);
 
 	//complex* tv2 = pb.rhs_v;
 	complex* tv2 = (complex*)malloc(pb.tSize);
@@ -69,11 +69,15 @@ TestResult test_dt_0() {
 		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		total_cost += cost;
 		count++;
-		if (i % 100 == 0) output_velocity(pb);
 		std::cout << "time_cost:" << cost << std::endl;
 		std::cout << "mean time cost:" << total_cost / count << std::endl;
+
+		if (i % 100 == 0) {
+			std::cout << "WRINTING RESULTS TO FILES" << std::endl;
+			output_velocity(pb);
+		}
 	}
-	output_velocity(pb);
+	//output_velocity(pb);
 	cuCheck(cudaMemcpy(tv2, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 
 	return TestSuccess;
