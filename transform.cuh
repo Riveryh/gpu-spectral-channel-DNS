@@ -7,7 +7,6 @@
 #include "transpose.cuh"
 extern cufftHandle planXYr2c, planXYc2r, planZ_pad;
 
-__global__ void investigate(cudaPitchedPtr p);
 
 enum Padding_mode { Padding, No_Padding };
 

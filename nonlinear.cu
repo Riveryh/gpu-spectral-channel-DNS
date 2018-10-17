@@ -68,11 +68,7 @@ __host__ int addMeanFlow(problem & pb)
 
 __host__ int computeLambVector(problem & pb)
 {
-	const int mx = pb.mx;
-	const int my = pb.my;
-	const int mz = pb.mz;
-
-	cudaExtent& pExtent = pb.pExtent;
+	//cudaExtent& pExtent = pb.pExtent;
 	//make_cudaExtent(
 	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
 
@@ -145,7 +141,7 @@ __host__ int rhsNonlinear(problem & pb)
 	cudaError_t err;
 	int nthreadx = 16;
 	int nthready = 16;
-	const int hnx = pb.mx / 3+1;
+	const int hnx = pb.mx/ 3 * 2 / 2+1;
 	const int ny = pb.my / 3 * 2;
 	int nDimx = hnx / nthreadx;
 	int nDimy = ny / nthready;
@@ -203,7 +199,7 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	int kx = threadIdx.x + blockDim.x*blockIdx.x;
 	int ky = threadIdx.y + blockDim.y*blockIdx.y; 
 	int pitch = plist.dptr_lamb_x.pitch;
-	int pz = mz / 2 + 1;
+	//int pz = mz / 2 + 1;
 	int nz = mz / 4 + 1;
 
 	// skip the k=0 mode
@@ -324,12 +320,12 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 }
 
 __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
-	const int mx, const int my,const int mz) {
+	const int mx, const int my,const int pz) {
 	//可以合并几个lamb矢量计算到一个kernel中
 	int ky = threadIdx.x + blockDim.x*blockIdx.x;
 	int kz = threadIdx.y + blockDim.y*blockIdx.y;
 	//const int py = my * 2 / 3;
-	const int pz = mz / 2 + 1;
+	//const int pz = mz / 2 + 1;
 	if (ky >= my || kz >= pz) return;
 
 

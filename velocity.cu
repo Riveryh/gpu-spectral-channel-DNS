@@ -13,7 +13,7 @@ void get_velocity_zero(problem& pb);
 int getUVW(problem& pb) {
 	size_t tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
 	
-	cudaExtent tExtent = pb.tExtent;
+//	cudaExtent tExtent = pb.tExtent;
 	//make_cudaExtent(
 	//	pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
 	//cuCheck(cudaDeviceReset(),"reset");
@@ -70,7 +70,7 @@ __global__ void getVelocityKernel(
 {
 	const int kx = threadIdx.x + blockDim.x*blockIdx.x;
 	const int ky = threadIdx.y + blockDim.y*blockIdx.y;
-	const int pz = mz / 2 + 1;
+//	const int pz = mz / 2 + 1;
 	const int nz = mz / 4 + 1;
 
 	complex tdz[MAX_NZ];
@@ -151,6 +151,6 @@ __global__ void getVelocityKernel(
 
 void get_velocity_zero(problem & pb)
 {
-	complex* w = pb.rhs_omega_y;
-	complex* u = pb.rhs_v;	
+//	complex* w = pb.rhs_omega_y;
+//	complex* u = pb.rhs_v;	
 }

@@ -16,8 +16,6 @@ public:
 };
 
 
-__global__ void vKernel(cudaPitchedPtr dpPtr,
-	int width, int height, int depth);
 
 __host__ int initCUDA(problem&  pb);
 

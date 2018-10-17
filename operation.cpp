@@ -118,7 +118,7 @@ void RPCF_Paras::read_para(char* filename) {
 	}
 	RPCF_Numerical_Para& np = this->numPara;
 	
-	infile >> np.nx >> np.ny >> np.nz;
+	infile >> np.mx >> np.my >> np.mz;
 	infile >> np.n_pi_x >> np.n_pi_y;
 	infile >> np.Re >> np.Ro >> np.dt;
 
@@ -149,8 +149,8 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	int mx = dims.x;
 	int my = dims.y;
 	int mz = dims.z;
-	int nx = mx * 2 / 3;
-	int ny = my * 2 / 3;
+	int nx = mx/ 3 * 2;
+	int ny = my/ 3 * 2;
 	int pz = mz / 2 + 1;
 
 	cudaExtent ext = make_cudaExtent(
@@ -171,11 +171,13 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	__my_tSize = __myTPitch * (nx / 2 + 1) * ny;
 	size_t maxSize = __my_pSize>__my_tSize ? __my_pSize : __my_tSize;
 
-	__myMaxMemorySize = maxSize * 7;
+	__myMaxMemorySize = maxSize * 8;
 
 	// mallocate the whole memory at one time to save time.
 	ext = make_cudaExtent(__myMaxMemorySize, 1, 1);
 	cuCheck(cudaMalloc3D(&__myPtr, ext),"my cuda malloc");
+
+	cuCheck(cudaMemset(__myPtr.ptr, -1, __myMaxMemorySize),"memset");
 
 	__my_pMem_allocated = 0;
 	__my_tMem_allocated = 0;
@@ -186,6 +188,7 @@ __host__ void* get_fft_buffer_ptr() {
 }
 
 __host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type) {
+	if (__my_pMem_allocated + __my_tMem_allocated >= 7)return cudaErrorMemoryAllocation;
 	if (type == XYZ_3D) {
 		// check if memory is already used up.
 		if (__my_pMem_allocated >= 6)return cudaErrorMemoryAllocation;

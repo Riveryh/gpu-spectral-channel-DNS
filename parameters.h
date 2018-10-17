@@ -2,9 +2,9 @@
 #include<string>
 
 struct RPCF_Numerical_Para {
-	int nx;
-	int ny;
-	int nz;
+	int mx;
+	int my;
+	int mz;
 	double n_pi_x;
 	double n_pi_y;
 	double Re;

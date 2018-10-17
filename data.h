@@ -297,9 +297,9 @@ struct problem {
 	complex* tomega_y_0;
 	
 	problem() :
-		nx(128),
-		ny(128),
-		nz(30),
+		mx(128),
+		my(128),
+		mz(30),
 		aphi(4.0),
 		beta(2.0)//,
 		//T0(nz,nz),
@@ -310,9 +310,14 @@ struct problem {
 	};
 
 	problem(RPCF_Paras conf) {
-		nx = conf.numPara.nx;
-		ny = conf.numPara.ny;
-		nz = conf.numPara.nz;
+		mx = conf.numPara.mx;
+		my = conf.numPara.my;
+		mz = conf.numPara.mz;
+
+		nx = conf.numPara.mx * 2/3;
+		ny = conf.numPara.my * 2/3;
+		nz = conf.numPara.mz / 4 + 1;
+		
 		aphi = conf.numPara.n_pi_x / 2;
 		beta = conf.numPara.n_pi_y / 2;
 		Ro = conf.numPara.Ro;

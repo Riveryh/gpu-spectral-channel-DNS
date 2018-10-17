@@ -7,8 +7,8 @@ using namespace std;
 int get_linear_v(problem & pb)
 {
 	int my = pb.my;
-	const int hnx = pb.mx / 3 + 1;
-	const int ny = pb.my / 3 * 2;
+	const int hnx = pb.nx / 2 + 1;
+	const int ny = pb.ny;
 	#pragma omp parallel for// firstprivate(pb,cmx,my)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
@@ -52,8 +52,8 @@ void get_linear_zero_wave_u_w(problem& pb) {
 int get_linear_omega_y(problem& pb)
 {
 	//problem pb = _pb; 
-	const int hnx = pb.mx / 3 + 1;
-	const int ny = pb.my / 3 * 2;
+	const int hnx = pb.nx / 2+ 1;
+	const int ny = pb.ny;
 	#pragma omp parallel for //firstprivate(cmx,my,pb)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;

@@ -87,7 +87,7 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 			size_t pitch, int mx, int my) {
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
-	#pragma omp parallel for firstprivate(mx,my)
+	#pragma omp parallel for firstprivate(nx,ny)
 	for (int i = 0; i < nx/2+1; i++) {
 		//cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
 		for (int j = 0; j < ny; j++) {			

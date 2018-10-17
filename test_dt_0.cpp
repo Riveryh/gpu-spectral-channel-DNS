@@ -23,6 +23,8 @@ TestResult test_dt_0() {
 	initFlow(pb);
 
 	cout << "output flow" << endl;
+
+	output_velocity(pb);
 	//output_velocity(pb);
 
 	complex* tv = (complex*)malloc(pb.tSize);
@@ -48,7 +50,7 @@ TestResult test_dt_0() {
 
 	cout << "init second step" << endl;
 	nextStep(pb);
-	//output_velocity(pb);
+	output_velocity(pb);
 
 	//complex* tv2 = pb.rhs_v;
 	complex* tv2 = (complex*)malloc(pb.tSize);
@@ -58,7 +60,7 @@ TestResult test_dt_0() {
 	double cost;
 	double total_cost = 0.0;
 	int count = 0;
-	for (int i = 0; i < 31; i++) {
+	for (int i = 0; i < 301; i++) {
 		std::cout << "step: " << i << std::endl;
 		start_time = clock();
 		nextStep(pb);
@@ -67,7 +69,7 @@ TestResult test_dt_0() {
 		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		total_cost += cost;
 		count++;
-		if (i % 30 == 0) output_velocity(pb);
+		if (i % 100 == 0) output_velocity(pb);
 		std::cout << "time_cost:" << cost << std::endl;
 		std::cout << "mean time cost:" << total_cost / count << std::endl;
 	}
@@ -76,11 +78,12 @@ TestResult test_dt_0() {
 
 	return TestSuccess;
 
-	for (int ix = 0; ix < pb.mx / 2 + 1; ix++) {
-		for (int iy = 0; iy < pb.my; iy++) {
+	#pragma omp parallel for
+	for (int ix = 0; ix < pb.nx / 2 + 1; ix++) {
+		for (int iy = 0; iy < pb.ny; iy++) {
 			for (int iz = 0; iz < pb.nz; iz++) {
 				size_t inc = pb.tPitch / sizeof(complex)
-					*((pb.mx / 2 + 1)*iy + ix);
+					*((pb.nx / 2 + 1)*iy + ix);
 				assert(isEqual(tv[inc].re, tv2[inc].re));
 				assert(isEqual(tv[inc].im, tv2[inc].im));
 			}

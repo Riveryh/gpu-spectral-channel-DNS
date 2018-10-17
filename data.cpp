@@ -5,12 +5,12 @@ void problem::initVars() {
 	lx = 2 * PI*aphi;
 	ly = 2 * PI*beta;
 	hptr_omega_z = nullptr;
-	mx = nx * 3 / 2;
-	my = ny * 3 / 2;
-	mz = (nz - 1) * 4;
-	px = nx * 3 / 2;
-	py = ny * 3 / 2;
-	pz = (nz - 1) * 2 + 1;
+	nx = mx / 3 * 2;
+	ny = my / 3 * 2;
+	nz = mz / 4 + 1;
+	px = mx;
+	py = my;
+	pz = mz / 2 + 1;
 
 	// compute cuda dimensions.
 	nThread.x = 4;

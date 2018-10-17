@@ -38,6 +38,13 @@ TestResult test_transform() {
 
 	int dim[3] = { pb.mx,pb.my,pb.mz };
 	int tdim[3] = { pb.mz,pb.mx,pb.my };
+
+	myCudaFree(pb.dptr_omega_z, XYZ_3D);
+	myCudaFree(pb.dptr_omega_y, XYZ_3D);
+	myCudaFree(pb.dptr_omega_x, XYZ_3D);
+	myCudaFree(pb.dptr_w, XYZ_3D);
+	myCudaFree(pb.dptr_v, XYZ_3D);
+
 	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
 	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
 	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);

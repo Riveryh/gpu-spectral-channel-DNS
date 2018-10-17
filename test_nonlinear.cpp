@@ -112,7 +112,7 @@ void setFlow(problem& pb) {
 	real* ox = pb.hptr_omega_x;
 	real* oy = pb.hptr_omega_y;
 	real* oz = pb.hptr_omega_z;
-	size_t size = pitch * my * mz;
+	size_t size = pitch * my * pz;
 
 	real PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
@@ -154,7 +154,7 @@ void setFlow_basic3(problem& pb) {
 	real* ox = pb.hptr_omega_x;
 	real* oy = pb.hptr_omega_y;
 	real* oz = pb.hptr_omega_z;
-	size_t size = pitch * my * mz;
+	size_t size = pitch * my * pz;
 
 	real PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
@@ -234,7 +234,7 @@ TestResult check_lamb_basic3(problem& pb) {
 	real* lambx = pb.hptr_omega_x;
 	real* lamby = pb.hptr_omega_y;
 	real* lambz = pb.hptr_omega_z;
-	size_t size = pitch * my * mz;
+	size_t size = pitch * my * pz;
 
 	// cpy data from gpu memory to cpu memory
 	cuCheck(cudaMemcpy(pb.hptr_omega_x, pb.dptr_lamb_x.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
@@ -333,7 +333,7 @@ TestResult check_nonlinear_basic(problem& pb) {
 	cudaError_t err;
 	err = cudaMemcpy(nonlinear_v, pb.dptr_lamb_x.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
-	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost);
+	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
 	real PI = 4.0*atan(1.0);
@@ -371,11 +371,11 @@ TestResult check_nonlinear_basic3(problem& pb) {
 	real* nonlinear_v = pb.hptr_omega_x;
 	real* nonlinear_omega_y = pb.hptr_omega_y;
 
-	size_t size = pitch * my * mz;
+	size_t size = pitch * my * pz;
 	real alpha = pb.aphi;
 	real beta = pb.beta;
 
-	real PRECISION = 1e-4;
+	real PRECISION = 1e-8;
 
 	int indim[3];
 	int outdim[3];
@@ -389,12 +389,13 @@ TestResult check_nonlinear_basic3(problem& pb) {
 	outdim[2] = pb.my;
 
 	transform_3d_one(BACKWARD, pb.dptr_lamb_x, pb.dptr_tLamb_x, indim, outdim);
+	transform_3d_one(BACKWARD, pb.dptr_lamb_y, pb.dptr_tLamb_y, indim, outdim);
 	transform_3d_one(BACKWARD, pb.dptr_lamb_z, pb.dptr_tLamb_z, indim, outdim);
 
 	cudaError_t err;
 	err = cudaMemcpy(nonlinear_v, pb.dptr_lamb_x.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
-	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost);
+	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
 	real PI = 4.0*atan(1.0);
@@ -411,7 +412,7 @@ TestResult check_nonlinear_basic3(problem& pb) {
 				+ (1 - z*z)*(1 - z*z)*sin(2 * x)*(2 * cos(2 * x) + 1);
 				real ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
 				sin(y)*sin(x) + cos(y)*cos(x));*/
-				real ex_rhsn_v = 0.0; 4 * z*(1 - z*z)*cos(2 * y);
+				real ex_rhsn_v = 0.0; //4 * z*(1 - z*z)*cos(2 * y);
 				real ex_rhsn_o = 0.0;
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));

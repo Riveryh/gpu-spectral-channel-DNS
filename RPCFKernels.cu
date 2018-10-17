@@ -10,22 +10,6 @@
 #include <cassert>
 #include "rhs.cuh"
 
-__global__ void vKernel(cudaPitchedPtr dpPtr,
-	int width, int height, int depth) {
-	char* dptr = (char*)dpPtr.ptr;
-	size_t pitch = dpPtr.pitch;
-	size_t slicePitch = pitch*height;
-	for (int z = 0; z < depth; ++z) {
-		char* slice = dptr + z * slicePitch;
-		for (int y = 0; y < height; ++y) {
-			real* row = (real*)(slice + y * pitch);
-			for (int x = 0; x < width; ++x) {
-				row[x] = 100.0*x + 10.0*y + 1.0*z;
-			}
-			printf("%d,%d,%d,%10.3f\n", width, height, depth, row[0]);
-		}
-	}
-}
 
 __host__ int initCUDA(problem&  pb) {
 	cudaDeviceProp prop;
@@ -48,12 +32,12 @@ __host__ int initCUDA(problem&  pb) {
 		2*(pb.mx/2+1) * sizeof(real), pb.my, pb.mz);
 
 	pb.tExtent = make_cudaExtent(
-		pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
+		pb.mz * sizeof(complex), pb.nx/2+1, pb.ny);
 
 	pb.pExtent = make_cudaExtent(
 		2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.pz);
 	
-	cudaExtent & extent = pb.extent;
+//	cudaExtent & extent = pb.extent;
 	cudaExtent & tExtent = pb.tExtent;
 	cudaExtent & pExtent = pb.pExtent;
 
@@ -84,7 +68,7 @@ __host__ int initCUDA(problem&  pb) {
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), extent), "allocate");
 
 	pb.tSize = pb.tPitch * (pb.nx / 2 + 1) * pb.ny;
-	size_t& tsize = pb.tSize;
+//	size_t& tsize = pb.tSize;
 	//pb.nonlinear_v = (complex*)malloc(tsize);
 	//pb.nonlinear_v_p = (complex*)malloc(tsize);
 	//pb.nonlinear_omega_y = (complex*)malloc(tsize);

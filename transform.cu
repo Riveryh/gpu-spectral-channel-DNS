@@ -22,8 +22,8 @@ __host__ int initFFT(problem &pb) {
 	const int outPitch = pb.tPitch;
 	const int pmx = inPitch / sizeof(real);
 	const int pmz = outPitch / sizeof(complex);
-	const int nx = mx / 3 * 2;
-	const int ny = my / 3 * 2;
+	const int nx = mx  / 3 * 2;
+	const int ny = my  / 3 * 2;
 
 	const int istride = 1;
 	int inembed[2] = { my, pmx };
@@ -93,8 +93,8 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 	ASSERT(dim[1] == tDim[2]);
 	ASSERT(dim[2] == tDim[0]);
 
-	int nx = dim[0] / 3 * 2;
-	int ny = dim[1] / 3 * 2;
+	int nx = dim[0]  / 3 * 2;
+	int ny = dim[1]  / 3 * 2;
 
 	cudaExtent tExtent = make_cudaExtent(
 		tDim[0] * sizeof(complex), nx/2+1 , ny);
@@ -103,15 +103,15 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 	dim3 threadDim(4, 4);
 
-	real* buffer;
-	real* tbuffer;
+//	real* buffer;
+//	real* tbuffer;
 
 	// tPtr -> Ptr
 	if (dir == BACKWARD) {
 
-		size_t size = Ptr.pitch*dim[1] * dim[2];
-		size_t pSize = Ptr.pitch*dim[1] * (dim[2]/2+1);
-		size_t tSize = tPtr.pitch*(nx / 2 + 1)*ny;
+//		size_t size = Ptr.pitch*dim[1] * dim[2];
+//		size_t pSize = Ptr.pitch*dim[1] * (dim[2]/2+1);
+//		size_t tSize = tPtr.pitch*(nx / 2 + 1)*ny;
 //		buffer = (real*)malloc(size);
 //		tbuffer = (real*)malloc(tSize);
 //		ASSERT(buffer != nullptr);
@@ -148,9 +148,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 #endif
 		void* dev_buffer = get_fft_buffer_ptr();
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
-			//(CUFFTREAL*)Ptr.ptr);
-			(CUFFTREAL*)dev_buffer);
-		cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
+			(CUFFTREAL*)Ptr.ptr);
+			//(CUFFTREAL*)dev_buffer);
+		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
 
 		ASSERT(res == CUFFT_SUCCESS);
 		err = cudaDeviceSynchronize();
@@ -178,9 +178,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 	{
 		// Ptr -> tPtr
 
-		size_t size = Ptr.pitch*dim[1] * dim[2];
-		size_t pSize = Ptr.pitch*dim[1] * (dim[2] / 2 + 1);
-		size_t tSize = tPtr.pitch*(dim[0] / 2 + 1)*dim[1];
+//		size_t size = Ptr.pitch*dim[1] * dim[2];
+//		size_t pSize = Ptr.pitch*dim[1] * (dim[2] / 2 + 1);
+//		size_t tSize = tPtr.pitch*(dim[0] / 2 + 1)*dim[1];
 //		buffer = (real*)malloc(size);
 //		tbuffer = (real*)malloc(tSize);
 //		ASSERT(buffer != nullptr);
@@ -199,9 +199,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(dir == FORWARD);
 		void* dev_buffer = get_fft_buffer_ptr();
 		res = CUFFTEXEC_R2C(planXYr2c, (CUFFTREAL*)Ptr.ptr,
-			//(CUFFTCOMPLEX*)Ptr.ptr);
-			(CUFFTCOMPLEX*)dev_buffer);
-		cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice), "mem move");
+			(CUFFTCOMPLEX*)Ptr.ptr);
+			//(CUFFTCOMPLEX*)dev_buffer);
+		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice), "mem move");
 //#ifdef DEBUG
 //		err = cudaMemcpy(buffer, Ptr.ptr, size, cudaMemcpyDeviceToHost);
 //		ASSERT(err == cudaSuccess);
@@ -265,13 +265,6 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 	return 0;
 }
 
-__global__ void investigate(cudaPitchedPtr p) {
-	int i;
-	//do something
-	i = p.pitch;
-	printf("%f",*((real*)p.ptr));
-}
-
 __host__ int transform(DIRECTION dir, problem& pb) {
 	int indim[3];
 	int outdim[3];
@@ -315,14 +308,14 @@ __global__ void setZeros(complex* ptr,size_t pitch, int mx, int my, int mz) {
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
 	
-	if (ky >= ny / 2 && ky < ny) {
+	if (ky >= ny / 2 && ky < my - (ny/2-1)) {
 		for (int ix = 0; ix<mx/2+1; ix++) {
 			ptr[ix] = 0.0;
 		}
 	}
 	else
 	{
-		for (int ix = nx/2+1; ix<mx/2+1; ix++) {
+		for (int ix = nx/2; ix<mx/2+1; ix++) {
 			ptr[ix] = 0.0;
 		}
 	}
@@ -332,7 +325,8 @@ __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor)
 	const int iy = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iz = threadIdx.y + blockIdx.y*blockDim.y;
 	if (iy >= my || iz >= mz/2+1)return;
-	if (iy > my / 3  && iy < my / 3 * 2 - 1) return;
+	const int ny = my / 3 * 2;
+	//if (iy > ny / 2  && iy < my - (ny/2)) return;
 
 	size_t pitch = p.pitch; 
 	size_t dist = pitch*(my*iz + iy) / sizeof(real);
@@ -347,9 +341,9 @@ __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor)
 __global__ void cheby_pre_p2s(complex* u, const size_t pitch, const int hmx, const int my, const int mz) {
 	const int mx = (hmx - 1) * 2;
 	const int pz = mz / 2 + 1;
-	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
-	const int hnx = mx / 3 + 1;
-	const int ny = my * 2 / 3;
+//	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
+	const int hnx = mx / 3 * 2 / 2 + 1;
+	const int ny = my / 3 * 2;
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= hnx || iy >= ny)return;
@@ -367,8 +361,8 @@ __global__ void cheby_pre_s2p_pad(complex* u, const size_t pitch, const int hmx,
 	const int mx = (hmx-1)*2;
 	const int pz = mz / 2 + 1;
 	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
-	const int hnx = mx / 3 + 1;
-	const int ny = my * 2 / 3;
+	const int hnx = mx / 3 * 2 / 2 + 1;
+	const int ny = my / 3 * 2;
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= hnx || iy >= ny)return;
@@ -395,8 +389,8 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int hm
 	const int mx = (hmx - 1) * 2;
 	const int pz = mz / 2 + 1;
 	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
-	const int hnx = mx / 3 + 1;
-	const int ny = my * 2 / 3;
+	const int hnx = mx/ 3 * 2 / 2 + 1;
+	const int ny = my / 3 * 2;
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= hnx || iy >= ny)return;
@@ -423,9 +417,9 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int hm
 __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int hmx, const int my, const int mz) {
 	const int mx = (hmx - 1) * 2;
 	const int pz = mz / 2 + 1;
-	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
-	const int hnx = mx / 3 + 1;
-	const int ny = my * 2 / 3;
+	//const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
+	const int hnx = mx/ 3 * 2 /2 + 1;
+	const int ny = my / 3 * 2;
 	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
 	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ix >= hnx || iy >= ny)return;
@@ -443,9 +437,9 @@ __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int hmx, co
 }
 
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
-	const size_t pitch = tPtr.pitch;
-	const int nx = (hmx - 1) * 2 * 2 / 3;
-	const int ny = my * 2 / 3;
+//	const size_t pitch = tPtr.pitch;
+	const int nx = (hmx - 1) * 2 / 3 * 2;
+	const int ny = my / 3 * 2;
 	const int hnx = nx / 2 + 1;
 
 	int threadDimx = 16;
@@ -482,10 +476,10 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
 #endif
 }
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mode doPadding) {
-	const size_t pitch = tPtr.pitch;
-	const int pz = mz / 2 + 1;
-	const int nx = (hmx-1)*2*2/3;
-	const int ny = my*2/3;
+//	const size_t pitch = tPtr.pitch;
+//	const int pz = mz / 2 + 1;
+	const int nx = (hmx-1)*2/3*2;
+	const int ny = my/3*2;
 	const int hnx = nx/2+1;
 
 	int threadDimx = 16;
@@ -601,9 +595,9 @@ __host__ void transform_forward_X3(problem& pb) {
 }
 
 __host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
-	const size_t pitch = tPtr.pitch;
-	const int nx = (hmx - 1) * 2 * 2 / 3;
-	const int ny = my * 2 / 3;
+//	const size_t pitch = tPtr.pitch;
+	const int nx = (hmx - 1) * 2 / 3 * 2;
+	const int ny = my / 3 * 2;
 	const int hnx = nx / 2 + 1;
 
 	int threadDimx = 16;
@@ -642,10 +636,10 @@ __host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
 
 
 __host__ void cheby_s2p_X6(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
-	const size_t pitch = tPtr.pitch;
-	const int pz = mz / 2 + 1;
-	const int nx = (hmx - 1) * 2 * 2 / 3;
-	const int ny = my * 2 / 3;
+//	const size_t pitch = tPtr.pitch;
+	//const int pz = mz / 2 + 1;
+	const int nx = (hmx - 1) * 2 / 3 * 2;
+	const int ny = my / 3 * 2;
 	const int hnx = nx / 2 + 1;
 
 	int threadDimx = 16;

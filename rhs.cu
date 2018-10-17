@@ -74,7 +74,7 @@ void* func(void* _pb) {
 		pthread_mutex_unlock(&mutex_v);
 		//pthread_exit(NULL);
 		//return NULL;
-		cudaExtent tExtent = pb.tExtent;
+//		cudaExtent tExtent = pb.tExtent;
 
 		//safeCudaFree(pb.dptr_tLamb_x.ptr);
 		//safeCudaFree(pb.dptr_tLamb_y.ptr);

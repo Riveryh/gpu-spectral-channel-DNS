@@ -99,8 +99,6 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	//	nx, ny, nz);
 	//RPCF::write_3d_to_file("output.txt", (real*)tbuffer, tPtr.pitch,
 	//	nz, nx, ny);
-	//investigate << <1, 1 >> > (Ptr);
-	//investigate << <1, 1 >> > (tPtr);
 	free(buffer);
 	free(tbuffer);
 	return 0;
@@ -108,7 +106,7 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 
 __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 	cudaPitchedPtr& tPtr, int* dim, int* tDim) {
-	const int hnx = dim[0] / 3 + 1;
+	const int hnx = dim[0] / 3 * 2 / 2 + 1;
 	const int ny = dim[1] / 3 * 2;
 	int nthreadx = 16;
 	int nthready = 16;
@@ -173,7 +171,8 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	if (ky >= ny) return;
 	
 	int old_ky = ky;
-	if (ky > ny / 2) old_ky = ky + ny/2;
+	int dky = my - ny;
+	if (ky > ny / 2) old_ky = ky + dky;
 
 	for (int kz = 0; kz < mz/2+1; kz++) {
 		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
@@ -207,7 +206,8 @@ __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	if (ky >= ny) return;
 	
 	int old_ky = ky;
-	if (ky > ny / 2) old_ky = ky + ny / 2;
+	int dky = my - ny;
+	if (ky > ny / 2) old_ky = ky + dky;
 
 	for (int kx = 0; kx < nx/2+1; kx++) {
 		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
