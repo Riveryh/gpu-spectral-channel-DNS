@@ -196,7 +196,6 @@ __host__ int rhsNonlinear(problem & pb)
 __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	int mx, int my, int mz, real alpha, real beta)
 {
-	
 	int kx = threadIdx.x + blockDim.x*blockIdx.x;
 	int ky = threadIdx.y + blockDim.y*blockIdx.y; 
 	int pitch = plist.dptr_lamb_x.pitch;

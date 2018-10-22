@@ -9,6 +9,10 @@ __global__ void getVelocityKernel(
 	complex* u, complex* v, complex*w,
 	complex* ox, complex*oy, complex* oz,
 	int tPitch, int mx, int my, int mz, real alpha, real beta);
+__global__ void getVelocityKernel_sm(
+	complex* u, complex* v, complex*w,
+	complex* ox, complex* oy, complex* oz,
+	int tPitch, int mx, int my, int mz, real alpha, real beta);
 void get_velocity_zero(problem& pb);
 
 int getUVW(problem& pb) {
@@ -50,8 +54,8 @@ int getUVW(problem& pb) {
 	//dim3 nThread(nthreadx, nthready);
 	dim3 nDim(nDimx, nDimy);
 
-	getVelocityKernel <<<pb.ntDim,pb.nThread>>>(
-	//getVelocityKernel <<<nDim,nthreadx>>>(
+	//getVelocityKernel <<<pb.ntDim,pb.nThread>>>(
+	getVelocityKernel_sm <<<nDim,nthreadx>>>(
 		(complex*)pb.dptr_tu.ptr, (complex*)pb.dptr_tv.ptr,
 		(complex*)pb.dptr_tw.ptr, (complex*)pb.dptr_tomega_x.ptr, 
 		(complex*)pb.dptr_tomega_y.ptr, (complex*)pb.dptr_tomega_z.ptr,
@@ -86,10 +90,10 @@ __global__ void getVelocityKernel_sm(
 		u[kz] = w[kz];
 		v[kz] = oz[kz];
 		w[kz] = 0.0;
+
 		tdz[kz] = u[kz];
 		tdz1[kz] = v[kz];
-		
-		__syncthreads();
+
 		ddz_sm(tdz, nz, kz);
 		ddz_sm(tdz1, nz, kz);
 		
@@ -105,13 +109,15 @@ __global__ void getVelocityKernel_sm(
 	//skip empty wave numbers
 	const int nx = mx / 3 * 2;
 	const int ny = mx / 3 * 2;
-	if (kx >= (nx / 2 + 1) || ky >= ny) return;
+	// if (kx >= (nx / 2 + 1) || ky >= ny) return;
 
 	real ialpha = real(kx) / alpha;
 	real ibeta = real(ky) / beta;
 	if (ky >= ny / 2 + 1) {
 		ibeta = real(ky - ny) / beta;
 	}
+
+	const int i = kz;
 
 	real kmn = ialpha*ialpha + ibeta*ibeta;
 	real kmn1 = 1.0 / kmn;
@@ -125,34 +131,24 @@ __global__ void getVelocityKernel_sm(
 	oz = oz + dist;
 
 	tdz[kz] = w[kz];
-	__syncthreads();
 	ddz_sm(tdz, nz, kz);
 
-	for (int i = kz; i < kz+1; i++) {
-		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
-			- complex(0.0, ibeta*kmn1) * oz[i];
-			v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-			- complex(0.0, ialpha*kmn1) * oz[i];
-		//u[i] = w[i];
-		//v[i] = w[i];
-	}
+	u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
+		- complex(0.0, ibeta*kmn1) * oz[i];
+	v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
+	- complex(0.0, ialpha*kmn1) * oz[i];
+	//u[i] = w[i];
+	//v[i] = w[i];
 
-	for (int i = kz; i < kz+1; i++) {
-		tdz[i] = v[i];
-	}
-	__syncthreads();
+	tdz[i] = v[i];
 	ddz_sm(tdz, nz, kz);
-	for (int i = kz; i < kz+1; i++) {
-		ox[i] = tdz[i] + complex(0.0, -1.0*ibeta)*w[i];
-	}
-	for (int i = kz; i < kz+1; i++) {
-		tdz[i] = u[i];
-	}
-	__syncthreads();
+	
+	ox[i] = tdz[i] + complex(0.0, -1.0*ibeta)*w[i];
+
+	tdz[i] = u[i];
 	ddz_sm(tdz, nz, kz);
-	for (int i = kz; i < kz+1; i++) {
-		oy[i] = tdz[i]*(-1.0) + complex(0.0, ialpha)*w[i];
-	}
+
+	oy[i] = tdz[i]*(-1.0) + complex(0.0, ialpha)*w[i];
 }
 
 

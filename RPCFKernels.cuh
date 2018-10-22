@@ -27,6 +27,6 @@ __host__ __device__ void ddz(real* u, int N);
 __host__ __device__ void ddz(complex* u, int N);
 
 
-__host__ __device__ void ddz_sm(real* u, int N, int kz);
-__host__ __device__ void ddz_sm(complex* u, int N, int kz);
+__device__ void ddz_sm(real* u, int N, int kz);
+__device__ void ddz_sm(complex* u, int N, int kz);
 

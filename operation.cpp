@@ -111,7 +111,7 @@ bool isEqual(real a, real b, real precision ){
 
 void RPCF_Paras::read_para(std::string filename) {
 	ifstream infile;
-	infile.open(filename, ios::in);
+	infile.open(filename.c_str(), ios::in);
 	if (!infile.is_open()) {
 		cerr << "Error in opening file" << endl;
 		//exit(-1);

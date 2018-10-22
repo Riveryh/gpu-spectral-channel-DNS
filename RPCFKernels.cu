@@ -349,21 +349,20 @@ __host__ __device__ void ddz(complex *u, int N) {
 }
 
 
-__host__ __device__ void ddz_sm(real* u, int N, int kz) {
+__device__ void ddz_sm(real* u, int N, int kz) {
 	real buffer;
 	real dmat;
-	real buffer_u[MAX_NZ];
-
-	for (int i = 0; i < N; i++) {
-		buffer_u[i] = u[i];
-	}
+	
+	//wait all threads to load data before computing
+	__syncthreads();
 
 	buffer = 0.0;
 	for (int j = kz + 1; j < N; j = j + 2) {
 		dmat = 2 * real(j);
-		buffer = buffer + buffer_u[j] * dmat;
+		buffer = buffer + u[j] * dmat;
 	}
-
+	//wait all threads to finish computation before overwriting array.
+	__syncthreads();
 	if (kz == 0) {
 		u[0] = buffer * 0.5;
 	}
@@ -373,22 +372,20 @@ __host__ __device__ void ddz_sm(real* u, int N, int kz) {
 	}
 }
 
-__host__ __device__ void ddz_sm(complex *u, int N, int kz) {
+__device__ void ddz_sm(complex *u, int N, int kz) {
 	complex buffer;
 	real dmat;
-	complex buffer_u[MAX_NZ];
-	
-	
-	for (int i = 0; i < N; i++) {
-		buffer_u[i] = u[i];
-	}
+
+	//wait all threads to load data before computing
+	__syncthreads();
 
 	buffer = complex(0.0,0.0);
 	for (int j = kz + 1; j < N; j = j + 2) {
 		dmat = 2 * real(j);
-		buffer = buffer + buffer_u[j] * dmat;
-	}
-	
+		buffer = buffer + u[j] * dmat;
+	}	
+	//wait all threads to finish computation before overwriting array.
+	__syncthreads();
 	if (kz == 0) {
 		u[0] = buffer * 0.5;
 	}
