@@ -331,16 +331,70 @@ __host__ __device__ void ddz(real* u, int N) {
 __host__ __device__ void ddz(complex *u, int N) {
 	complex buffer[MAX_NZ];
 	real dmat;
+	complex buffer_u[MAX_NZ];
+	for (int i = 0; i < N; i++) {
+		buffer_u[i] = u[i];
+	}
 	for (int i = 0; i < N; i++) {
 		buffer[i] = complex(0.0,0.0);
 		for (int j = i + 1; j < N; j = j + 2) {
 			dmat = 2 * real(j);
-			buffer[i] = buffer[i] + u[j] * dmat;
+			buffer[i] = buffer[i] + buffer_u[j] * dmat;
 		}
 	}
 	u[0] = buffer[0] * 0.5;
 	for (int i = 1; i < N; i++) {
 		u[i] = buffer[i];
+	}
+}
+
+
+__host__ __device__ void ddz_sm(real* u, int N, int kz) {
+	real buffer;
+	real dmat;
+	real buffer_u[MAX_NZ];
+
+	for (int i = 0; i < N; i++) {
+		buffer_u[i] = u[i];
+	}
+
+	buffer = 0.0;
+	for (int j = kz + 1; j < N; j = j + 2) {
+		dmat = 2 * real(j);
+		buffer = buffer + buffer_u[j] * dmat;
+	}
+
+	if (kz == 0) {
+		u[0] = buffer * 0.5;
+	}
+	else
+	{
+		u[kz] = buffer;
+	}
+}
+
+__host__ __device__ void ddz_sm(complex *u, int N, int kz) {
+	complex buffer;
+	real dmat;
+	complex buffer_u[MAX_NZ];
+	
+	
+	for (int i = 0; i < N; i++) {
+		buffer_u[i] = u[i];
+	}
+
+	buffer = complex(0.0,0.0);
+	for (int j = kz + 1; j < N; j = j + 2) {
+		dmat = 2 * real(j);
+		buffer = buffer + buffer_u[j] * dmat;
+	}
+	
+	if (kz == 0) {
+		u[0] = buffer * 0.5;
+	}
+	else
+	{
+		u[kz] = buffer;
 	}
 }
 

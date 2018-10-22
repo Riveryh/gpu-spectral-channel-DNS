@@ -29,7 +29,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mod
 __host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int mx, int my, int mz);
 __host__ void cheby_s2p_X6(cudaPitchedPtr tPtr, int mx, int my, int mz);
 
-#define CACHE_SIZE 512
+#define CACHE_SIZE 768
 #define _MIN(x,y) (((x)<(y))?(x):(y))
 
 __host__ void transform_backward_X6(problem& pb);

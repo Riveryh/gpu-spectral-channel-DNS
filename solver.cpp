@@ -198,10 +198,11 @@ int initSolver(problem& pb, bool inversed)
 	cudaMallocHost(&pb.rhs_omega_y, tSize);
 
 	cout << "malloc zerowave number memory" << endl;
-	pb.lambx0 = (complex*)malloc(sizeof(complex)*pb.nz);
-	pb.lambz0 = (complex*)malloc(sizeof(complex)*pb.nz); 
-	pb.lambx0_p = (complex*)malloc(sizeof(complex)*pb.nz);
-	pb.lambz0_p = (complex*)malloc(sizeof(complex)*pb.nz);
+	cudaMallocHost(&pb.lambx0, sizeof(complex)*pb.nz);
+	cudaMallocHost(&pb.lambx0_p, sizeof(complex)*pb.nz);
+	cudaMallocHost(&pb.lambz0, sizeof(complex)*pb.nz);
+	cudaMallocHost(&pb.lambz0_p, sizeof(complex)*pb.nz);
+
 	pb.tv0 = (complex*)malloc(sizeof(complex)*pb.nz);
 	pb.tomega_y_0 = (complex*)malloc(sizeof(complex)*pb.nz);
 

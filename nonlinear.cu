@@ -103,8 +103,9 @@ __host__ int computeLambVector(problem & pb)
 	//if (pb.pz % nthready != 0) nDimy++;
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
-
-	computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz);
+	dim3 nDim(pb.my, pb.pz);
+	//computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz);
+	computeLambVectorKernel<<<nDim,pb.mx>>>(pList, pb.px, pb.py, pb.pz);
 	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 
@@ -318,15 +319,54 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 		dp_u[i] = dp_u[i] + mean_u;
 	}
 }
+//
+//__global__ void computeLambVectorKernekl _non(cudaPitchedPtrList ptrList,
+//	const int mx, const int my, const int pz) {
+//	//可以合并几个lamb矢量计算到一个kernel中
+//	int ky = threadIdx.x + blockDim.x*blockIdx.x;
+//	int kz = threadIdx.y + blockDim.y*blockIdx.y;
+//	//const int py = my * 2 / 3;
+//	//const int pz = mz / 2 + 1;
+//	if (ky >= my || kz >= pz) return;
+//
+//
+//	int id = my*kz + ky;
+//	cudaPitchedPtr& ptrU = ptrList.dptr_u;
+//	cudaPitchedPtr& ptrV = ptrList.dptr_v;
+//	cudaPitchedPtr& ptrW = ptrList.dptr_w;
+//	cudaPitchedPtr& ptrOmegaX = ptrList.dptr_omega_x;
+//	cudaPitchedPtr& ptrOmegaY = ptrList.dptr_omega_y;
+//	cudaPitchedPtr& ptrOmegaZ = ptrList.dptr_omega_z;
+//	cudaPitchedPtr& ptrLambX = ptrList.dptr_lamb_x;
+//	cudaPitchedPtr& ptrLambY = ptrList.dptr_lamb_y;
+//	cudaPitchedPtr& ptrLambZ = ptrList.dptr_lamb_z;
+//
+//	//compute the location of data in each thread.
+//	int pitch = ptrV.pitch;
+//	real* pU = (real*)((char*)ptrU.ptr + pitch * id);
+//	real* pV = (real*)((char*)ptrV.ptr + pitch * id);
+//	real* pW = (real*)((char*)ptrW.ptr + pitch * id);
+//	real* pOmegaX = (real*)((char*)ptrOmegaX.ptr + pitch * id);
+//	real* pOmegaY = (real*)((char*)ptrOmegaY.ptr + pitch * id);
+//	real* pOmegaZ = (real*)((char*)ptrOmegaZ.ptr + pitch * id);
+//	real* pLambX = (real*)((char*)ptrLambX.ptr + pitch * id);
+//	real* pLambY = (real*)((char*)ptrLambY.ptr + pitch * id);
+//	real* pLambZ = (real*)((char*)ptrLambZ.ptr + pitch * id);
+//
+//	//execute the computation
+//	computeLambDevice(pU, pV, pW, pOmegaX, pOmegaY, pOmegaZ,
+//		pLambX, pLambY, pLambZ, mx);
+//}
 
 __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
-	const int mx, const int my,const int pz) {
+	const int mx, const int my, const int pz) {
 	//可以合并几个lamb矢量计算到一个kernel中
-	int ky = threadIdx.x + blockDim.x*blockIdx.x;
-	int kz = threadIdx.y + blockDim.y*blockIdx.y;
+	int ky = blockIdx.x;
+	int kz = blockIdx.y;
+	int kx = threadIdx.x;
 	//const int py = my * 2 / 3;
 	//const int pz = mz / 2 + 1;
-	if (ky >= my || kz >= pz) return;
+	if (ky >= my || kz >= pz || kx>=mx) return;
 
 
 	int id = my*kz + ky;
@@ -342,20 +382,100 @@ __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 
 	//compute the location of data in each thread.
 	int pitch = ptrV.pitch;
-	real* pU = (real*)((char*)ptrU.ptr + pitch * id);
-	real* pV = (real*)((char*)ptrV.ptr + pitch * id);
-	real* pW = (real*)((char*)ptrW.ptr + pitch * id);
-	real* pOmegaX = (real*)((char*)ptrOmegaX.ptr + pitch * id);
-	real* pOmegaY = (real*)((char*)ptrOmegaY.ptr + pitch * id);
-	real* pOmegaZ = (real*)((char*)ptrOmegaZ.ptr + pitch * id);
-	real* pLambX = (real*)((char*)ptrLambX.ptr + pitch * id);
-	real* pLambY = (real*)((char*)ptrLambY.ptr + pitch * id);
-	real* pLambZ = (real*)((char*)ptrLambZ.ptr + pitch * id);
+	real* pU = (real*)((char*)ptrU.ptr + pitch * id) + kx;
+	real* pV = (real*)((char*)ptrV.ptr + pitch * id) + kx;
+	real* pW = (real*)((char*)ptrW.ptr + pitch * id) + kx;
+	real* pOmegaX = (real*)((char*)ptrOmegaX.ptr + pitch * id) + kx;
+	real* pOmegaY = (real*)((char*)ptrOmegaY.ptr + pitch * id) + kx;
+	real* pOmegaZ = (real*)((char*)ptrOmegaZ.ptr + pitch * id) + kx;
+	real* pLambX = (real*)((char*)ptrLambX.ptr + pitch * id) + kx;
+	real* pLambY = (real*)((char*)ptrLambY.ptr + pitch * id) + kx;
+	real* pLambZ = (real*)((char*)ptrLambZ.ptr + pitch * id) + kx;
 
 	//execute the computation
-	computeLambDevice(pU, pV,  pW, pOmegaX, pOmegaY,  pOmegaZ,
+	computeLambDevice(pU, pV, pW, pOmegaX, pOmegaY, pOmegaZ,
 		pLambX, pLambY, pLambZ, mx);
 }
+
+__device__ void computeLambDevice(real* pU, real* pV, real* pW,
+	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
+	real* pLambX, real* pLambY, real* pLambZ, int mx) {
+	int  i = 0;
+	pLambX[i] = pOmegaY[i] * pW[i] - pOmegaZ[i] * pV[i];
+	pLambY[i] = pOmegaZ[i] * pU[i] - pOmegaX[i] * pW[i];
+	pLambZ[i] = pOmegaX[i] * pV[i] - pOmegaY[i] * pU[i];
+}
+//
+//__device__ void computeLambDevice_non(real* pU, real* pV, real* pW,
+//	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
+//	real* pLambX, real* pLambY, real* pLambZ, int mx) {
+//
+//	real tU[CACHE_SIZE];
+//	real tV[CACHE_SIZE];
+//	real tW[CACHE_SIZE];
+//	
+//	real tOmegaX[CACHE_SIZE];
+//	real tOmegaY[CACHE_SIZE];
+//	real tOmegaZ[CACHE_SIZE];
+//
+//	real tLambX[CACHE_SIZE];
+//	real tLambY[CACHE_SIZE];
+//	real tLambZ[CACHE_SIZE];
+//
+//	int nCycle = mx / CACHE_SIZE + 1;
+//	ASSERT(mx < CACHE_SIZE);
+//
+//	//cycles except the last cycle.
+//	for (int iCycle = 0; iCycle < nCycle - 1; iCycle++) {
+//		for (int i = 0; i < CACHE_SIZE; i++) {
+//			int index = iCycle*CACHE_SIZE + i;
+//			tU[i] = pU[index];
+//			tV[i] = pV[index];
+//			tW[i] = pW[index];
+//			tOmegaX[i] = pOmegaX[index];
+//			tOmegaY[i] = pOmegaY[index];
+//			tOmegaZ[i] = pOmegaZ[index];
+//		}
+//		for (int i = 0; i < CACHE_SIZE; i++) {
+//			tLambX[i] = tOmegaY[i] * tW[i] - tOmegaZ[i] * tV[i];
+//			tLambY[i] = tOmegaZ[i] * tU[i] - tOmegaX[i] * tW[i];
+//			tLambZ[i] = tOmegaX[i] * tV[i] - tOmegaY[i] * tU[i];
+//		}
+//		//seperate reading and writing action to avoid memory conflicts
+//		for (int i = 0; i < CACHE_SIZE; i++) {
+//			int index = iCycle*CACHE_SIZE + i;
+//			pLambX[index] = tLambX[i];
+//			pLambY[index] = tLambY[i];
+//			pLambZ[index] = tLambZ[i];
+//		}
+//	}
+//
+//	ASSERT(nCycle >= 1);
+//	int nLast = mx%CACHE_SIZE;
+//	//for the last part.
+//	for (int i = 0; i < nLast; i++) {
+//		int index = (nCycle-1)*CACHE_SIZE + i;
+//		tU[i] = pU[index];
+//		tV[i] = pV[index];
+//		tW[i] = pW[index];
+//		tOmegaX[i] = pOmegaX[index];
+//		tOmegaY[i] = pOmegaY[index];
+//		tOmegaZ[i] = pOmegaZ[index];
+//	}
+//	for (int i = 0; i < nLast; i++) {
+//		tLambX[i] = tOmegaY[i] * tW[i] - tOmegaZ[i] * tV[i];
+//		tLambY[i] = tOmegaZ[i] * tU[i] - tOmegaX[i] * tW[i];
+//		tLambZ[i] = tOmegaX[i] * tV[i] - tOmegaY[i] * tU[i];
+//	}
+//	//seperate reading and writing action to avoid memory conflicts
+//	for (int i = 0; i < nLast; i++) {
+//		int index = (nCycle - 1)*CACHE_SIZE + i;
+//		pLambX[index] = tLambX[i];
+//		pLambY[index] = tLambY[i];
+//		pLambZ[index] = tLambZ[i];
+//	}
+//
+//}
 
 __host__ void saveZeroWaveLamb(problem & pb)
 {
@@ -366,79 +486,8 @@ __host__ void saveZeroWaveLamb(problem & pb)
 	complex* lambz = (complex*)pb.dptr_tLamb_y.ptr;	//change of y,z definition here!
 	cudaError err;
 	err = cudaMemcpy(pb.lambx0, lambx, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
-	ASSERT(err == cudaSuccess); 
+	ASSERT(err == cudaSuccess);
 	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
-	
-}
-
-__device__ void computeLambDevice(real* pU, real* pV, real* pW,
-	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-	real* pLambX, real* pLambY, real* pLambZ, int mx) {
-
-	real tU[CACHE_SIZE];
-	real tV[CACHE_SIZE];
-	real tW[CACHE_SIZE];
-	
-	real tOmegaX[CACHE_SIZE];
-	real tOmegaY[CACHE_SIZE];
-	real tOmegaZ[CACHE_SIZE];
-
-	real tLambX[CACHE_SIZE];
-	real tLambY[CACHE_SIZE];
-	real tLambZ[CACHE_SIZE];
-
-	int nCycle = mx / CACHE_SIZE + 1;
-	ASSERT(mx < CACHE_SIZE);
-
-	//cycles except the last cycle.
-	for (int iCycle = 0; iCycle < nCycle - 1; iCycle++) {
-		for (int i = 0; i < CACHE_SIZE; i++) {
-			int index = iCycle*CACHE_SIZE + i;
-			tU[i] = pU[index];
-			tV[i] = pV[index];
-			tW[i] = pW[index];
-			tOmegaX[i] = pOmegaX[index];
-			tOmegaY[i] = pOmegaY[index];
-			tOmegaZ[i] = pOmegaZ[index];
-		}
-		for (int i = 0; i < CACHE_SIZE; i++) {
-			tLambX[i] = tOmegaY[i] * tW[i] - tOmegaZ[i] * tV[i];
-			tLambY[i] = tOmegaZ[i] * tU[i] - tOmegaX[i] * tW[i];
-			tLambZ[i] = tOmegaX[i] * tV[i] - tOmegaY[i] * tU[i];
-		}
-		//seperate reading and writing action to avoid memory conflicts
-		for (int i = 0; i < CACHE_SIZE; i++) {
-			int index = iCycle*CACHE_SIZE + i;
-			pLambX[index] = tLambX[i];
-			pLambY[index] = tLambY[i];
-			pLambZ[index] = tLambZ[i];
-		}
-	}
-
-	ASSERT(nCycle >= 1);
-	int nLast = mx%CACHE_SIZE;
-	//for the last part.
-	for (int i = 0; i < nLast; i++) {
-		int index = (nCycle-1)*CACHE_SIZE + i;
-		tU[i] = pU[index];
-		tV[i] = pV[index];
-		tW[i] = pW[index];
-		tOmegaX[i] = pOmegaX[index];
-		tOmegaY[i] = pOmegaY[index];
-		tOmegaZ[i] = pOmegaZ[index];
-	}
-	for (int i = 0; i < nLast; i++) {
-		tLambX[i] = tOmegaY[i] * tW[i] - tOmegaZ[i] * tV[i];
-		tLambY[i] = tOmegaZ[i] * tU[i] - tOmegaX[i] * tW[i];
-		tLambZ[i] = tOmegaX[i] * tV[i] - tOmegaY[i] * tU[i];
-	}
-	//seperate reading and writing action to avoid memory conflicts
-	for (int i = 0; i < nLast; i++) {
-		int index = (nCycle - 1)*CACHE_SIZE + i;
-		pLambX[index] = tLambX[i];
-		pLambY[index] = tLambY[i];
-		pLambZ[index] = tLambZ[i];
-	}
 
 }

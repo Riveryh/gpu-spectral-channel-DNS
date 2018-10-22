@@ -3,6 +3,13 @@
 #include "cuRPCF.h"
 #include <string>
 #include <fstream>
+
+#include "data.h"
+#include <iostream>
+#include <cstdlib>
+#include "velocity.h"
+
+
 using namespace std;
 
 void write_velocity(char* filename, real* u, real* v, real* w,
@@ -65,4 +72,78 @@ void write_velocity(char* filename, real* u, real* v, real* w,
 			}
 		}
 	}
+}
+
+void write_recover_data(problem& pb, char* filename) {
+	ofstream outfile;
+	outfile.open(filename, ios::binary);
+	if (!outfile.is_open()) {
+		cerr << "cannot open recovery file" << endl;
+		exit(0);
+	}
+
+	outfile.write((char*)&pb.mx, sizeof(int));
+	outfile.write((char*)&pb.my, sizeof(int));
+	outfile.write((char*)&pb.mz, sizeof(int));
+
+	outfile.write((char*)&pb.pSize, sizeof(size_t));
+	outfile.write((char*)&pb.tSize, sizeof(size_t));
+
+	outfile.write((char*)pb.lambx0, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.lambz0, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.lambx0_p, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.lambz0_p, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.tv0, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.tomega_y_0, sizeof(complex)*pb.nz);
+
+	outfile.write((char*)pb.rhs_v, pb.tSize);
+	outfile.write((char*)pb.rhs_v_p, pb.tSize);
+	outfile.write((char*)pb.rhs_omega_y, pb.tSize);
+
+	outfile.write((char*)pb.nonlinear_v, pb.tSize);
+	//	outfile.write((char*)pb.nonlinear_v_p, pb.tSize);
+	outfile.write((char*)pb.nonlinear_omega_y, pb.tSize);
+	//	outfile.write((char*)pb.nonlinear_omega_y_p, pb.tSize);
+}
+
+#define READ_AND_CHECK(infile, buffer, v, size);\
+	infile.read((char*)&buffer,size);\
+	if(buffer!=v){cerr<<"wrong parameter"<<endl;exit(0);}
+
+void read_recover_data(problem& pb, char* filename) {
+	ifstream outfile;
+	outfile.open(filename, ios::binary);
+	if (!outfile.is_open()) {
+		cerr << "cannot open recovery file" << endl;
+		exit(0);
+	}
+
+	int mx, my, mz;
+	size_t pSize, tSize;
+
+	READ_AND_CHECK(outfile, mx, pb.mx, sizeof(int));
+	READ_AND_CHECK(outfile, my, pb.my, sizeof(int));
+	READ_AND_CHECK(outfile, mz, pb.mz, sizeof(int));
+	READ_AND_CHECK(outfile, pSize, pb.pSize, sizeof(size_t));
+	READ_AND_CHECK(outfile, tSize, pb.tSize, sizeof(size_t));
+
+	outfile.read((char*)pb.lambx0, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.lambz0, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.lambx0_p, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.lambz0_p, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.tv0, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.tomega_y_0, sizeof(complex)*pb.nz);
+
+	outfile.read((char*)pb.rhs_v, pb.tSize);
+	outfile.read((char*)pb.rhs_v_p, pb.tSize);
+	outfile.read((char*)pb.rhs_omega_y, pb.tSize);
+
+	outfile.read((char*)pb.nonlinear_v, pb.tSize);
+	//	outfile.read((char*)pb.nonlinear_v_p, pb.tSize);
+	outfile.read((char*)pb.nonlinear_omega_y, pb.tSize);
+	//	outfile.read((char*)pb.nonlinear_omega_y_p, pb.tSize);
+
+
+	// copy velocity and votricity to GPU and compute other components.
+	getUVW(pb);
 }

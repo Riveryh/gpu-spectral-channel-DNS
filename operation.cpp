@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include <sstream>
 #include "parameters.h"
 
 using namespace std;
@@ -81,12 +82,12 @@ int RPCF::write_3d_to_file(char* filename,real* pu, int pitch, int nx, int ny, i
 }
 
 
-void cuCheck(cudaError_t ret, char* s) {
+void cuCheck(cudaError_t ret, string s) {
 	if (ret == cudaSuccess) {
 		return;
 	}
 	else {
-		printf("cudaError at %s\n", s);
+		printf("cudaError at %s\n", s.c_str());
 		assert(false);
 	}
 }
@@ -108,7 +109,7 @@ bool isEqual(real a, real b, real precision ){
 
 
 
-void RPCF_Paras::read_para(char* filename) {
+void RPCF_Paras::read_para(std::string filename) {
 	ifstream infile;
 	infile.open(filename, ios::in);
 	if (!infile.is_open()) {
@@ -123,11 +124,12 @@ void RPCF_Paras::read_para(char* filename) {
 	infile >> np.Re >> np.Ro >> np.dt;
 
 	RPCF_Step_Para& sp = this->stepPara;
-	infile >> sp.start_step >> sp.end_step >> sp.save_internal;
+	infile >> sp.start_type >> sp.start_step 
+		>> sp.end_step >> sp.save_internal >> sp.save_recovery_internal;
 
 	RPCF_IO_Para& iop = this->ioPara;
-	infile >> iop.input_file;
-	infile >> iop.output_file;
+	infile >> iop.output_file_prefix;
+	infile >> iop.recovery_file_prefix;
 
 	infile.close();
 }
@@ -238,4 +240,12 @@ __host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type) {
 
 __host__ void destroyMyCudaMalloc() {
 	cuCheck(cudaFree(__myPtr.ptr),"destroy allocator");
+}
+
+string get_file_name(string prefix, int num, string suffix) {
+	string filename;
+	ostringstream s_num;
+	s_num << num;
+	filename = prefix + s_num.str() + string(".") + suffix;
+	return filename;
 }
