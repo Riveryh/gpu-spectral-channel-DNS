@@ -427,15 +427,39 @@ __global__
 void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitch) {
 	const int iMat = blockIdx.x;
 	const int J = threadIdx.x;
-	__shared__ complex UI[MAX_NZ];
-	__shared__ complex buffer[MAX_NZ];
-	complex* mat = _mat + iMat*N*N;
+	//__shared__ complex UI[MAX_NZ];
+	//__shared__ complex buffer[MAX_NZ];
+	complex* mat = _mat + iMat*N*N + J*N;
 	complex* v = _v + pitch / sizeof(complex)*iMat;
-	
+	complex mat_cache[MAX_NZ];
+	complex v_cache[MAX_NZ];
+
+	for (int i = 0; i < N; i++) {
+		mat_cache[i] = mat[i];
+	}
+	for (int i = 0; i < N; i++) {
+		v_cache[i] = v[i];
+	}
 	complex res = complex(0.0, 0.0);
 	for (int k = 0; k < N; k++) {
-		res = res + mat[J*N + k] * v[k];
+		res = res + mat_cache[k] * v_cache[k];
 	}
+
+	//complex res[MAX_NZ];
+	//// for each row
+	//for (int i = 0; i < N; i++) {
+	//	UI[J] = mat[i*N + J];
+	//	__syncthreads();
+	//	buffer[J] = UI[J] * v[J];
+	//	__syncthreads();
+	//	if (J == 0) {
+	//		res[i] = complex(0.0, 0.0);
+	//		for (int k = 0; k < N; k++) {
+	//			res[i] = res[i] + buffer[k];
+	//		}
+	//	}
+	//}
+
 	__syncthreads();
 	v[J] = res;
 

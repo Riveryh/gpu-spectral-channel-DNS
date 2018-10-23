@@ -144,6 +144,7 @@ int __my_tMem_allocated[NUM_GPU];
 int __my_pSize;
 int __my_tSize;
 size_t __myMaxMemorySize[NUM_GPU];
+#define my_MAX(a,b) a>b?a:b
 
 __host__ void initMyCudaMalloc(dim3 dims) {
 	// get memory allignment factor
@@ -174,7 +175,7 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	__my_tSize = __myTPitch * (nx / 2 + 1) * ny;
 	size_t maxSize = __my_pSize>__my_tSize ? __my_pSize : __my_tSize;
 
-	__myMaxMemorySize[0] = maxSize * 8;
+	__myMaxMemorySize[0] = my_MAX(maxSize * 8, 1024*1024*1024);
 	__myMaxMemorySize[1] = maxSize * 3;
 
 	// allocate the whole memory at one time to save time.
