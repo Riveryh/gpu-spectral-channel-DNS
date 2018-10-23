@@ -4,6 +4,7 @@
 #include "cuda_runtime.h"
 #include "device_functions.h"
 #include <cassert>
+#include <iostream>
 
 __global__ void getVelocityKernel(
 	complex* u, complex* v, complex*w,
@@ -15,9 +16,12 @@ __global__ void getVelocityKernel_sm(
 	int tPitch, int mx, int my, int mz, real alpha, real beta);
 void get_velocity_zero(problem& pb);
 
+extern cudaEvent_t __start, __stop;
+extern bool cudaTimeInitialized;
+
 int getUVW(problem& pb) {
 	size_t tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
-	
+	float time;
 //	cudaExtent tExtent = pb.tExtent;
 	//make_cudaExtent(
 	//	pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
@@ -54,14 +58,26 @@ int getUVW(problem& pb) {
 	//dim3 nThread(nthreadx, nthready);
 	dim3 nDim(nDimx, nDimy);
 
+	if (!cudaTimeInitialized) {
+		cudaEventCreate(&__start);
+		cudaEventCreate(&__stop);
+		cudaTimeInitialized = true;
+	}
+
 	//getVelocityKernel <<<pb.ntDim,pb.nThread>>>(
+	cudaEventRecord(__start, 0);
+	
 	getVelocityKernel_sm <<<nDim,nthreadx>>>(
 		(complex*)pb.dptr_tu.ptr, (complex*)pb.dptr_tv.ptr,
 		(complex*)pb.dptr_tw.ptr, (complex*)pb.dptr_tomega_x.ptr, 
 		(complex*)pb.dptr_tomega_y.ptr, (complex*)pb.dptr_tomega_z.ptr,
 		pb.tPitch, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
 	cuCheck(cudaDeviceSynchronize(), "get velocity kernel");
-
+	
+	cudaEventRecord(__stop, 0);
+	cudaEventSynchronize(__stop);
+	cudaEventElapsedTime(&time, __start, __stop);
+	std::cout << "get velocity time = " << time / 1000.0 << std::endl;
 	//the zeros wave number velocity 
 	// is computed inside the kernel function above.
 	//get_velocity_zero(pb);

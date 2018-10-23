@@ -20,7 +20,7 @@ enum myCudaMemType {
 
 
 __host__ void initMyCudaMalloc(dim3 dims);
-__host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type);
-__host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type);
-__host__ void destroyMyCudaMalloc();
-__host__ void* get_fft_buffer_ptr();
+__host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type, int dev_id = 0);
+__host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type, int dev_id = 0);
+__host__ void destroyMyCudaMalloc(int dev_id = 0);
+__host__ void* get_fft_buffer_ptr(int dev_id = 0);

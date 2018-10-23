@@ -3,7 +3,7 @@
 #include "cuRPCF.h"
 #include <string>
 #include <fstream>
-
+#include <sstream>
 #include "data.h"
 #include <iostream>
 #include <cstdlib>
@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void write_velocity(char* filename, real* u, real* v, real* w,
+void write_velocity(const char* filename, real* u, real* v, real* w,
 	size_t pitch, int px, int py, int pz);
 
 void output_velocity(problem & pb)
@@ -39,9 +39,14 @@ void output_velocity(problem & pb)
 	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
 
-	write_velocity("velocity.dat", pb.hptr_u, pb.hptr_v, pb.hptr_w,
+	ostringstream ss;
+	ss << pb.currenStep;
+	string velocity_filename = pb.para.ioPara.output_file_prefix + "_velocity." + ss.str() + ".dat";
+	string vortricity_filename = pb.para.ioPara.output_file_prefix + "_vortricity." + ss.str() + ".dat";
+	cout << "writing results to " << velocity_filename << " and " << vortricity_filename << endl;
+	write_velocity(velocity_filename.c_str(), pb.hptr_u, pb.hptr_v, pb.hptr_w,
 		pb.pitch, pb.px, pb.py, pb.pz); 
-	write_velocity("votricity.dat", pb.hptr_omega_x, pb.hptr_omega_y, pb.hptr_omega_z,
+	write_velocity(vortricity_filename.c_str(), pb.hptr_omega_x, pb.hptr_omega_y, pb.hptr_omega_z,
 			pb.pitch, pb.px, pb.py, pb.pz);
 
 	safeFree(pb.hptr_u);
@@ -58,20 +63,35 @@ void output_velocity(problem & pb)
 	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
 }
 
-void write_velocity(char* filename, real* u, real* v, real* w,
+void write_velocity(const char* filename, real* u, real* v, real* w,
 	size_t pitch, int px,int py, int pz) {
 	ofstream outfile;
 	outfile.open(filename, ios::binary);
 	for(int k=0;k<pz;k++)	{
 		for (int j = 0; j < py; j++) {
-			for (int i = 0; i < px; i++) {
-				size_t inc = pitch*(py*k + j) / sizeof(real) + i;
-				outfile.write((char*)(u + inc), sizeof(real));
-				outfile.write((char*)(v + inc), sizeof(real));
-				outfile.write((char*)(w + inc), sizeof(real));
-			}
+			//for (int i = 0; i < px; i++) {
+				size_t inc = pitch*(py*k + j) / sizeof(real);
+				outfile.write((char*)(u + inc), sizeof(real)*px);
+			//}
 		}
 	}
+	for (int k = 0; k<pz; k++) {
+		for (int j = 0; j < py; j++) {
+			//for (int i = 0; i < px; i++) {
+			size_t inc = pitch*(py*k + j) / sizeof(real);
+			outfile.write((char*)(v + inc), sizeof(real)*px);
+			//}
+		}
+	}
+	for (int k = 0; k<pz; k++) {
+		for (int j = 0; j < py; j++) {
+			//for (int i = 0; i < px; i++) {
+			size_t inc = pitch*(py*k + j) / sizeof(real);
+			outfile.write((char*)(w + inc), sizeof(real)*px);
+			//}
+		}
+	}	
+	outfile.close();
 }
 
 void write_recover_data(problem& pb, char* filename) {

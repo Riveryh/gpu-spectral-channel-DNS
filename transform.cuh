@@ -12,16 +12,17 @@ enum Padding_mode { Padding, No_Padding };
 
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 	cudaPitchedPtr& tPtr, int* dim, int* tDim, 
-	Padding_mode pd = Padding, bool isOutput = false);
+	Padding_mode pd = Padding, bool isOutput = false );
 
 __host__ int initFFT(problem& pb);
 
 __host__ int transform(DIRECTION dir,problem& pb);
 
-__global__ void setZeros(complex* ptr, size_t pitch, int mx, int my, int mz);
+__global__ void setZerosKernel(complex* ptr, size_t pitch, int mx, int my, int mz);
+__host__ void setZeros(complex* ptr, size_t pitch, dim3 dims);
 
-
-__global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor);
+__global__ void normalizeKernel(cudaPitchedPtr p, int mx, int my, int mz, real factor);
+__host__ void normalize(cudaPitchedPtr p, dim3 dims, real factor);
 
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);

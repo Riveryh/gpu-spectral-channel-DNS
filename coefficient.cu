@@ -31,7 +31,7 @@ __host__ __device__ int _get_coefficient_v(complex* mcv, int N, real* U, real* d
 		mcv[(N + 1) * 0 + j] = complex(1.0, 0.0);
 		mcv[(N + 1) * 1 + j] = complex((j%2==0)?1.0:-1.0, 0.0);
 		mcv[(N + 1) * 2 + j] = complex(j*j, 0.0);
-		mcv[(N + 1) * 3 + j] = complex(((j % 2 == 0) ? -1.0 : 1.0)*j*j,0.0);
+		mcv[(N + 1) * 3 + j] = complex(((j%2==0) ? -1.0 : 1.0)*j*j,0.0);
 	}
 	return 0;
 }

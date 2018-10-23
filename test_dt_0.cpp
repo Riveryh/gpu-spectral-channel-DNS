@@ -14,6 +14,7 @@ TestResult test_dt_0() {
 	//paras.numPara.dt = 0.0;
 	problem pb(paras);
 	cout << "init cuda" << endl;
+	setupCUDA(pb);
 	initCUDA(pb);
 	cout << "init fft" << endl;
 	initFFT(pb);
@@ -45,7 +46,6 @@ TestResult test_dt_0() {
 
 		//nextStep(pb);
 
-		cout << "init cuda" << endl;
 		initCUDA(pb);
 
 		cout << "init flow" << endl;
@@ -78,6 +78,7 @@ TestResult test_dt_0() {
 	double cost;
 	double total_cost = 0.0;
 	int count = 0;
+	pb.currenStep = pb.para.stepPara.start_step;
 	for (int i = pb.para.stepPara.start_step;
 		i < pb.para.stepPara.end_step; i++) 
 	{

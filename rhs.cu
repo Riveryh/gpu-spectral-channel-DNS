@@ -49,7 +49,6 @@ void* func(void* _pb) {
 		double cost;
 		problem& pb = *((problem*)_pb);
 		start_time = clock();
-		transform(BACKWARD, pb);
 		getNonlinear(pb);
 
 		// transform the nonlinear term into physical space.

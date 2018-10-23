@@ -6,6 +6,6 @@
 #include <string>
 
 //check the return value of cuda calls.
-void cuCheck(cudaError_t ret, std::string s);
+void cuCheck(cudaError_t ret, std::string s = "");
 
 

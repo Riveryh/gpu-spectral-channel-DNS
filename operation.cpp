@@ -6,6 +6,7 @@
 #include <cassert>
 #include <sstream>
 #include "parameters.h"
+#include "transform_multi_gpu.h"
 
 using namespace std;
 
@@ -135,14 +136,14 @@ void RPCF_Paras::read_para(std::string filename) {
 }
 
 
-cudaPitchedPtr __myPtr;
+cudaPitchedPtr __myPtr[NUM_GPU];
 size_t __myPPitch;
 size_t __myTPitch;
-int __my_pMem_allocated;
-int __my_tMem_allocated;
+int __my_pMem_allocated[NUM_GPU];
+int __my_tMem_allocated[NUM_GPU];
 int __my_pSize;
 int __my_tSize;
-size_t __myMaxMemorySize;
+size_t __myMaxMemorySize[NUM_GPU];
 
 __host__ void initMyCudaMalloc(dim3 dims) {
 	// get memory allignment factor
@@ -173,39 +174,53 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	__my_tSize = __myTPitch * (nx / 2 + 1) * ny;
 	size_t maxSize = __my_pSize>__my_tSize ? __my_pSize : __my_tSize;
 
-	__myMaxMemorySize = maxSize * 8;
+	__myMaxMemorySize[0] = maxSize * 8;
+	__myMaxMemorySize[1] = maxSize * 3;
 
-	// mallocate the whole memory at one time to save time.
-	ext = make_cudaExtent(__myMaxMemorySize, 1, 1);
-	cuCheck(cudaMalloc3D(&__myPtr, ext),"my cuda malloc");
+	// allocate the whole memory at one time to save time.
+	ext = make_cudaExtent(__myMaxMemorySize[0], 1, 1);
+	cuCheck(cudaSetDevice(dev_id[0]), "set device");
+	cuCheck(cudaMalloc3D(&__myPtr[0], ext), "my cuda malloc");
+	//cuCheck(cudaMemset(__myPtr[0].ptr, -1, __myMaxMemorySize[0]), "memset");
 
-	cuCheck(cudaMemset(__myPtr.ptr, -1, __myMaxMemorySize),"memset");
+	// allocate the peer device memory
+	ext = make_cudaExtent(__myMaxMemorySize[1], 1, 1);
+	cuCheck(cudaSetDevice(dev_id[1]), "set device");
+	cuCheck(cudaMalloc3D(&__myPtr[1], ext), "my cuda malloc");
+	//cuCheck(cudaMemset(__myPtr[1].ptr, -1, __myMaxMemorySize[1]), "memset");
 
-	__my_pMem_allocated = 0;
-	__my_tMem_allocated = 0;
+	__my_pMem_allocated[0] = 0;
+	__my_tMem_allocated[0] = 0;
+
+	__my_pMem_allocated[1] = 0;
+	__my_tMem_allocated[1] = 0;
+
+	cuCheck(cudaSetDevice(dev_id[0]), "set device");
 }
 
-__host__ void* get_fft_buffer_ptr() {
-	return __myPtr.ptr;
+__host__ void* get_fft_buffer_ptr(int dev_id) {
+	assert(dev_id < NUM_GPU);
+	return __myPtr[dev_id].ptr;
 }
 
-__host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type) {
-	if (__my_pMem_allocated + __my_tMem_allocated >= 7)return cudaErrorMemoryAllocation;
+__host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type, int dev_id) {
+	assert(dev_id < NUM_GPU);
+	if (__my_pMem_allocated[dev_id] + __my_tMem_allocated[dev_id] >= 7)return cudaErrorMemoryAllocation;
 	if (type == XYZ_3D) {
 		// check if memory is already used up.
-		if (__my_pMem_allocated >= 6)return cudaErrorMemoryAllocation;
+		if (__my_pMem_allocated[dev_id] >= 6)return cudaErrorMemoryAllocation;
 		Ptr.pitch = __myPPitch;
-		Ptr.ptr = (char*)__myPtr.ptr + (__my_pMem_allocated+1)*__my_pSize;
-		__my_pMem_allocated++;
+		Ptr.ptr = (char*)__myPtr[dev_id].ptr + (__my_pMem_allocated[dev_id]+1)*__my_pSize;
+		__my_pMem_allocated[dev_id]++;
 		return cudaSuccess;
 	}
 	else if (type == ZXY_3D) {
 		// check if memory is already used up.
-		if (__my_tMem_allocated >= 6)return cudaErrorMemoryAllocation;
+		if (__my_tMem_allocated[dev_id] >= 6)return cudaErrorMemoryAllocation;
 		Ptr.pitch = __myTPitch;
-		Ptr.ptr = (char*)__myPtr.ptr + __myMaxMemorySize
-			- (__my_tMem_allocated+1)*__my_tSize;
-		__my_tMem_allocated++;
+		Ptr.ptr = (char*)__myPtr[dev_id].ptr + __myMaxMemorySize[dev_id]
+			- (__my_tMem_allocated[dev_id]+1)*__my_tSize;
+		__my_tMem_allocated[dev_id]++;
 		return cudaSuccess;
 	}
 	else {
@@ -213,24 +228,25 @@ __host__ cudaError_t myCudaMalloc(cudaPitchedPtr& Ptr, myCudaMemType type) {
 	}
 }
 
-__host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type) {
+__host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type, int dev_id){
+	assert(dev_id < NUM_GPU);
 	if (type == XYZ_3D) {
-		if (__my_pMem_allocated <= 0) return cudaErrorMemoryAllocation;
-		int i = ((char*)Ptr.ptr - (char*)__myPtr.ptr) / __my_pSize;
-		assert(((char*)Ptr.ptr - (char*)__myPtr.ptr) % __my_pSize == 0);
+		if (__my_pMem_allocated[dev_id] <= 0) return cudaErrorMemoryAllocation;
+		int i = ((char*)Ptr.ptr - (char*)__myPtr[dev_id].ptr) / __my_pSize;
+		assert(((char*)Ptr.ptr - (char*)__myPtr[dev_id].ptr) % __my_pSize == 0);
 		// the next memory to free must be the last memory of allocated block.
-		if (__my_pMem_allocated != i) return cudaErrorInvalidValue;
+		if (__my_pMem_allocated[dev_id] != i) return cudaErrorInvalidValue;
 		Ptr.ptr = NULL;
-		__my_pMem_allocated--;
+		__my_pMem_allocated[dev_id]--;
 		return cudaSuccess;
 	}
 	else if (type == ZXY_3D) {
-		if (__my_tMem_allocated <= 0) return cudaErrorMemoryAllocation;
-		int i = ((char*)__myPtr.ptr + __myMaxMemorySize - (char*)Ptr.ptr) / __my_tSize;
-		assert(((char*)__myPtr.ptr + __myMaxMemorySize - (char*)Ptr.ptr) % __my_tSize == 0);
-		if (__my_tMem_allocated != i) return cudaErrorInvalidValue;
+		if (__my_tMem_allocated[dev_id] <= 0) return cudaErrorMemoryAllocation;
+		int i = ((char*)__myPtr[dev_id].ptr + __myMaxMemorySize[dev_id] - (char*)Ptr.ptr) / __my_tSize;
+		assert(((char*)__myPtr[dev_id].ptr + __myMaxMemorySize[dev_id] - (char*)Ptr.ptr) % __my_tSize == 0);
+		if (__my_tMem_allocated[dev_id] != i) return cudaErrorInvalidValue;
 		Ptr.ptr = NULL;
-		__my_tMem_allocated--;
+		__my_tMem_allocated[dev_id]--;
 		return cudaSuccess;
 	}
 	else {
@@ -238,8 +254,9 @@ __host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type) {
 	}
 }
 
-__host__ void destroyMyCudaMalloc() {
-	cuCheck(cudaFree(__myPtr.ptr),"destroy allocator");
+__host__ void destroyMyCudaMalloc(int dev_id) {
+	assert(dev_id < NUM_GPU);
+	cuCheck(cudaFree(__myPtr[dev_id].ptr),"destroy allocator");
 }
 
 string get_file_name(string prefix, int num, string suffix) {

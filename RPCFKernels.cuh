@@ -17,7 +17,8 @@ public:
 
 
 
-__host__ int initCUDA(problem&  pb);
+__host__ int initCUDA(problem& pb);
+__host__ void setupCUDA(problem& pb);
 
 __host__ int initFlow(problem& pb);
 
@@ -29,4 +30,5 @@ __host__ __device__ void ddz(complex* u, int N);
 
 __device__ void ddz_sm(real* u, int N, int kz);
 __device__ void ddz_sm(complex* u, int N, int kz);
+
 

@@ -120,15 +120,15 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 nBlock(nBlockx, nBlocky);
 		dim3 nThread(nthreadx, nthready);
 
-		ASSERT(tPtr.ptr == nullptr);
+		//ASSERT(tPtr.ptr == nullptr);
 		//cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
-		cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
+		//cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 
 		transpose_forward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
-		cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
+		//cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
 		//safeCudaFree(Ptr.ptr);
 	}
 	else if (dir == BACKWARD) {
@@ -139,15 +139,15 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		dim3 nBlock(nBlockx, nBlocky);
 		dim3 nThread(nthreadx, nthready);
 
-		ASSERT(Ptr.ptr == nullptr);
+		//ASSERT(Ptr.ptr == nullptr);
 		//cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
-		cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
+		//cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
 
 		transpose_backward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
 
-		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
+		//cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 		//safeCudaFree(tPtr.ptr);
 	}
 	else {

@@ -8,26 +8,43 @@
 #include <cstdlib>
 #include <math.h>
 #include <cassert>
+#include <iostream>
 #include "rhs.cuh"
+#include "transform_multi_gpu.h"
 
-
-__host__ int initCUDA(problem&  pb) {
+__host__ void setupCUDA(problem& pb) {
 	cudaDeviceProp prop;
 	int dev_num;
-	cudaError_t err;
+	int n_dev;
 	size_t free;
 	size_t total;
 	init_pthread(pb);
 	cudaGetDevice(&dev_num);
 	cudaGetDeviceProperties(&prop, dev_num);
 	cudaMemGetInfo(&free, &total);
+	cudaGetDeviceCount(&n_dev);
 	//err = cudaDeviceReset();
 	//ASSERT(err == cudaSuccess);
-	printf("\nUsing CUDA device %u. Device ID: %s on PCI-E %d\n",
-		dev_num, prop.name, prop.pciBusID); 
-	printf("\nGPU total memory = % .2f MB\n", (float)total / (1.024e6));
-	printf("\nGPU free  memory = % .2f MB\n", (float)free / (1.024e6));
+	printf("Using CUDA device %u. Device ID: %s on PCI-E %d\n",
+		dev_num, prop.name, prop.pciBusID);
+	printf("GPU total memory = % .2f MB\n", (float)total / (1.024e6));
+	printf("GPU free  memory = % .2f MB\n", (float)free / (1.024e6));
+	printf("Total device number = :%d\n\n", n_dev);
+	for (int i = 0; i < NUM_GPU; i++) {
+		dev_id[i] = i%n_dev;
+		assert(dev_id[0] == dev_num);
+	}
+	for (int i = 0; i < n_dev; i++) {
+		cudaDeviceEnablePeerAccess(i, 0);
+	}
+	int accessibleTest;
+	cudaDeviceCanAccessPeer(&accessibleTest, dev_id[0], dev_id[1]);
+	if (accessibleTest != 1) { std::cerr << "peer access not supported" << std::endl; };
+}
 
+__host__ int initCUDA(problem&  pb) {
+	
+	cudaError_t err;
 	pb.extent = make_cudaExtent(
 		2*(pb.mx/2+1) * sizeof(real), pb.my, pb.mz);
 
@@ -406,4 +423,46 @@ void get_ialpha_ibeta(int kx, int ky, int ny,
 		ibeta = real(ky - ny) / beta;
 	}
 }
+__global__
+void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitch) {
+	const int iMat = blockIdx.x;
+	const int J = threadIdx.x;
+	__shared__ complex UI[MAX_NZ];
+	__shared__ complex buffer[MAX_NZ];
+	complex* mat = _mat + iMat*N*N;
+	complex* v = _v + pitch / sizeof(complex)*iMat;
+	
+	complex res = complex(0.0, 0.0);
+	for (int k = 0; k < N; k++) {
+		res = res + mat[J*N + k] * v[k];
+	}
+	__syncthreads();
+	v[J] = res;
+
+	//complex res[MAX_NZ];
+	////complex* temp = (complex*)malloc(N*sizeof(complex));
+	
+	//for (int i = 0; i < N; i++) {
+	//	UI[J] = mat[i*N + J];
+	//	__syncthreads();
+
+	//	buffer[J] = 0;
+	//	buffer[J] = UI[J] * v[J];
+	//	if(J == 0){
+	//		for (int j = 1; j < N; j++) {
+	//			buffer[0] = buffer[0] + buffer[j];
+	//		}
+	//		res[i] = buffer[0];
+	//	}
+	//}
+	//__syncthreads();
+	//v[J] = res[J];
+}
+
+
+__host__ cudaError_t m_multi_v_gpu(complex* _mat, complex* v, const int N, const size_t pitch, const int batch) {
+	m_multi_v_kernel <<<batch, N >>>(_mat, v, N, pitch);
+	return cudaDeviceSynchronize();
+}
+
 

@@ -76,8 +76,6 @@ __host__ int initFFT(problem &pb) {
 	return 0;
 }
 
-
-
 __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 	cudaPitchedPtr& tPtr, int* dim, int* tDim, 
 	Padding_mode pd, bool isOutput) {
@@ -131,21 +129,12 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2]);
 
 		//transpose(dir, Ptr, tPtr, dim, tDim);
+		cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
+		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 
-		int nThreadx = 16;
-		int nThready = 16;
-		dim3 nThread(nThreadx, nThready);
-		int nDimx = dim[1] / nThreadx;
-		int nDimy = (dim[2]/2+1) / nThready;
-		if (dim[1] % nThreadx != 0) nDimx++;
-		if ((dim[2]/2+1) % nThready != 0) nDimy++;
-		dim3 nDim(nDimx, nDimy);
-		setZeros<<<nDim,nThread>>>((complex*)Ptr.ptr, Ptr.pitch, 
-			dim[0], dim[1], dim[2]);
-#ifdef KERNEL_SYNCHRONIZED
-		cuCheck(cudaDeviceSynchronize(),"set zeros");
-#endif
+		setZeros((complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
+	
 		void* dev_buffer = get_fft_buffer_ptr();
 		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
 			(CUFFTREAL*)Ptr.ptr);
@@ -214,17 +203,12 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-		dim3 nDim(dim[1], dim[2]/2+1);
-
-		normalize <<<nDim , dim[0]>>>
-			(Ptr, dim[0], dim[1], dim[2], 1.0 / dim[0] / dim[1]);
-#ifdef KERNEL_SYNCHRONIZED
-		err = cudaDeviceSynchronize();
-#endif
-		ASSERT(err == cudaSuccess);
+		normalize(Ptr, dim3(dim[0], dim[1], dim[2]), 1.0 / dim[0] / dim[1]);
 
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
+		cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
+		cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
 
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
@@ -293,7 +277,7 @@ __host__ int transform(DIRECTION dir, problem& pb) {
 
 //nx, ny, nz is the size of large matrix
 //mx, my, mz is the size of the small matrix (dealiased)
-__global__ void setZeros(complex* ptr,size_t pitch, int mx, int my, int mz) {
+__global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz) {
 	int ky = threadIdx.x + blockIdx.x*blockDim.x;
 	int kz = threadIdx.y + blockIdx.y*blockDim.y;
 	if (ky >= my || kz >= mz/2+1) return;
@@ -309,13 +293,30 @@ __global__ void setZeros(complex* ptr,size_t pitch, int mx, int my, int mz) {
 	}
 	else
 	{
-		for (int ix = nx/2; ix<mx/2+1; ix++) {
+		for (int ix = nx/2-1; ix<mx/2+1; ix++) {
 			ptr[ix] = 0.0;
 		}
 	}
 }
 
-__global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor) {
+__host__ void setZeros(complex* ptr, size_t pitch, dim3 dims) {
+	int nThreadx = 16;
+	int nThready = 16;
+	dim3 nThread(nThreadx, nThready);
+	int dim[3] = { dims.x,dims.y,dims.z };
+	int nDimx = dim[1] / nThreadx;
+	int nDimy = (dim[2] / 2 + 1) / nThready;
+	if (dim[1] % nThreadx != 0) nDimx++;
+	if ((dim[2] / 2 + 1) % nThready != 0) nDimy++;
+	dim3 nDim(nDimx, nDimy);
+	setZerosKernel <<<nDim, nThread >>>((complex*)ptr, pitch,
+		dim[0], dim[1], dim[2]);
+#ifdef KERNEL_SYNCHRONIZED
+	cuCheck(cudaDeviceSynchronize(), "set zeros");
+#endif
+}
+
+__global__ void normalizeKernel(cudaPitchedPtr p, int mx, int my, int mz, real factor) {
 	const int iy = blockIdx.x;
 	const int iz = blockIdx.y;
 	const int ix = threadIdx.x;
@@ -329,6 +330,17 @@ __global__ void normalize(cudaPitchedPtr p, int mx, int my, int mz, real factor)
 
 	real* row = ((real*)p.ptr) + dist;
 	row[ix] = row[ix] * factor;
+}
+
+__host__ void normalize(cudaPitchedPtr Ptr, dim3 dims, real factor) {
+	cudaError_t err;
+	int dim[3] = { dims.x,dims.y,dims.z }; 
+	dim3 nDim(dim[1], dim[2] / 2 + 1);
+	normalizeKernel<<<nDim, dim[0]>>> (Ptr, dim[0], dim[1], dim[2], factor);
+#ifdef KERNEL_SYNCHRONIZED
+	err = cudaDeviceSynchronize();
+#endif
+	ASSERT(err == cudaSuccess);
 }
 
 
@@ -562,7 +574,7 @@ __host__ void transform_backward_X6(problem& pb) {
 	if (dim[1] % nThreadx != 0) nDimx++;
 	if ((dim[2] / 2 + 1)*6 % nThready != 0) nDimy++;
 	dim3 nDim(nDimx, nDimy);
-	setZeros <<<nDim, nThread >>>((complex*)Ptr.ptr, Ptr.pitch,
+	setZerosKernel<<<nDim, nThread >>>((complex*)Ptr.ptr, Ptr.pitch,
 		dim[0], dim[1], dim[2]*6);
 #ifdef KERNEL_SYNCHRONIZED
 	cuCheck(cudaDeviceSynchronize(), "set zeros");
@@ -593,7 +605,7 @@ __host__ void transform_forward_X3(problem& pb) {
 	dim3 thread_num(nthreadx, nthready);
 
 	// THIS LAUNCH PARAMETER NEED TO BE CHANGED
-	normalize <<< dim_num, thread_num >>>
+	normalizeKernel<<< dim_num, thread_num >>>
 		(Ptr, dim[0], dim[1], dim[2]*3, 1.0 / dim[0] / dim[1]);
 	cuCheck(cudaDeviceSynchronize(),"normalize X3");
 
