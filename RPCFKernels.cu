@@ -427,41 +427,45 @@ __global__
 void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitch) {
 	const int iMat = blockIdx.x;
 	const int J = threadIdx.x;
-	//__shared__ complex UI[MAX_NZ];
-	//__shared__ complex buffer[MAX_NZ];
+	const int tid = J;
+	__shared__ complex UI[MAX_NZ];
+	__shared__ complex buffer[MAX_NZ];
 	complex* mat = _mat + iMat*N*N + J*N;
 	complex* v = _v + pitch / sizeof(complex)*iMat;
-	complex mat_cache[MAX_NZ];
-	complex v_cache[MAX_NZ];
+	//complex mat_cache[MAX_NZ];
+	//complex v_cache[MAX_NZ];
 
-	for (int i = 0; i < N; i++) {
-		mat_cache[i] = mat[i];
-	}
-	for (int i = 0; i < N; i++) {
-		v_cache[i] = v[i];
-	}
-	complex res = complex(0.0, 0.0);
-	for (int k = 0; k < N; k++) {
-		res = res + mat_cache[k] * v_cache[k];
-	}
-
-	//complex res[MAX_NZ];
-	//// for each row
 	//for (int i = 0; i < N; i++) {
-	//	UI[J] = mat[i*N + J];
-	//	__syncthreads();
-	//	buffer[J] = UI[J] * v[J];
-	//	__syncthreads();
-	//	if (J == 0) {
-	//		res[i] = complex(0.0, 0.0);
-	//		for (int k = 0; k < N; k++) {
-	//			res[i] = res[i] + buffer[k];
-	//		}
-	//	}
+	//	mat_cache[i] = mat[i];
+	//}
+	//for (int i = 0; i < N; i++) {
+	//	v_cache[i] = v[i];
+	//}
+	//complex res = complex(0.0, 0.0);
+	//for (int k = 0; k < N; k++) {
+	//	res = res + mat_cache[k] * v_cache[k];
 	//}
 
+	complex res[MAX_NZ];
+	__shared__ complex reduction[MAX_NZ];
+	// for each row
+	for (int i = 0; i < N; i++) {
+		UI[J] = mat[i*N + J];
+		buffer[J] = v[J];
+		__syncthreads();
+		buffer[J] = UI[J] * buffer[J];
+		__syncthreads();
+		if (tid == 0 && N % 2 != 0) buffer[tid] = buffer[tid] + buffer[N - 1];
+		for (int s = N/2; s>0; s = s / 2)
+		{
+			if (tid < s) buffer[tid] = buffer[tid] + buffer[tid + s];
+			if (tid == 0 && s % 2 != 0) buffer[tid] = buffer[tid] + buffer[s-1];
+			__syncthreads();
+		}
+		res[i] = buffer[0];
+	}
 	__syncthreads();
-	v[J] = res;
+	v[J] = res[J];
 
 	//complex res[MAX_NZ];
 	////complex* temp = (complex*)malloc(N*sizeof(complex));
