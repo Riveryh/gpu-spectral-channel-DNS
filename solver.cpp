@@ -12,6 +12,7 @@
 #include "pthread.h"
 #include"cublas_v2.h"
 #include "transform_multi_gpu.h"
+#include "cuRPCF.h"
 
 using namespace std;
 //// compute multiply of matrix and vector
@@ -29,7 +30,7 @@ using namespace std;
 int solveEq(complex* inv_coef, complex* rhs, int N, 
 	size_t pitch, int nx, int ny);
 int solveEqGPU(complex* inv_coef, complex* rhs, int N,
-	size_t pitch, int mx, int my);
+	size_t pitch, int mx, int my, int num_equation);
 void save_0_v_omega_y(problem& pb);
 
 extern pthread_cond_t cond_malloc;
@@ -49,7 +50,7 @@ int nextStep(problem& pb) {
 	start_time = clock();
 
 	solveEqGPU(pb.matrix_coeff_v, pb.rhs_v, 
-		pb.nz, pb.tPitch, pb.mx, pb.my);//check the dimension of data??
+		pb.nz, pb.tPitch, pb.mx, pb.my, 0);//check the dimension of data??
 	
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -67,7 +68,7 @@ int nextStep(problem& pb) {
 	start_time = clock();
 
 	solveEqGPU(pb.matrix_coeff_omega, pb.rhs_omega_y, 
-		pb.nz, pb.tPitch, pb.mx, pb.my);
+		pb.nz, pb.tPitch, pb.mx, pb.my, 1);
 	
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -108,70 +109,6 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 	return 0;
 }
 
-//extern size_t __myMaxMemorySize[NUM_GPU];
-#ifdef REAL_DOUBLE
-#define CUBLAS_CGEMV cublasZgemv
-#define CUBLAS_COMPLEX cuDoubleComplex
-#elif
-#define CUBLAS_CGEMV cublasCgemv
-#define CUBLAS_COMPLEX cuComplex
-#endif
-
-extern size_t __myMaxMemorySize[NUM_GPU];
-
-int solveEqGPU(complex* inv_coef, complex* rhs, int N,
-	size_t pitch, int mx, int my) {
-	int nx = mx / 3 * 2;
-	int ny = my / 3 * 2;
-
-	complex* dev_ptr = (complex*)get_fft_buffer_ptr();
-	size_t free_memory = __myMaxMemorySize[0];
-
-	size_t total_matrix_and_data_size = ((N)*(N)*sizeof(complex) + pitch)*(nx/2+1)*ny;
-	size_t n_parts = total_matrix_and_data_size / free_memory + 1;
-	size_t index_per_part = (nx/2+1)*ny / n_parts;
-	assert((nx/2+1)*ny % n_parts==0);
-	size_t size_matrix_per_part = (N)*(N)*index_per_part*sizeof(complex);
-	size_t size_rhs_per_part = pitch*index_per_part;
-	
-	for (int iPart = 0; iPart < n_parts; iPart++) {
-		size_t start_index = index_per_part * iPart;
-		size_t inc_m = (N)*(N)*start_index;
-		size_t inc_rhs = pitch / sizeof(complex) * start_index;
-		complex* pMatrix = inv_coef + inc_m;
-		complex* pRHS = rhs + inc_rhs;
-		complex* dev_matrix = dev_ptr;
-		complex* dev_rhs = dev_ptr + size_matrix_per_part / sizeof(complex);
-
-		cudaError_t err;
-		//assert(pMatrix + size_matrix_per_part/sizeof(complex) <= inv_coef + (N)*(N)*(nx/2+1)*ny);
-		err = cudaMemcpy(dev_matrix, pMatrix, size_matrix_per_part, cudaMemcpyHostToDevice);
-		assert(err == cudaSuccess);
-		//assert(pRHS + size_rhs_per_part/sizeof(complex) <= rhs + pitch/sizeof(complex)*(nx/2+1)*ny);
-		err = cudaMemcpy(dev_rhs, pRHS, size_rhs_per_part, cudaMemcpyHostToDevice);
-		assert(err == cudaSuccess);
-
-		CUBLAS_COMPLEX _cublas_alpha,_cublas_beta;
-		cublasStatus_t cuStat;
-		_cublas_alpha.x = 1.0;
-		_cublas_alpha.y = 0.0;
-		_cublas_beta.x = 0.0;
-		_cublas_beta.y = 0.0;
-		//for (int i = 0; i < index_per_part; i++) {
-		for (int i = 0; i < 1; i++) {
-			CUBLAS_COMPLEX* p_dev_matrix = (CUBLAS_COMPLEX*)(dev_matrix + (N)*(N)*i);
-			CUBLAS_COMPLEX* p_dev_rhs = (CUBLAS_COMPLEX*)(dev_rhs + pitch/sizeof(complex)*i);
-			//cuStat = CUBLAS_CGEMV(__cublas_handle, CUBLAS_OP_T, N, N, &_cublas_alpha, (CUBLAS_COMPLEX*)dev_matrix,
-			//	N, (CUBLAS_COMPLEX*)dev_rhs, 1, &_cublas_beta, (CUBLAS_COMPLEX*)dev_rhs, 1);
-			//assert(cuStat == CUBLAS_STATUS_SUCCESS);
-			err = m_multi_v_gpu((complex*)p_dev_matrix, (complex*)p_dev_rhs, N, pitch, index_per_part);
-			assert(err == cudaSuccess);
-		}
-
-		cudaMemcpy(pRHS, dev_rhs, size_rhs_per_part, cudaMemcpyDeviceToHost);
-	}
-	return 0;
-}
 
 //void multiplyMatrix(complex * mul, complex * v, const int n)
 //{
@@ -240,6 +177,10 @@ int solveEqGPU(complex* inv_coef, complex* rhs, int N,
 //		*a1j = complex((j % 2 == 0) ? 1 : -1, 0);
 //	}
 //}
+
+complex* __dev_coef_v = NULL;
+complex* __dev_coef_omega = NULL;
+complex* __dev_rhs = NULL;
 int initGPUSolver(problem& pb) {
 	cublasStatus_t stat;
 	stat = cublasCreate(&__cublas_handle);
@@ -247,6 +188,15 @@ int initGPUSolver(problem& pb) {
 		printf("CUBLAS initialization failed\n");
 		return EXIT_FAILURE;
 	}
+	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(complex);
+	size_t tSize = pb.tSize;
+	cuCheck(cudaSetDevice(dev_id[1]));
+	cuCheck(cudaMalloc(&__dev_coef_v, mSize*2 + tSize),"alloc solver data");
+	__dev_coef_omega = __dev_coef_v + mSize / sizeof(complex);
+	__dev_rhs = __dev_coef_omega + mSize / sizeof(complex);
+	cuCheck(cudaMemcpy(__dev_coef_v, pb.matrix_coeff_v, mSize, cudaMemcpyHostToDevice),"memcpy");
+	cuCheck(cudaMemcpy(__dev_coef_omega, pb.matrix_coeff_omega, mSize, cudaMemcpyHostToDevice), "memcpy");
+	cuCheck(cudaSetDevice(dev_id[0]));
 	return 0;
 }
 
@@ -372,3 +322,72 @@ void save_0_v_omega_y(problem& pb) {
 	}
 }
 
+
+//extern size_t __myMaxMemorySize[NUM_GPU];
+#ifdef REAL_DOUBLE
+#define CUBLAS_CGEMV cublasZgemv
+#define CUBLAS_COMPLEX cuDoubleComplex
+#elif
+#define CUBLAS_CGEMV cublasCgemv
+#define CUBLAS_COMPLEX cuComplex
+#endif
+
+extern size_t __myMaxMemorySize[NUM_GPU];
+
+int solveEqGPU(complex* inv_coef, complex* rhs, int N,
+	size_t pitch, int mx, int my, int num_equation) {
+	int nx = mx / 3 * 2;
+	int ny = my / 3 * 2;
+
+	//complex* dev_ptr = (complex*)get_fft_buffer_ptr();
+	
+	size_t free_memory = __myMaxMemorySize[0];
+
+	size_t total_matrix_and_data_size = ((N)*(N) * sizeof(complex) + pitch)*(nx / 2 + 1)*ny;
+	size_t n_parts = 1;
+	//size_t n_parts = total_matrix_and_data_size / free_memory + 1;
+	size_t index_per_part = (nx / 2 + 1)*ny / n_parts;
+	assert((nx / 2 + 1)*ny % n_parts == 0);
+	size_t size_matrix_per_part = (N)*(N)*index_per_part * sizeof(complex);
+	size_t size_rhs_per_part = pitch*index_per_part;
+
+	for (int iPart = 0; iPart < n_parts; iPart++) {
+		size_t start_index = index_per_part * iPart;
+		size_t inc_m = (N)*(N)*start_index;
+		size_t inc_rhs = pitch / sizeof(complex) * start_index;
+		complex* pMatrix = inv_coef + inc_m;
+		complex* pRHS = rhs + inc_rhs;
+		//complex* dev_matrix = dev_ptr;
+		complex* dev_matrix = (num_equation==0 ? __dev_coef_v : __dev_coef_omega);
+		//complex* dev_rhs = dev_ptr + size_matrix_per_part / sizeof(complex);
+		complex* dev_rhs = __dev_rhs;
+
+		cudaError_t err;
+		//assert(pMatrix + size_matrix_per_part/sizeof(complex) <= inv_coef + (N)*(N)*(nx/2+1)*ny);
+		//err = cudaMemcpy(dev_matrix, pMatrix, size_matrix_per_part, cudaMemcpyHostToDevice);
+		//assert(err == cudaSuccess);
+		//assert(pRHS + size_rhs_per_part/sizeof(complex) <= rhs + pitch/sizeof(complex)*(nx/2+1)*ny);
+		err = cudaMemcpy(dev_rhs, pRHS, size_rhs_per_part, cudaMemcpyHostToDevice);
+		assert(err == cudaSuccess);
+
+		CUBLAS_COMPLEX _cublas_alpha, _cublas_beta;
+		cublasStatus_t cuStat;
+		_cublas_alpha.x = 1.0;
+		_cublas_alpha.y = 0.0;
+		_cublas_beta.x = 0.0;
+		_cublas_beta.y = 0.0;
+		//for (int i = 0; i < index_per_part; i++) {
+		for (int i = 0; i < 1; i++) {
+			CUBLAS_COMPLEX* p_dev_matrix = (CUBLAS_COMPLEX*)(dev_matrix + (N)*(N)*i);
+			CUBLAS_COMPLEX* p_dev_rhs = (CUBLAS_COMPLEX*)(dev_rhs + pitch / sizeof(complex)*i);
+			//cuStat = CUBLAS_CGEMV(__cublas_handle, CUBLAS_OP_T, N, N, &_cublas_alpha, (CUBLAS_COMPLEX*)dev_matrix,
+			//	N, (CUBLAS_COMPLEX*)dev_rhs, 1, &_cublas_beta, (CUBLAS_COMPLEX*)dev_rhs, 1);
+			//assert(cuStat == CUBLAS_STATUS_SUCCESS);
+			err = m_multi_v_gpu((complex*)p_dev_matrix, (complex*)p_dev_rhs, N, pitch, index_per_part);
+			assert(err == cudaSuccess);
+		}
+
+		cudaMemcpy(pRHS, dev_rhs, size_rhs_per_part, cudaMemcpyDeviceToHost);
+	}
+	return 0;
+}
