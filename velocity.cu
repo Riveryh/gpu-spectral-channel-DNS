@@ -152,7 +152,7 @@ __global__ void getVelocityKernel_sm(
 	u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
 		- complex(0.0, ibeta*kmn1) * oz[i];
 	v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-	- complex(0.0, ialpha*kmn1) * oz[i];
+	+ complex(0.0, ialpha*kmn1) * oz[i];
 	//u[i] = w[i];
 	//v[i] = w[i];
 
@@ -233,7 +233,7 @@ __global__ void getVelocityKernel(
 		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
 			- complex(0.0, ibeta*kmn1) * oz[i];
 		v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-			- complex(0.0, ialpha*kmn1) * oz[i];
+			+ complex(0.0, ialpha*kmn1) * oz[i];
 		//u[i] = w[i];
 		//v[i] = w[i];
 	}

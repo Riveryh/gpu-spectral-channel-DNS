@@ -44,14 +44,17 @@ int nextStep(problem& pb) {
 	double cost_eq = 0.0;
 	double cost_rhs_omega = 0.0;
 
+
 	get_rhs_v(pb);
 	//cout << "solve eq v" << endl;
 	//solve equation of v from (0,0) to (nx,ny)
 	start_time = clock();
 
-	solveEqGPU(pb.matrix_coeff_v, pb.rhs_v, 
-		pb.nz, pb.tPitch, pb.mx, pb.my, 0);//check the dimension of data??
-	
+	solveEq(pb.matrix_coeff_v, pb.rhs_v,
+		pb.nz, pb.tPitch, pb.mx, pb.my);//check the dimension of data??
+	//solveEqGPU(pb.matrix_coeff_v, pb.rhs_v,
+	//	pb.nz, pb.tPitch, pb.mx, pb.my, 0);//check the dimension of data??
+
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
@@ -66,9 +69,11 @@ int nextStep(problem& pb) {
 	//cout << "solve eq omega" << endl;
 	//solve equation of omega from (0,0) to (nx,ny)
 	start_time = clock();
-
-	solveEqGPU(pb.matrix_coeff_omega, pb.rhs_omega_y, 
-		pb.nz, pb.tPitch, pb.mx, pb.my, 1);
+	
+	solveEq(pb.matrix_coeff_omega, pb.rhs_omega_y,
+		pb.nz, pb.tPitch, pb.mx, pb.my);
+	//solveEqGPU(pb.matrix_coeff_omega, pb.rhs_omega_y, 
+	//	pb.nz, pb.tPitch, pb.mx, pb.my, 1);
 	
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -298,8 +303,8 @@ int initSolver(problem& pb, bool inversed)
 
 	pb.currenStep = pb.para.stepPara.start_step;
 
-	int ret = initGPUSolver(pb);
-	assert(ret == 0);
+	//int ret = initGPUSolver(pb);
+	//assert(ret == 0);
 
 	return 0;
 }

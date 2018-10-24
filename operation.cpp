@@ -89,6 +89,8 @@ void cuCheck(cudaError_t ret, string s) {
 	}
 	else {
 		printf("cudaError at %s\n", s.c_str());
+		system("pause");
+		exit(ret);
 		assert(false);
 	}
 }
@@ -176,7 +178,7 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	size_t maxSize = __my_pSize>__my_tSize ? __my_pSize : __my_tSize;
 
 	__myMaxMemorySize[0] = my_MAX(maxSize * 8, 1024*1024*1024);
-	__myMaxMemorySize[1] = maxSize * 3;
+	if(NUM_GPU>1) __myMaxMemorySize[1] = maxSize * 3;
 
 	// allocate the whole memory at one time to save time.
 	ext = make_cudaExtent(__myMaxMemorySize[0], 1, 1);
@@ -185,16 +187,20 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	//cuCheck(cudaMemset(__myPtr[0].ptr, -1, __myMaxMemorySize[0]), "memset");
 
 	// allocate the peer device memory
-	ext = make_cudaExtent(__myMaxMemorySize[1], 1, 1);
-	cuCheck(cudaSetDevice(dev_id[1]), "set device");
-	cuCheck(cudaMalloc3D(&__myPtr[1], ext), "my cuda malloc");
+	if (NUM_GPU > 1) {
+		ext = make_cudaExtent(__myMaxMemorySize[1], 1, 1);
+		cuCheck(cudaSetDevice(dev_id[1]), "set device");
+		cuCheck(cudaMalloc3D(&__myPtr[1], ext), "my cuda malloc");
+	}
 	//cuCheck(cudaMemset(__myPtr[1].ptr, -1, __myMaxMemorySize[1]), "memset");
 
 	__my_pMem_allocated[0] = 0;
 	__my_tMem_allocated[0] = 0;
-
-	__my_pMem_allocated[1] = 0;
-	__my_tMem_allocated[1] = 0;
+	
+	if (NUM_GPU > 1) {
+		__my_pMem_allocated[1] = 0;
+		__my_tMem_allocated[1] = 0;
+	}
 
 	cuCheck(cudaSetDevice(dev_id[0]), "set device");
 }
@@ -255,9 +261,11 @@ __host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type, int dev
 	}
 }
 
-__host__ void destroyMyCudaMalloc(int dev_id) {
-	assert(dev_id < NUM_GPU);
-	cuCheck(cudaFree(__myPtr[dev_id].ptr),"destroy allocator");
+__host__ void destroyMyCudaMalloc(int _dev_id) {
+	assert(_dev_id < NUM_GPU);
+	for (int i = 0; i < NUM_GPU; i++) {
+		cuCheck(cudaFree(__myPtr[dev_id[i]].ptr), "destroy allocator");
+	}
 }
 
 string get_file_name(string prefix, int num, string suffix) {

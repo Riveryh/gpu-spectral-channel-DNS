@@ -41,11 +41,17 @@ __host__ int getNonlinear(problem& pb) {
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
-	std::cout << "tranform backward time = " << time / 1000.0 << std::endl;
+	std::cout << "transform backward time = " << time / 1000.0 << std::endl;
 
 
+	cudaEventRecord(__start, 0);
 	// use Ptr in pb
 	addMeanFlow(pb);
+
+	cudaEventRecord(__stop, 0);
+	cudaEventSynchronize(__stop);
+	cudaEventElapsedTime(&time, __start, __stop);
+	std::cout << "add mean flow time = " << time / 1000.0 << std::endl;
 
 	cudaEventRecord(__start, 0);
 	

@@ -42,6 +42,7 @@ void init_pthread(problem& pb) {
 
 void* func(void* _pb) {
 	while (true) {
+		float time;
 		pthread_mutex_lock(&mutex_nonlinear);
 		pthread_cond_wait(&cond_nonlinear,&mutex_nonlinear);
 		pthread_mutex_unlock(&mutex_nonlinear);
@@ -49,18 +50,42 @@ void* func(void* _pb) {
 		double cost;
 		problem& pb = *((problem*)_pb);
 		start_time = clock();
+		cudaEventRecord(start_non, 0);
+
 		getNonlinear(pb);
 
+
+		cudaEventRecord(end_non, 0);
+		cudaEventSynchronize(end_non);
+		cudaEventElapsedTime(&time, start_non, end_non);
+		std::cout << "get nonlinear time CUDA EVENT = " << time / 1000.0 << std::endl;
+
+
+		cudaEventRecord(start_non, 0);
 		// transform the nonlinear term into physical space.
 		cheby_s2p(pb.dptr_tLamb_x, pb.mx / 2 + 1, pb.my, pb.mz, No_Padding);
 		cheby_s2p(pb.dptr_tLamb_y, pb.mx / 2 + 1, pb.my, pb.mz, No_Padding);
+
+		cudaEventRecord(end_non, 0);
+		cudaEventSynchronize(end_non);
+		cudaEventElapsedTime(&time, start_non, end_non);
+		std::cout << "cheby_s2p no pad time = " << time / 1000.0 << std::endl;
+
 
 		//save previous step
 		swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
 		swap(pb.nonlinear_v, pb.nonlinear_v_p);
 		size_t tsize = pb.tSize;// pb.tPitch * (pb.mx / 2 + 1) * pb.my;
+
+		cudaEventRecord(start_non, 0);
+
 		cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 		cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
+
+		cudaEventRecord(end_non, 0);
+		cudaEventSynchronize(end_non);
+		cudaEventElapsedTime(&time, start_non, end_non);
+		std::cout << "memcpy time = " << time / 1000.0 << std::endl;
 		//TODO: NONLINEAR TIME SCHEME
 		save_zero_wave_number_lamb(pb);
 

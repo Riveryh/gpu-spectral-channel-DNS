@@ -29,15 +29,36 @@ int inverse(complex* mat, const int N) {
 	return 0;
 }
 
-int m_multi_v(complex* mat, complex* v, const int N) {
+#ifdef REAL_DOUBLE
+#define CBLAS_CGEMV cblas_zgemv
+#else
+#define CBLAS_CGEMV cblas_cgemv
+#endif
 
+// using intel library
+int m_multi_v_cblas(complex* mat, complex* v, const int N) {
+	complex buffer[MAX_NZ];
+	complex alpha = complex(1.0,0.0);
+	complex beta = complex(0.0, 0.0);
+	CBLAS_CGEMV(CblasRowMajor, CblasNoTrans, N, N, &alpha, mat, N, v, 1, &beta, buffer, 1);
+	for (int i = 0; i < N; i++) {
+		v[i] = buffer[i];
+	}
+	return 0;
+}
+
+int m_multi_v_myversion(complex* mat, complex* v, const int N) {
 	complex temp[MAX_NZ];
+	complex v_cache[MAX_NZ];
+	for (int i = 0; i < N; i++) {
+		v_cache[i] = v[i];
+	}
 	//complex* temp = (complex*)malloc(N*sizeof(complex));
 	for (int i = 0; i < N; i++) {
 		temp[i] = 0.0;
+		complex* row = mat + N*i;
 		for (int j = 0; j < N; j++) {
-			size_t inc = N*i + j;
-			temp[i] = temp[i] + mat[inc] * v[j];
+			temp[i] = temp[i] + row[j] * v_cache[j];
 		}
 	}
 	for (int i = 0; i < N; i++) {
@@ -45,4 +66,9 @@ int m_multi_v(complex* mat, complex* v, const int N) {
 	}
 	//free(temp);
 	return 0;
+}
+
+int m_multi_v(complex* mat, complex* v, const int N) {
+	//return m_multi_v_myversion(mat, v, N);
+	return m_multi_v_cblas(mat,v,N);
 }
