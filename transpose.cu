@@ -108,6 +108,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 	cudaPitchedPtr& tPtr, int* dim, int* tDim) {
 	const int hnx = dim[0] / 3 * 2 / 2 + 1;
 	const int ny = dim[1] / 3 * 2;
+	const int mz = dim[2];
 	int nthreadx = 16;
 	int nthready = 16;
 	
@@ -124,7 +125,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 
-		transpose_forward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_forward<<<dim3(hnx,ny),mz/2+1>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
@@ -143,7 +144,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
 
-		transpose_backward<<<nBlock,nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_backward<<<dim3(hnx, ny), mz/2+1 >>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
 
@@ -158,9 +159,10 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	int kx = threadIdx.x + blockDim.x*blockIdx.x;
-	int ky = threadIdx.y + blockDim.y*blockIdx.y;
-
+	int kx = blockIdx.x;
+	int ky = blockIdx.y;
+	int kz = threadIdx.x;
+	
 	int mx = dim.x;
 	int my = dim.y;
 	int mz = dim.z;
@@ -169,16 +171,16 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	int hnx = nx / 2 + 1;
 	if (kx >= hnx) return;
 	if (ky >= ny) return;
-	
+	if (kz >= mz/2+1)return;
 	int old_ky = ky;
 	int dky = my - ny;
 	if (ky > ny / 2) old_ky = ky + dky;
 
-	for (int kz = 0; kz < mz/2+1; kz++) {
+	//for (int kz = 0; kz < mz/2+1; kz++) {
 		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
 		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
 		tu[tInc] = u[inc];
-	}
+	//}
 
 	// NO NEED to set zeros here, 
 	// because it will be covered by later setZero kernels.
@@ -190,11 +192,52 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	//	}
 	//}
 }
+#define TILE_DIM 16
+__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
+	size_t pitch, size_t tPitch) {
+	__shared__ complex tile[TILE_DIM][TILE_DIM];
 
+	int kz = blockIdx.x * TILE_DIM + threadIdx.x;
+	int kx = blockIdx.y * TILE_DIM + threadIdx.y;
+	const int ky = blockIdx.z;
+
+	int mx = dim.x;
+	int my = dim.y;
+	int mz = dim.z;
+	int ny = my / 3 * 2;
+	int nx = mx / 3 * 2;
+	int hnx = nx / 2 + 1;
+
+	int old_ky = ky;
+	int dky = my - ny;
+	if (ky > ny / 2) old_ky = ky + dky;
+
+	
+	if (kz < mz / 2 + 1) {
+		for (int ix = 0; ix < TILE_DIM && ix+kx<hnx; ix++) {
+			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (ix+kx)) + kz;
+			tile[ix][threadIdx.x] = tu[tInc];
+		}
+	}
+
+	__syncthreads();
+
+	kx = blockIdx.x * TILE_DIM + threadIdx.x;
+	kz = blockIdx.y * TILE_DIM + threadIdx.y;
+
+	if (kx < hnx) {
+		for (int iz = 0; iz < TILE_DIM && iz+kz<mz/2+1; iz++) {
+			size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
+			u[inc] = tile[threadIdx.x][iz];
+		}
+	}
+
+}
 __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	int ky = threadIdx.x + blockDim.x*blockIdx.x;
-	int kz = threadIdx.y + blockDim.y*blockIdx.y;
+	int kx = blockIdx.x;
+	int ky = blockIdx.y;
+	int kz = threadIdx.x;
 
 	int mx = dim.x;
 	int my = dim.y;
@@ -204,14 +247,14 @@ __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	int hnx = nx / 2 + 1;
 	if (kz >= mz / 2 + 1) return;
 	if (ky >= ny) return;
-	
+	if (kx >= nx / 2 + 1)return;
 	int old_ky = ky;
 	int dky = my - ny;
 	if (ky > ny / 2) old_ky = ky + dky;
 
-	for (int kx = 0; kx < nx/2+1; kx++) {
+	//for (int kx = 0; kx < nx/2+1; kx++) {
 		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
 		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
 		u[inc] = tu[tInc];
-	}
+	//}
 }

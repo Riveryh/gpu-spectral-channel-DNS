@@ -320,38 +320,31 @@ __host__ int transform(DIRECTION dir, problem& pb) {
 //nx, ny, nz is the size of large matrix
 //mx, my, mz is the size of the small matrix (dealiased)
 __global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz) {
-	int ky = threadIdx.x + blockIdx.x*blockDim.x;
-	int kz = threadIdx.y + blockIdx.y*blockDim.y;
-	if (ky >= my || kz >= mz/2+1) return;
+	int ky =  blockIdx.x;
+	int kz =  blockIdx.y;
+	int kx = threadIdx.x;
+	if (ky >= my || kz >= mz/2+1 || kx>=mx/2+1) return;
 	size_t inc = pitch * (kz * my + ky)/sizeof(complex);
 	ptr = ptr + inc;
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
 	
 	if (ky >= ny / 2 && ky < my - (ny/2-1)) {
-		for (int ix = 0; ix<mx/2+1; ix++) {
-			ptr[ix] = 0.0;
-		}
+		ptr[kx] = 0.0;
+		return;
 	}
 	else
 	{
-		for (int ix = nx/2-1; ix<mx/2+1; ix++) {
-			ptr[ix] = 0.0;
+		if( kx >= nx/2-1) {
+			ptr[kx] = 0.0;
 		}
+		return;
 	}
 }
 
 __host__ void setZeros(complex* ptr, size_t pitch, dim3 dims) {
-	int nThreadx = 16;
-	int nThready = 16;
-	dim3 nThread(nThreadx, nThready);
 	int dim[3] = { dims.x,dims.y,dims.z };
-	int nDimx = dim[1] / nThreadx;
-	int nDimy = (dim[2] / 2 + 1) / nThready;
-	if (dim[1] % nThreadx != 0) nDimx++;
-	if ((dim[2] / 2 + 1) % nThready != 0) nDimy++;
-	dim3 nDim(nDimx, nDimy);
-	setZerosKernel <<<nDim, nThread >>>((complex*)ptr, pitch,
+	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+1 >>>((complex*)ptr, pitch,
 		dim[0], dim[1], dim[2]);
 #ifdef KERNEL_SYNCHRONIZED
 	cuCheck(cudaDeviceSynchronize(), "set zeros");
@@ -432,8 +425,9 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int hm
 	const int nz = mz / 4;	//here, nz is the max index of z (start from 0)
 	const int hnx = mx/ 3 * 2 / 2 + 1;
 	const int ny = my / 3 * 2;
-	const int ix = threadIdx.x + blockIdx.x*blockDim.x;
-	const int iy = threadIdx.y + blockIdx.y*blockDim.y;
+	const int ix = blockIdx.x;
+	const int iy = blockIdx.y;
+	const int iz = threadIdx.x;
 	if (ix >= hnx || iy >= ny)return;
 
 	size_t dist = pitch*(hnx*iy + ix) / sizeof(complex);
@@ -443,16 +437,22 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int hm
 	//	u[i].re = 0.0;
 	//	u[i].im = 0.0;
 	//}
-	for (int i = 0; i < nz; i++) {
+	int i = iz;
+	//for (int i = 0; i < nz; i++) {
+	if (i < nz) {
 		u[i].re = u[i].re*0.5;
 		u[i].im = u[i].im*0.5;
 	}
-	for (int i = 1; i < nz - 1; i++) {
-		u[pz-1 - i].re = u[i].re;
-		u[pz-1 - i].im = u[i].im;
+	__syncthreads();
+	//for (int i = 1; i < nz - 1; i++) {
+
+	if (i >= 1 && i < nz - 1) {
+		u[pz - 1 - i].re = u[i].re;
+		u[pz - 1 - i].im = u[i].im;
+	}else if (i == 0) {
+		u[0].re = u[0].re*2.0;
+		u[0].im = u[0].im*2.0;
 	}
-	u[0].re = u[0].re*2.0;
-	u[0].im = u[0].im*2.0;
 }
 
 //preprocessing of chebyshev transfor, phy to spect
@@ -609,7 +609,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	else if(doPadding == No_Padding){
 
 		cudaEventRecord(start_trans);
-		cheby_pre_s2p_noPad<<<nBlock, nthread >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
+		cheby_pre_s2p_noPad<<<dim3(hnx,ny), mz/4+1 >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
 #ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
