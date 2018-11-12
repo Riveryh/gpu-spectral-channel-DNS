@@ -90,8 +90,8 @@ void cuCheck(cudaError_t ret, string s) {
 	else {
 		printf("cudaError at %s\n", s.c_str());
 		system("pause");
-		exit(ret);
 		assert(false);
+		exit(ret);
 	}
 }
 

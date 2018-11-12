@@ -7,6 +7,7 @@
 #include "test_getUVW.h"
 #include "test_rhs.h"
 #include "test_dt_0.h"
+#include "test_transpose.h"
 #include <iostream>
 using namespace std;
 #include <cstdio>
@@ -16,6 +17,7 @@ int main() {
 }
 
 TestResult main_test(){
+	//RUN_TEST(test_transpose(), "test_transpose");
 	//RUN_TEST(test_transform(),"test_transform");
 	//RUN_TEST(test_nonlinear(), "test nonlinear");
 	//RUN_TEST(test_get_T_matrix(), "test chebyshev");

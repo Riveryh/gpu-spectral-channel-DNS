@@ -130,12 +130,14 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if(isOutput) RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
 //#endif //DEBUG
 		//chebyshev transform in z direction
-		cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2]);
+			cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2]);
 
 		//transpose(dir, Ptr, tPtr, dim, tDim);
 		cudaEventRecord(start_trans);
 		cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
-		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
+		
+			cuda_transpose(dir, Ptr, tPtr, dim, tDim);
+		
 		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 
 		cudaEventRecord(end_trans);
@@ -145,7 +147,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		cudaEventRecord(start_trans);
 		
-		setZeros((complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
+			setZeros((complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
 
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
@@ -153,9 +155,11 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		std::cout << "set zeros time = " << time / 1000.0 << std::endl;
 
 		cudaEventRecord(start_trans);
-		void* dev_buffer = get_fft_buffer_ptr();
-		res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
-			(CUFFTREAL*)Ptr.ptr);
+			
+			void* dev_buffer = get_fft_buffer_ptr();
+			res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
+				(CUFFTREAL*)Ptr.ptr);
+		
 			//(CUFFTREAL*)dev_buffer);
 		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
 
@@ -323,7 +327,7 @@ __global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz
 	int ky =  blockIdx.x;
 	int kz =  blockIdx.y;
 	int kx = threadIdx.x;
-	if (ky >= my || kz >= mz/2+1 || kx>=mx/2+1) return;
+	if (ky >= my || kz >= mz/2+1 || kx>mx/2+1 || kx*sizeof(complex)>pitch) return;
 	size_t inc = pitch * (kz * my + ky)/sizeof(complex);
 	ptr = ptr + inc;
 	int nx = mx / 3 * 2;
@@ -344,26 +348,25 @@ __global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz
 
 __host__ void setZeros(complex* ptr, size_t pitch, dim3 dims) {
 	int dim[3] = { dims.x,dims.y,dims.z };
-	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+1 >>>((complex*)ptr, pitch,
+	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+2 >>>((complex*)ptr, pitch,
 		dim[0], dim[1], dim[2]);
 #ifdef KERNEL_SYNCHRONIZED
 	cuCheck(cudaDeviceSynchronize(), "set zeros");
 #endif
 }
 
-__global__ void normalizeKernel(cudaPitchedPtr p, int mx, int my, int mz, real factor) {
+__global__ void normalizeKernel(real* ptr, size_t pitch , int mx, int my, int mz, real factor) {
 	const int iy = blockIdx.x;
 	const int iz = blockIdx.y;
 	const int ix = threadIdx.x;
-	if (iy >= my || iz >= mz/2+1)return;
+	//if (iy >= my || iz >= mz/2+1)return;
 	//const int ny = my / 3 * 2;
 	//if (iy > ny / 2  && iy < my - (ny/2)) return;
-	if (ix >= mx) return;
+	//if (ix >= mx) return;
 
-	size_t pitch = p.pitch; 
-	size_t dist = pitch*(my*iz + iy) / sizeof(real);
+	size_t dist = pitch*(my*iz + iy) / sizeof(complex);
 
-	real* row = ((real*)p.ptr) + dist;
+	complex* row = ((complex*)ptr) + dist;
 	row[ix] = row[ix] * factor;
 }
 
@@ -371,7 +374,7 @@ __host__ void normalize(cudaPitchedPtr Ptr, dim3 dims, real factor) {
 	cudaError_t err;
 	int dim[3] = { dims.x,dims.y,dims.z }; 
 	dim3 nDim(dim[1], dim[2] / 2 + 1);
-	normalizeKernel<<<nDim, dim[0]>>> (Ptr, dim[0], dim[1], dim[2], factor);
+	normalizeKernel<<<nDim, dim[0]/2+1>>> ((real*)Ptr.ptr, Ptr.pitch, dim[0], dim[1], dim[2], factor);
 #ifdef KERNEL_SYNCHRONIZED
 	err = cudaDeviceSynchronize();
 #endif
@@ -695,7 +698,7 @@ __host__ void transform_forward_X3(problem& pb) {
 
 	// THIS LAUNCH PARAMETER NEED TO BE CHANGED
 	normalizeKernel<<< dim_num, thread_num >>>
-		(Ptr, dim[0], dim[1], dim[2]*3, 1.0 / dim[0] / dim[1]);
+		((real*)Ptr.ptr, Ptr.pitch, dim[0], dim[1], dim[2]*3, 1.0 / dim[0] / dim[1]);
 	cuCheck(cudaDeviceSynchronize(),"normalize X3");
 
 

@@ -3,10 +3,18 @@
 #include <iostream>
 #include "cuRPCF.h"
 
+#define TILE_DIM 8
+
 __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
 __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
+	size_t pitch, size_t tPitch);
+
+__global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
+	size_t pitch, size_t tPitch);
+
+__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
 // dim参数表示的是xyz排列的数据的维度（Real格式），实际上由于transpose时存储的是Complex格式，
@@ -157,6 +165,61 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 	return 0;
 }
 
+__host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
+	cudaPitchedPtr& tPtr, int* dim, int* tDim) {
+	const int hnx = dim[0] / 3 * 2 / 2 + 1;
+	const int ny = dim[1] / 3 * 2;
+	const int mz = dim[2];
+	const int pz = mz / 2 + 1;
+	int nthreadx = TILE_DIM;
+	int nthready = TILE_DIM;
+
+	dim3 dims(dim[0], dim[1], dim[2]);
+	if (dir == FORWARD) {
+		//int max_length = hnx>pz ? hnx : pz;
+		int nBlockx = hnx / TILE_DIM;
+		int nBlocky = pz / TILE_DIM;
+		if ((hnx % TILE_DIM) != 0) nBlockx++;
+		if ((pz % TILE_DIM) != 0) nBlocky++;
+		dim3 nBlock(nBlockx, nBlocky, ny);
+		dim3 nThread(nthreadx, nthready);
+
+		//ASSERT(tPtr.ptr == nullptr);
+		//cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
+		//cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
+
+		transpose_forward_sm <<<nBlock, nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+			dims, Ptr.pitch, tPtr.pitch);
+
+		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		//cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
+		//safeCudaFree(Ptr.ptr);
+	}
+	else if (dir == BACKWARD) {
+		int nBlockx = hnx / TILE_DIM;
+		int nBlocky = pz / TILE_DIM;
+		if ((hnx % TILE_DIM) != 0) nBlockx++;
+		if ((pz % TILE_DIM) != 0) nBlocky++;
+		dim3 nBlock(nBlockx, nBlocky, ny);
+		dim3 nThread(nthreadx, nthready);
+
+		//ASSERT(Ptr.ptr == nullptr);
+		//cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
+		//cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
+
+		transpose_backward_sm <<<nBlock, nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+			dims, Ptr.pitch, tPtr.pitch);
+		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+
+		//cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
+		//safeCudaFree(tPtr.ptr);
+	}
+	else {
+		std::cerr << "Wrong tranpose type!" << std::endl;
+	}
+	return 0;
+}
+
 __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
 	int kx = blockIdx.x;
@@ -192,13 +255,12 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	//	}
 	//}
 }
-#define TILE_DIM 16
-__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
 	__shared__ complex tile[TILE_DIM][TILE_DIM];
 
-	int kz = blockIdx.x * TILE_DIM + threadIdx.x;
-	int kx = blockIdx.y * TILE_DIM + threadIdx.y;
+	int kx = blockIdx.x * TILE_DIM + threadIdx.x;
+	int kz = blockIdx.y * TILE_DIM + threadIdx.y;
 	const int ky = blockIdx.z;
 
 	int mx = dim.x;
@@ -208,15 +270,73 @@ __global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 	int nx = mx / 3 * 2;
 	int hnx = nx / 2 + 1;
 
+	if (ky >= ny) return;
+
+	const size_t size = pitch*my*(mz/2+1);
+	const size_t tSize = tPitch*hnx*ny;
+
 	int old_ky = ky;
 	int dky = my - ny;
 	if (ky > ny / 2) old_ky = ky + dky;
 
-	
+	if (kx < hnx) {
+		//for (int iz = 0; iz < TILE_DIM && iz + kz<mz / 2 + 1; iz++) {
+		if(kz < mz/2+1){
+			size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
+			assert(inc * sizeof(complex) < size);
+			tile[threadIdx.y][threadIdx.x] = u[inc];
+			//printf("block:%d,%d,%d,thread:%d,%d writing to: %x\n",blockIdx.x,blockIdx.y,blockIdx.z, threadIdx.x, threadIdx.y, inc);
+		}
+	}
+
+	__syncthreads();
+
+	kx = blockIdx.x * TILE_DIM + threadIdx.y;
+	kz = blockIdx.y * TILE_DIM + threadIdx.x;
+
+
 	if (kz < mz / 2 + 1) {
-		for (int ix = 0; ix < TILE_DIM && ix+kx<hnx; ix++) {
-			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (ix+kx)) + kz;
-			tile[ix][threadIdx.x] = tu[tInc];
+		//for (int ix = 0; ix < TILE_DIM && ix + kx<hnx; ix++) {
+		if (kx < hnx){
+			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (kx)) + kz;
+			assert(tInc * sizeof(complex) < tSize);
+			tu[tInc] = tile[threadIdx.x][threadIdx.y];
+		}
+	}
+}
+
+__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
+	size_t pitch, size_t tPitch) {
+	__shared__ complex tile[TILE_DIM][TILE_DIM];
+
+	int kx = blockIdx.x * TILE_DIM + threadIdx.y;
+	int kz = blockIdx.y * TILE_DIM + threadIdx.x;
+	const int ky = blockIdx.z;
+
+	int mx = dim.x;
+	int my = dim.y;
+	int mz = dim.z;
+	int ny = my / 3 * 2;
+	int nx = mx / 3 * 2;
+	int hnx = nx / 2 + 1;
+
+	if (ky >= ny) return;
+
+	const size_t size = pitch*my*(mz / 2 + 1);
+	const size_t tSize = tPitch*hnx*ny;
+
+	int old_ky = ky;
+	int dky = my - ny;
+	if (ky > ny / 2) old_ky = ky + dky;
+
+	if (kx < hnx) {
+		//for (int iz = 0; iz < TILE_DIM && iz + kz<mz / 2 + 1; iz++) {
+		if (kz < mz / 2 + 1) {
+			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (kx)) + kz;
+			assert(tInc * sizeof(complex) < tSize);
+			tile[threadIdx.x][threadIdx.y] = tu[tInc];
+			
+			//printf("block:%d,%d,%d,thread:%d,%d writing to: %x\n",blockIdx.x,blockIdx.y,blockIdx.z, threadIdx.x, threadIdx.y, inc);
 		}
 	}
 
@@ -225,13 +345,15 @@ __global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 	kx = blockIdx.x * TILE_DIM + threadIdx.x;
 	kz = blockIdx.y * TILE_DIM + threadIdx.y;
 
-	if (kx < hnx) {
-		for (int iz = 0; iz < TILE_DIM && iz+kz<mz/2+1; iz++) {
+
+	if (kz < mz / 2 + 1) {
+		//for (int ix = 0; ix < TILE_DIM && ix + kx<hnx; ix++) {
+		if (kx < hnx) {
 			size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
-			u[inc] = tile[threadIdx.x][iz];
+			assert(inc * sizeof(complex) < size);
+			u[inc] = tile[threadIdx.y][threadIdx.x];
 		}
 	}
-
 }
 __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
