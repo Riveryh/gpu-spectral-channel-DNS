@@ -9,7 +9,7 @@ int get_linear_v(problem & pb)
 	int my = pb.my;
 	const int hnx = pb.nx / 2 + 1;
 	const int ny = pb.ny;
-	//#pragma omp parallel for// firstprivate(pb,cmx,my)
+	#pragma omp parallel for// firstprivate(pb,cmx,my)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < ny; j++) {
@@ -54,7 +54,7 @@ int get_linear_omega_y(problem& pb)
 	//problem pb = _pb; 
 	const int hnx = pb.nx / 2+ 1;
 	const int ny = pb.ny;
-	//#pragma omp parallel for //firstprivate(cmx,my,pb)
+	#pragma omp parallel for //firstprivate(cmx,my,pb)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < ny; j++) {
