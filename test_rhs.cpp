@@ -12,26 +12,20 @@
 #include "rhs.cuh"
 #include <iostream>
 #include "output.h"
+using namespace std;
 
 TestResult test_rhs() {
-	RPCF_Paras para("parameter.txt");
-	problem pb(para);
+	RPCF_Paras paras("parameter.txt");
+	//paras.numPara.dt = 0.0;
+	problem pb(paras);
+	cout << "init cuda" << endl;
+	setupCUDA(pb);
 	initCUDA(pb);
+	cout << "init fft" << endl;
 	initFFT(pb);
-	int mx = pb.mx;
-	int my = pb.my;
-	int mz = pb.mz;
-	int pitch = pb.pitch;
-	size_t size = pitch * my * mz;
+	cout << "init solver" << endl;
 	initSolver(pb);
-	//set_flow_rhs_test(pb);
-	initFlow(pb);
-	output_velocity(pb);
-	get_rhs_v(pb);
-	initCUDA(pb);
-	//set_flow_rhs_test(pb);
-	initFlow(pb);
-	get_rhs_v(pb);
+	cout << "init flow" << endl;
 	//nextStep(pb);
 	//compare_rhs_v(pb);
 	/*for (int i = 0; i < 10; i++) {
@@ -39,6 +33,19 @@ TestResult test_rhs() {
 		nextStep(pb);
 		output_velocity(pb);
 	}*/
+
+	set_flow_rhs_test(pb);
+
+	get_rhs_v(pb);
+	
+
+	solveEq(pb.matrix_coeff_v, pb.rhs_v,
+		pb.nz, pb.tPitch, pb.mx, pb.my);
+
+	get_rhs_omega(pb);
+
+	compare_rhs_v(pb);
+
 
 	RPCF::write_3d_to_file("rhs_v.txt", (real*)pb.rhs_v,
 		pb.tPitch, 2 * pb.mz, (pb.mx / 2 + 1), pb.my);
@@ -86,12 +93,14 @@ void set_flow_rhs_test(problem& pb)
 				real y = ly * j / my;
 				real z = cos(real(k) / (pz - 1)*PI);
 				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				u[inc] = (1 - z*z)*sin(y);
+				//u[inc] = (1 - z*z)*sin(y);
 				v[inc] = 0.0;
-				w[inc] = 0.0;
+				u[inc] = 0.0;
+				w[inc] = (1 - z*z)*sin(y);
+				//w[inc] = 0.0;
 				ox[inc] = 0.0;
-				oy[inc] = 2 * z * sin(y);
-				oz[inc] = (1 - z*z)*cos(y);
+				oy[inc] = -2 * z * sin(y);
+				oz[inc] = -(1 - z*z)*cos(y);
 			}
 
 	cuCheck(cudaMemcpy(pb.dptr_u.ptr, pb.hptr_u, size, cudaMemcpyHostToDevice), "memcpy");
@@ -112,12 +121,13 @@ void set_flow_rhs_test(problem& pb)
 	tDim[1] = pb.mx;
 	tDim[2] = pb.my;
 
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
-	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tDim);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
+
 
 	//copy initial rhs_v and rhs_omeag_y
 	cuCheck(cudaMemcpy(pb.rhs_v, pb.dptr_tw.ptr, pb.tSize, cudaMemcpyDeviceToHost), "memcpy");
@@ -128,10 +138,10 @@ void set_flow_rhs_test(problem& pb)
 		pb.tomega_y_0[k] = pb.rhs_omega_y[k];
 	}
 
-	for (int j = 0; j < pb.my; j++) {
-		for (int i = 0; i < (pb.mx / 2 + 1); i++) {
-			for (int k = 0; k < pb.mz; k++) {
-				size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.mx / 2 + 1) + i) + k;
+	for (int j = 0; j < pb.ny; j++) {
+		for (int i = 0; i < (pb.nx / 2 + 1); i++) {
+			for (int k = 0; k < pb.nz; k++) {
+				size_t inc = pb.tPitch / sizeof(complex)*(j*(pb.nx / 2 + 1) + i) + k;
 				pb.rhs_v_p[inc] = pb.rhs_v[inc];
 			}
 		}

@@ -33,9 +33,9 @@ TestResult test_get_T_matrix()
 
 TestResult Test_coef_v() {
 	RPCF_Paras para;
-	para.numPara.mx = 64;
-	para.numPara.my = 64;
-	para.numPara.mz = 32;
+	para.numPara.mx = 96;
+	para.numPara.my = 96;
+	para.numPara.mz = 62;
 	para.numPara.dt = 0.005;
 	para.numPara.Re = 2600;
 	para.numPara.n_pi_x = 8;
@@ -99,9 +99,9 @@ TestResult Test_coef_v() {
 
 TestResult Test_coef_omega() {
 	RPCF_Paras para;
-	para.numPara.mx = 64;
-	para.numPara.my = 64;
-	para.numPara.mz = 51;
+	para.numPara.mx = 96;
+	para.numPara.my = 96;
+	para.numPara.mz = 100;
 	para.numPara.dt = 0.005;
 	para.numPara.Re = 2600;
 	para.numPara.n_pi_x = 8;

@@ -44,6 +44,7 @@ TestResult test_nonlinear() {
 	problem pb2(para);
 	initCUDA(pb2);
 	initFFT(pb2);
+	cout << pb2.mx << pb2.my << pb2.mz << endl;
 	int mx = pb2.mx;
 	int my = pb2.my;
 	int mz = pb2.mz;
@@ -71,29 +72,29 @@ TestResult test_nonlinear() {
 	////validate output
 	//assert(check_nonlinear_basic2(pb2) == TestSuccess);
 
-	////impose input field
-	//setFlow(pb2);	
-	////compute lamb vector
-	//computeLambVector(pb2);
-	////validate lamb vector
-	//assert(check_lamb(pb2)==TestSuccess);
-	//transform(FORWARD, pb2);
-	////compute rhs nonlinear part;
-	//rhsNonlinear(pb2);
-	////validate output
-	//assert(check_nonlinear_complex(pb2) == TestSuccess);
-
 	//impose input field
-	setFlow_basic3(pb2);
+	setFlow(pb2);	
 	//compute lamb vector
 	computeLambVector(pb2);
 	//validate lamb vector
-	assert(check_lamb_basic3(pb2) == TestSuccess);
+	assert(check_lamb(pb2)==TestSuccess);
 	transform(FORWARD, pb2);
 	//compute rhs nonlinear part;
 	rhsNonlinear(pb2);
 	//validate output
-	assert(check_nonlinear_basic3(pb2) == TestSuccess);
+	assert(check_nonlinear_complex(pb2) == TestSuccess);
+
+	////impose input field
+	//setFlow_basic3(pb2);
+	////compute lamb vector
+	//computeLambVector(pb2);
+	////validate lamb vector
+	//assert(check_lamb_basic3(pb2) == TestSuccess);
+	//transform(FORWARD, pb2);
+	////compute rhs nonlinear part;
+	//rhsNonlinear(pb2);
+	////validate output
+	//assert(check_nonlinear_basic3(pb2) == TestSuccess);
 
 	return TestSuccess;
 }
@@ -127,8 +128,8 @@ void setFlow(problem& pb) {
 				v[inc] = 0.0;
 				w[inc] = 0.0;
 				ox[inc] = 0.0;
-				oy[inc] = 2 * z * sin(y)*cos(x);
-				oz[inc] = (1-z*z)*cos(y)*cos(x);
+				oy[inc] = -2 * z * sin(y)*cos(x);
+				oz[inc] = -(1-z*z)*cos(y)*cos(x);
 			}
 
 	cuCheck(cudaMemcpy(pb.dptr_u.ptr, pb.hptr_u, size, cudaMemcpyHostToDevice), "memcpy");
@@ -169,8 +170,8 @@ void setFlow_basic3(problem& pb) {
 				v[inc] = 0.0;
 				w[inc] = 0.0;
 				ox[inc] = 0.0;
-				oy[inc] = 2 * z * sin(y);
-				oz[inc] = (1 - z*z)*cos(y);
+				oy[inc] = -2 * z * sin(y);
+				oz[inc] = -(1 - z*z)*cos(y);
 			}
 
 	cuCheck(cudaMemcpy(pb.dptr_u.ptr, pb.hptr_u, size, cudaMemcpyHostToDevice), "memcpy");
@@ -258,6 +259,9 @@ TestResult check_lamb_basic3(problem& pb) {
 				assert(isEqual(lambx[inc], ex_lambx, PRECISION));
 				assert(isEqual(lamby[inc], ex_lamby, PRECISION));
 				assert(isEqual(lambz[inc], ex_lambz, PRECISION));
+				//assert(isEqual(lambx[inc], 0.0, PRECISION));
+				//assert(isEqual(lamby[inc], 0.0, PRECISION));
+				//assert(isEqual(lambz[inc], 0.0, PRECISION));
 			}
 	return TestSuccess;
 }
@@ -414,6 +418,7 @@ TestResult check_nonlinear_basic3(problem& pb) {
 				sin(y)*sin(x) + cos(y)*cos(x));*/
 				real ex_rhsn_v = 0.0; //4 * z*(1 - z*z)*cos(2 * y);
 				real ex_rhsn_o = 0.0;
+
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));
 			}
@@ -547,12 +552,27 @@ TestResult check_nonlinear_complex(problem& pb) {
 	outdim[2] = pb.my;
 
 	transform_3d_one(BACKWARD, pb.dptr_lamb_x, pb.dptr_tLamb_x, indim, outdim);
+	transform_3d_one(BACKWARD, pb.dptr_lamb_y, pb.dptr_tLamb_y, indim, outdim);
 	transform_3d_one(BACKWARD, pb.dptr_lamb_z, pb.dptr_tLamb_z, indim, outdim);
 
+
+
 	cudaError_t err;
+	//cheby_s2p(pb.dptr_tLamb_x, mx, my, mz);
+	//cheby_s2p(pb.dptr_tLamb_y, mx, my, mz);
+	//cheby_s2p(pb.dptr_tLamb_z, mx, my, mz);
+
+	//nonlinear_v = (real*)malloc(pb.tSize);
+	//nonlinear_omega_y = (real*)malloc(pb.tSize);
+
+	//err = cudaMemcpy(nonlinear_v, pb.dptr_tLamb_x.ptr, pb.tSize, cudaMemcpyDeviceToHost);
+	//ASSERT(err == cudaSuccess);
+	//err = cudaMemcpy(nonlinear_omega_y, pb.dptr_tLamb_y.ptr, pb.tSize, cudaMemcpyDeviceToHost);
+	//ASSERT(err == cudaSuccess);
+
 	err = cudaMemcpy(nonlinear_v, pb.dptr_lamb_x.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
-	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost);
+	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
 	real PI = 4.0*atan(1.0);

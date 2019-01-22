@@ -130,7 +130,7 @@ __host__ int initCUDA(problem&  pb) {
 #define EPSILON_INIT 0.005
 __device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
 	const real PI = 4*atan(1.0);
-	return EPSILON_INIT*lx*sin(1.5*PI*z)
+	return EPSILON_INIT*lx*sin(PI*z)
 		*(cos(2 * PI*x / lx)*sin(2.0*PI*y / ly)
 			+ 0.5*cos(4.0*PI*x / lx)*sin(2 * PI*y / ly)
 			+ cos(2 * PI*x / lx)*sin(4 * PI*y / ly));
@@ -143,7 +143,7 @@ __device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
 
 __device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
-	return -EPSILON_INIT*ly*sin(1.5*PI*z)
+	return -EPSILON_INIT*ly*sin(PI*z)
 		*(0.5*sin(2 * PI*x / lx)*cos(2.0*PI*y / ly)
 			+ 0.5*sin(4.0*PI*x / lx)*cos(2.0 * PI*y / ly)
 			+ 0.25*sin(2.0 * PI*x / lx)*cos(4.0 * PI*y / ly));
@@ -155,7 +155,7 @@ __device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
 
 __device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
-	return EPSILON_INIT*(-2.0)/3.0*(1.0+cos(1.5*PI*z))
+	return EPSILON_INIT*(-1.0)*(1.0+cos(PI*z))
 		*(sin(2*PI*x/lx)*sin(2*PI*y/ly)
 			+sin(4*PI*x/lx)*sin(2*PI*y/ly)
 			+sin(2*PI*x/lx)*sin(4*PI*y/ly));
@@ -168,12 +168,12 @@ __device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
 
 __device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
 	const real pi = 4 * atan(1.0);
-	return (-EPSILON_INIT*ly*1.5*pi*cos(1.5*pi*z)*(0.5*sin(2.0*pi*x/lx) 
+	return (-EPSILON_INIT*ly*pi*cos(pi*z)*(0.5*sin(2.0*pi*x/lx) 
 		*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
 		*cos(2.0*pi*y/ly) + 0.25*sin(2.0*pi*x/lx) 
 		*cos(4.0*pi*y/ly)))
 
-		-(2.0 / 3.0*EPSILON_INIT*(1.0 + cos(1.5*pi*z))*4.0*pi / ly*(0.5*sin(2.0*pi*x/lx) 
+		-(EPSILON_INIT*(1.0 + cos(pi*z))*4.0*pi / ly*(0.5*sin(2.0*pi*x/lx) 
 			*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
 			*cos(2.0*pi*y/ly) + sin(2.0*pi*x/lx) 
 			*cos(4.0*pi*y/ly)));
@@ -181,7 +181,7 @@ __device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
 
 __device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
 	const real pi = 4 * atan(1.0);
-	return EPSILON_INIT*2.0*pi*sin(1.5*pi*z)*  
+	return EPSILON_INIT*2.0*pi*sin(pi*z)*  
 		(lx / ly*(cos(2.0*pi*x/lx)*cos(2.0*pi*y/ly) 
 			+0.5*cos(4.0*pi*x/lx)*cos(2.0*pi*y/ly) 
 			+2.0*cos(2.0*pi*x/lx)*cos(4.0*pi*y/ly)) 
@@ -195,13 +195,13 @@ __device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
 __device__ real _get_init_omegay(real x, real y, real z, real lx, real ly) {
 	const real PI = 4 * atan(1.0);
 	return
-		EPSILON_INIT*(-2.0) / 3.0*(1.0 + cos(1.5*PI*z))
+		EPSILON_INIT*(-1.0) *(1.0 + cos(PI*z))
 		*2*PI/lx*(
 			     cos(2 * PI*x / lx)*sin(2 * PI*y / ly)
 			+2.0*cos(4 * PI*x / lx)*sin(2 * PI*y / ly)
 			+    cos(2 * PI*x / lx)*sin(4 * PI*y / ly))
 		-
-		EPSILON_INIT*lx*1.5*PI*cos(1.5*PI*z)*(
+		EPSILON_INIT*lx*PI*cos(PI*z)*(
 		      cos(2 * PI*x / lx)*sin(2 * PI*y / ly)
 		+ 0.5*cos(4 * PI*x / lx)*sin(2 * PI*y / ly)
 		+     cos(2 * PI*x / lx)*sin(4 * PI*y / ly)

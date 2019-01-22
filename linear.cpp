@@ -9,7 +9,7 @@ int get_linear_v(problem & pb)
 	int my = pb.my;
 	const int hnx = pb.nx / 2 + 1;
 	const int ny = pb.ny;
-	#pragma omp parallel for// firstprivate(pb,cmx,my)
+	//#pragma omp parallel for// firstprivate(pb,cmx,my)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear v omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < ny; j++) {
@@ -54,7 +54,7 @@ int get_linear_omega_y(problem& pb)
 	//problem pb = _pb; 
 	const int hnx = pb.nx / 2+ 1;
 	const int ny = pb.ny;
-	#pragma omp parallel for //firstprivate(cmx,my,pb)
+	//#pragma omp parallel for //firstprivate(cmx,my,pb)
 	for (int i = 0; i < hnx; i++) {
 		//cout << "linear omg omp id:" << omp_get_thread_num() << " i=" << i << endl;
 		for (int j = 0; j < ny; j++) {
@@ -99,6 +99,7 @@ int _get_linear_v(complex* rhs_v,
 			rhs_temp[i] = rhs_temp[i] + rhs_v[j] * complex(
 				T4[inc_2_0]*dt*0.5/Re+(1-kmn*dt/Re)*T2[inc_2_0]
 				-kmn*(1-kmn*dt*0.5/Re)*T0[inc_2_0]
+				//T2[inc_2_0] - kmn*T0[inc_2_0]
 				,
 				-alpha*dt*0.5*U[i-2]*T2[inc_2_0]
 				+(kmn*alpha*dt*0.5*U[i-2]+alpha*dt*0.5*ddU[i-2])*T0[inc_2_0]
@@ -139,6 +140,7 @@ int _get_linear_omega_y(complex* rhs_omega_y,
 			size_t inc_1_0 = (N + 1)*(i-1) + j;
 			rhs_temp[i] = rhs_temp[i] + rhs_omega_y[j] * complex(
 				T2[inc_1_0]*0.5/Re*dt + (1-kmn*dt*0.5/Re)*T0[inc_1_0]
+				//T2[inc_1_0] * 0.5 / Re*dt + (0 - kmn*dt*0.5 / Re)*T0[inc_1_0]
 				,
 				-alpha*dt*0.5*U[i-1]*T0[inc_1_0]
 			);
@@ -153,7 +155,7 @@ int _get_linear_omega_y(complex* rhs_omega_y,
 	
 
 	//save new rhs data and add nonlinear part to it.
-	for (int i = 0; i <= N; i++) {
+	for (int i = 2; i <= N; i++) {
 		rhs_omega_y[i] = rhs_temp[i] + 
 			(nonlinear_omega_y[i-1]*1.5 -
 				nonlinear_omega_y_p[i-1]*0.5)*dt;

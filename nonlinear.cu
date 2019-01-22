@@ -15,7 +15,7 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz);
 __global__ void computeLambVectorKernel(cudaPitchedPtrList pList, 
 	int mx, int my, int mz, real Ro);
 
-__host__ void saveZeroWaveLamb(problem& pb);
+//__host__ void saveZeroWaveLamb(problem& pb);
 
 
 
@@ -76,7 +76,8 @@ __host__ int getNonlinear(problem& pb) {
 	cudaEventElapsedTime(&time, __start, __stop);
 	std::cout << "transform forward time = " << time/1000.0 << std::endl;
 
-	addCoriolisForce(pb);
+	// This step is completed in computeLambVector()
+	//addCoriolisForce(pb);
 
 	// this operation will be finished in get_rhs_v;
 	//saveZeroWaveLamb(pb);
@@ -253,8 +254,6 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	int nz = mz / 4 + 1;
 
 	// skip the k=0 mode
-	//if (kx == 0 && ky == 0) return;
-
 	if (kx == 0 && ky == 0) return;
 
 	//skip non-necessary wave numbers.
@@ -447,9 +446,13 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
 	real* pLambX, real* pLambY, real* pLambZ, int mx, real Ro) {
 	int  i = 0;
-	pLambX[i] = pOmegaY[i] * pW[i] - pOmegaZ[i] * pV[i] - Ro*pW[i];
-	pLambY[i] = pOmegaZ[i] * pU[i] - pOmegaX[i] * pW[i];
-	pLambZ[i] = pOmegaX[i] * pV[i] - pOmegaY[i] * pU[i] + Ro*pU[i];
+	real lx, ly, lz;
+	lx = -pOmegaY[i] * pW[i] + pOmegaZ[i] * pV[i] - Ro*pW[i];
+	ly = -pOmegaZ[i] * pU[i] + pOmegaX[i] * pW[i] ;
+	lz = -pOmegaX[i] * pV[i] + pOmegaY[i] * pU[i] + Ro*pU[i];
+	pLambX[i] = lx;
+	pLambY[i] = ly;
+	pLambZ[i] = lz;
 }
 //
 //__device__ void computeLambDevice_non(real* pU, real* pV, real* pW,
@@ -523,17 +526,17 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 //
 //}
 
-__host__ void saveZeroWaveLamb(problem & pb)
-{
-	swap(pb.lambx0, pb.lambx0_p);
-	swap(pb.lambz0, pb.lambz0_p);
-
-	complex* lambx = (complex*)pb.dptr_tLamb_x.ptr;
-	complex* lambz = (complex*)pb.dptr_tLamb_y.ptr;	//change of y,z definition here!
-	cudaError err;
-	err = cudaMemcpy(pb.lambx0, lambx, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
-	ASSERT(err == cudaSuccess);
-	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
-	ASSERT(err == cudaSuccess);
-
-}
+//__host__ void saveZeroWaveLamb(problem & pb)
+//{
+//	swap(pb.lambx0, pb.lambx0_p);
+//	swap(pb.lambz0, pb.lambz0_p);
+//
+//	complex* lambx = (complex*)pb.dptr_tLamb_x.ptr;
+//	complex* lambz = (complex*)pb.dptr_tLamb_y.ptr;	//change of y,z definition here!
+//	cudaError err;
+//	err = cudaMemcpy(pb.lambx0, lambx, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
+//	ASSERT(err == cudaSuccess);
+//	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
+//	ASSERT(err == cudaSuccess);
+//
+//}

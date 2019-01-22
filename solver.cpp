@@ -27,11 +27,7 @@ using namespace std;
 //void getCoefOmega(complex * coefOmega, int n, real kmn, real alpha,
 //	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4,
 //	real* U0, real* dU0, real* ddU0, const real dt, const real Re);
-int solveEq(complex* inv_coef, complex* rhs, int N, 
-	size_t pitch, int nx, int ny);
-int solveEqGPU(complex* inv_coef, complex* rhs, int N,
-	size_t pitch, int mx, int my, int num_equation);
-void save_0_v_omega_y(problem& pb);
+
 
 extern pthread_cond_t cond_malloc;
 extern pthread_mutex_t mutex_malloc;
@@ -51,9 +47,9 @@ int nextStep(problem& pb) {
 	start_time = clock();
 
 	solveEq(pb.matrix_coeff_v, pb.rhs_v,
-		pb.nz, pb.tPitch, pb.mx, pb.my);//check the dimension of data??
+		pb.nz, pb.tPitch, pb.mx, pb.my); 
 	//solveEqGPU(pb.matrix_coeff_v, pb.rhs_v,
-	//	pb.nz, pb.tPitch, pb.mx, pb.my, 0);//check the dimension of data??
+	//	pb.nz, pb.tPitch, pb.mx, pb.my, 0); 
 
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -80,7 +76,10 @@ int nextStep(problem& pb) {
 	std::cout << "solve equation time = " << cost_eq << std::endl;
 
 	//cout << "save 0 v,oy" << endl;
+
+	// save results of u0 and w0 results.
 	save_0_v_omega_y(pb);
+	
 	//cout << "get velocity" << endl;
 
 	//pthread_mutex_lock(&mutex_malloc);

@@ -94,6 +94,7 @@ TestResult test_dt_0() {
 		std::cout << "mean time cost:" << total_cost / count << std::endl;
 
 		if (i % pb.para.stepPara.save_internal == 0) {
+		//if (i > 320) {
 			std::cout << "[OUTPUT] WRINTING RESULTS" << std::endl;
 			output_velocity(pb);
 		}
@@ -101,6 +102,7 @@ TestResult test_dt_0() {
 			std::cout << "[OUTPUT] WRINTING RECOVERY FILES" << std::endl;
 			write_recover_data(pb);
 		}
+		//if (i == 340) exit(0);
 	}
 	//output_velocity(pb);
 	//cuCheck(cudaMemcpy(tv2, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
