@@ -508,17 +508,17 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
 	const int ny = my / 3 * 2;
 	const int hnx = nx / 2 + 1;
 
-	int threadDimx = 16;
-	int threadDimy = 16;
+	//int threadDimx = 16;
+	//int threadDimy = 16;
 
-	int blockDimx = hnx / threadDimx;
-	int blockDimy = ny / threadDimy;
+	//int blockDimx = hnx / threadDimx;
+	//int blockDimy = ny / threadDimy;
 
-	if (hnx%threadDimx != 0) blockDimx++;
-	if (ny%threadDimy != 0) blockDimy++;
+	//if (hnx%threadDimx != 0) blockDimx++;
+	//if (ny%threadDimy != 0) blockDimy++;
 
-	dim3 nthread(threadDimx, threadDimy);
-	dim3 nBlock(blockDimx, blockDimy);
+	//dim3 nthread(threadDimx, threadDimy);
+	//dim3 nBlock(blockDimx, blockDimy);
 
 	cufftResult res;
 	cudaError_t err;
@@ -566,17 +566,17 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	const int ny = my/3*2;
 	const int hnx = nx/2+1;
 
-	int threadDimx = 16;
-	int threadDimy = 16;
+	//int threadDimx = 16;
+	//int threadDimy = 16;
 
-	int blockDimx = hnx / threadDimx ;
-	int blockDimy = ny / threadDimy ;
+	//int blockDimx = hnx / threadDimx ;
+	//int blockDimy = ny / threadDimy ;
 
-	if (hnx%threadDimx != 0) blockDimx++;
-	if (ny%threadDimy != 0) blockDimy++;
+	//if (hnx%threadDimx != 0) blockDimx++;
+	//if (ny%threadDimy != 0) blockDimy++;
 
-	dim3 nthread(threadDimx, threadDimy);
-	dim3 nBlock(blockDimx, blockDimy);
+	//dim3 nthread(threadDimx, threadDimy);
+	//dim3 nBlock(blockDimx, blockDimy);
 	cufftResult res;
 	cudaError_t err;
 	float time;

@@ -322,11 +322,11 @@ __host__ int initFlow(problem& pb) {
 	safeFree(buffer);
 	return 0;
 }
-
-__host__ int computeNonlinear(problem& pb) {
-
-	return 0;
-}
+//
+//__host__ int computeNonlinear(problem& pb) {
+//
+//	return 0;
+//}
 
 
 __host__ __device__ void ddz(real* u, int N) {
@@ -423,6 +423,8 @@ void get_ialpha_ibeta(int kx, int ky, int ny,
 		ibeta = real(ky - ny) / beta;
 	}
 }
+
+// This kernel function is used to perform multiply between matrix and vector;
 __global__
 void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitch) {
 	const int iMat = blockIdx.x;

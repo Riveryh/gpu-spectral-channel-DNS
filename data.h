@@ -327,7 +327,7 @@ struct problem {
 		initVars();
 	}
 
-	void memcpy_device_to_host();
+	//void memcpy_device_to_host();
 
 private:
 	void initVars();

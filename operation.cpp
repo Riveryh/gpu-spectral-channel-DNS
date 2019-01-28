@@ -33,33 +33,33 @@ using namespace std;
 //	return 0;
 //}
 
-void problem::memcpy_device_to_host() {
-	size_t isize = dptr_u.pitch*ny*nz;
-	cudaError_t cuerr;
-	//isize = 1 * sizeof(real);
-	if (hptr_omega_z==nullptr) {		
-		std::cout << "allocated " << endl;
-		hptr_u = (real*)malloc(isize);
-		hptr_v = (real*)malloc(isize);
-		hptr_w = (real*)malloc(isize);
-		hptr_omega_x = (real*)malloc(isize);
-		hptr_omega_y = (real*)malloc(isize);
-		hptr_omega_z = (real*)malloc(isize);
-	}
-	cuerr = cudaSuccess;
-	cuerr = cudaMemcpy(hptr_u, dptr_u.ptr, isize, cudaMemcpyDeviceToHost);
-	cuerr = cudaMemcpy(hptr_v, dptr_v.ptr, isize, cudaMemcpyDeviceToHost);
-	cuerr = cudaMemcpy(hptr_w, dptr_w.ptr, isize, cudaMemcpyDeviceToHost);
-
-	cuerr = cudaMemcpy(hptr_omega_x, dptr_omega_x.ptr, isize, cudaMemcpyDeviceToHost);
-	cuerr = cudaMemcpy(hptr_omega_y, dptr_omega_y.ptr, isize, cudaMemcpyDeviceToHost);
-	//cuerr = cudaMemcpy(hptr_omega_z, dptr_omega_z.ptr, isize, cudaMemcpyDeviceToHost);
-
-	if (cuerr != cudaSuccess) {
-		cout << cuerr << endl;
-	}
-	cudaDeviceSynchronize();
-}
+//void problem::memcpy_device_to_host() {
+//	size_t isize = dptr_u.pitch*ny*nz;
+//	cudaError_t cuerr;
+//	//isize = 1 * sizeof(real);
+//	if (hptr_omega_z==nullptr) {		
+//		std::cout << "allocated " << endl;
+//		hptr_u = (real*)malloc(isize);
+//		hptr_v = (real*)malloc(isize);
+//		hptr_w = (real*)malloc(isize);
+//		hptr_omega_x = (real*)malloc(isize);
+//		hptr_omega_y = (real*)malloc(isize);
+//		hptr_omega_z = (real*)malloc(isize);
+//	}
+//	cuerr = cudaSuccess;
+//	cuerr = cudaMemcpy(hptr_u, dptr_u.ptr, isize, cudaMemcpyDeviceToHost);
+//	cuerr = cudaMemcpy(hptr_v, dptr_v.ptr, isize, cudaMemcpyDeviceToHost);
+//	cuerr = cudaMemcpy(hptr_w, dptr_w.ptr, isize, cudaMemcpyDeviceToHost);
+//
+//	cuerr = cudaMemcpy(hptr_omega_x, dptr_omega_x.ptr, isize, cudaMemcpyDeviceToHost);
+//	cuerr = cudaMemcpy(hptr_omega_y, dptr_omega_y.ptr, isize, cudaMemcpyDeviceToHost);
+//	//cuerr = cudaMemcpy(hptr_omega_z, dptr_omega_z.ptr, isize, cudaMemcpyDeviceToHost);
+//
+//	if (cuerr != cudaSuccess) {
+//		cout << cuerr << endl;
+//	}
+//	cudaDeviceSynchronize();
+//}
 
 
 int RPCF::write_3d_to_file(char* filename,real* pu, int pitch, int nx, int ny, int nz) {
@@ -116,7 +116,7 @@ void RPCF_Paras::read_para(std::string filename) {
 	ifstream infile;
 	infile.open(filename.c_str(), ios::in);
 	if (!infile.is_open()) {
-		cerr << "Error in opening file" << endl;
+		cerr << "Error in opening file: " << filename << endl;
 		//exit(-1);
 		return;
 	}
@@ -138,6 +138,7 @@ void RPCF_Paras::read_para(std::string filename) {
 }
 
 
+// Deal with cuda memory allocation and deallocations.
 cudaPitchedPtr __myPtr[NUM_GPU];
 size_t __myPPitch;
 size_t __myTPitch;

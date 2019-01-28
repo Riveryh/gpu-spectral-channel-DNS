@@ -22,7 +22,7 @@ __host__ void setupCUDA(problem& pb);
 
 __host__ int initFlow(problem& pb);
 
-__host__ int computeNonlinear(problem& pb);
+//__host__ int computeNonlinear(problem& pb);
 
 __host__ __device__ void ddz(real* u, int N);
 __host__ __device__ void ddz(complex* u, int N);

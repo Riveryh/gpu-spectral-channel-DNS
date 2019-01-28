@@ -445,14 +445,25 @@ __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
 	real* pLambX, real* pLambY, real* pLambZ, int mx, real Ro) {
-	int  i = 0;
-	real lx, ly, lz;
-	lx = -pOmegaY[i] * pW[i] + pOmegaZ[i] * pV[i] - Ro*pW[i];
-	ly = -pOmegaZ[i] * pU[i] + pOmegaX[i] * pW[i] ;
-	lz = -pOmegaX[i] * pV[i] + pOmegaY[i] * pU[i] + Ro*pU[i];
-	pLambX[i] = lx;
-	pLambY[i] = ly;
-	pLambZ[i] = lz;
+	//int  i = 0;
+	real lx, ly, lz, ox, oy, oz, u, v, w;
+	ox = *pOmegaX;
+	oy = *pOmegaY;
+	oz = *pOmegaZ;
+	u = *pU;
+	v = *pV;
+	w = *pW;
+
+	lx = oz*v - oy*w - Ro*w;
+	ly = ox*w - oz*u;
+	lz = oy*u - ox*v + Ro*u;
+
+	//lx = -pOmegaY[i] * pW[i] + pOmegaZ[i] * pV[i] - Ro*pW[i];
+	//ly = -pOmegaZ[i] * pU[i] + pOmegaX[i] * pW[i] ;
+	//lz = -pOmegaX[i] * pV[i] + pOmegaY[i] * pU[i] + Ro*pU[i];
+	*pLambX = lx;
+	*pLambY = ly;
+	*pLambZ = lz;
 }
 //
 //__device__ void computeLambDevice_non(real* pU, real* pV, real* pW,

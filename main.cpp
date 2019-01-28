@@ -23,16 +23,16 @@ int _main(int args, char** argv) {
 	return 0;
 }
 
-int _main2(int args, char** argv) {
-	problem pb;
-	cout << pb.nx << endl;
-	initCUDA(pb);
-	initFlow(pb);
-	computeNonlinear(pb);
-	cudaDeviceSynchronize();
-	pb.memcpy_device_to_host();
-	RPCF::write_3d_to_file("init.txt", pb.hptr_u, pb.dptr_u.pitch,
-		pb.nx, pb.ny, pb.nz);
-	cout << "end" << endl;
-	return 0;
-}
+//int _main2(int args, char** argv) {
+//	problem pb;
+//	cout << pb.nx << endl;
+//	initCUDA(pb);
+//	initFlow(pb);
+//	computeNonlinear(pb);
+//	cudaDeviceSynchronize();
+//	pb.memcpy_device_to_host();
+//	RPCF::write_3d_to_file("init.txt", pb.hptr_u, pb.dptr_u.pitch,
+//		pb.nx, pb.ny, pb.nz);
+//	cout << "end" << endl;
+//	return 0;
+//}
