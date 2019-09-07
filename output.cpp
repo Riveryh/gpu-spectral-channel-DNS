@@ -163,7 +163,8 @@ void read_recover_data(problem& pb, char* filename) {
 	outfile.read((char*)pb.nonlinear_omega_y, pb.tSize);
 	//	outfile.read((char*)pb.nonlinear_omega_y_p, pb.tSize);
 
-
 	// copy velocity and votricity to GPU and compute other components.
+	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice),"cpy");
+	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice), "cpy");
 	getUVW(pb);
 }

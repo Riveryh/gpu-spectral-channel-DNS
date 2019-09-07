@@ -48,16 +48,27 @@ __host__ int initFFT(problem &pb) {
 	//  int* onembed, int ostride, int odist, cufftType, int batch);
 	res = cufftPlanMany(&planXYr2c, 2, dim2, inembed, istride, idist,
 		inembed2, istride, idist2, myCUFFT_R2C, pb.pz);
-	assert(res == CUFFT_SUCCESS);
+	if (!(res == CUFFT_SUCCESS)) {
+		std::cerr << "[ERROR]:plan create failed!" << std::endl;
+	};
+
 	res = cufftPlanMany(&planXYc2r, 2, dim2, inembed2, istride, idist2,
 		inembed, istride, idist, myCUFFT_C2R, pb.pz);
-	assert(res == CUFFT_SUCCESS);
+	if (!(res == CUFFT_SUCCESS)) {
+		std::cerr << "[ERROR]:plan create failed!" << std::endl;
+	};
+
 	res = cufftPlanMany(&planZ_pad, 1, dim1, onembed, ostride, odist,
 		onembed, ostride, odist, myCUFFT_C2C, (nx/2+1)*ny);
-	assert(res == CUFFT_SUCCESS);
+	if (!(res == CUFFT_SUCCESS)) {
+		std::cerr << "[ERROR]:plan create failed!" << std::endl;
+	};
+
 	res = cufftPlanMany(&planZ_no_pad, 1, dim1_no_pad, onembed, ostride, odist,
 		onembed, ostride, odist, myCUFFT_C2C, (nx/2+1)*ny);
-	assert(res == CUFFT_SUCCESS);
+	if (!(res == CUFFT_SUCCESS)) {
+		std::cerr << "[ERROR]:plan create failed !" << std::endl;
+	};
 
 	//res = cufftPlanMany(&planXYr2c_X3, 2, dim2, inembed, istride, idist,
 	//	inembed2, istride, idist2, myCUFFT_R2C, pb.pz*3);
@@ -130,32 +141,37 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //		if(isOutput) RPCF::write_3d_to_file("beforeREV.txt", tbuffer, tPtr.pitch, 2 * dim[2], (dim[0] / 2 + 1), dim[1]);
 //#endif //DEBUG
 		//chebyshev transform in z direction
-			cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2]);
+			cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2], pd);
 
 		//transpose(dir, Ptr, tPtr, dim, tDim);
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_trans);
+#endif 
+
 		cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
-		
-			cuda_transpose(dir, Ptr, tPtr, dim, tDim);
-		
+		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "transpose backward time = " << time / 1000.0 << std::endl;
-
 		cudaEventRecord(start_trans);
+
+#endif
 		
 			setZeros((complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "set zeros time = " << time / 1000.0 << std::endl;
 
 		cudaEventRecord(start_trans);
-			
+#endif 
+
 			void* dev_buffer = get_fft_buffer_ptr();
 			res = CUFFTEXEC_C2R(planXYc2r, (CUFFTCOMPLEX*)Ptr.ptr,
 				(CUFFTREAL*)Ptr.ptr);
@@ -163,10 +179,12 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 			//(CUFFTREAL*)dev_buffer);
 		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "FFT XY BACKWARD TIME = " << time / 1000.0 << std::endl;
+#endif
 
 		ASSERT(res == CUFFT_SUCCESS);
 		err = cudaDeviceSynchronize();
@@ -214,15 +232,20 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		ASSERT(dir == FORWARD);
 		void* dev_buffer = get_fft_buffer_ptr();
+
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_trans);
+#endif
 		
 		res = CUFFTEXEC_R2C(planXYr2c, (CUFFTREAL*)Ptr.ptr,
 			(CUFFTCOMPLEX*)Ptr.ptr); 
-		
+
+#ifdef CURPCF_CUDA_PROFILING	
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "FFT XY forward TIME = " << time / 1000.0 << std::endl;
+#endif
 			//(CUFFTCOMPLEX*)dev_buffer);
 		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice), "mem move");
 //#ifdef DEBUG
@@ -236,10 +259,14 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
+
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_trans);
+#endif 
 		
 		normalize(Ptr, dim3(dim[0], dim[1], dim[2]), 1.0 / dim[0] / dim[1]);
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -247,6 +274,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
 		cudaEventRecord(start_trans);
+#endif
 		cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 		cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
@@ -254,11 +282,12 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "tranpose forward TIME = " << time / 1000.0 << std::endl;
-
+#endif
 		//err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
 		//ASSERT(err == cudaSuccess);
 		//err = cudaDeviceSynchronize();
@@ -269,7 +298,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 //#endif //DEBUG
 
 		//transform in z direction
-		cheby_p2s(tPtr, dim[0] / 2 + 1, dim[1], dim[2]);
+		cheby_p2s(tPtr, dim[0] / 2 + 1, dim[1], dim[2], pd);
 
 //#ifdef DEBUG
 //		err = cudaMemcpy(tbuffer, tPtr.ptr, tSize, cudaMemcpyDeviceToHost);
@@ -321,25 +350,26 @@ __host__ int transform(DIRECTION dir, problem& pb) {
 	return 0;
 }
 
-//nx, ny, nz is the size of large matrix
-//mx, my, mz is the size of the small matrix (dealiased)
+//mx, my, mz is the size of large matrix
+//nx, ny, nz is the size of the small matrix (dealiased)
 __global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz) {
 	int ky =  blockIdx.x;
 	int kz =  blockIdx.y;
 	int kx = threadIdx.x;
-	if (ky >= my || kz >= mz/2+1 || kx>mx/2+1 || kx*sizeof(complex)>pitch) return;
+	if (ky >= my || kz >= mz/2+1 || kx>= mx/2+1) return;
+	assert(kx * sizeof(complex) <= pitch);
 	size_t inc = pitch * (kz * my + ky)/sizeof(complex);
 	ptr = ptr + inc;
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
 	
-	if (ky >= ny / 2 && ky < my - (ny/2-1)) {
+	if (ky >= ny / 2 && ky <= my - (ny/2)) {
 		ptr[kx] = 0.0;
 		return;
 	}
 	else
 	{
-		if( kx >= nx/2-1) {
+		if( kx >= nx/2 ) {
 			ptr[kx] = 0.0;
 		}
 		return;
@@ -348,11 +378,11 @@ __global__ void setZerosKernel(complex* ptr,size_t pitch, int mx, int my, int mz
 
 __host__ void setZeros(complex* ptr, size_t pitch, dim3 dims) {
 	int dim[3] = { dims.x,dims.y,dims.z };
-	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+2 >>>((complex*)ptr, pitch,
+	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+1 >>>((complex*)ptr, pitch,
 		dim[0], dim[1], dim[2]);
-#ifdef KERNEL_SYNCHRONIZED
+//#ifdef KERNEL_SYNCHRONIZED
 	cuCheck(cudaDeviceSynchronize(), "set zeros");
-#endif
+//#endif
 }
 
 __global__ void normalizeKernel(real* ptr, size_t pitch , int mx, int my, int mz, real factor) {
@@ -442,23 +472,25 @@ __global__ void cheby_pre_s2p_noPad(complex* u, const size_t pitch, const int hm
 	//}
 	int i = iz;
 	//for (int i = 0; i < nz; i++) {
-	if (i < nz) {
+	if (i <= nz) {
 		u[i].re = u[i].re*0.5;
 		u[i].im = u[i].im*0.5;
 	}
+
 	__syncthreads();
 	//for (int i = 1; i < nz - 1; i++) {
 
-	if (i >= 1 && i < nz - 1) {
+	if (i >= 1 && i <= nz - 1) {
 		u[pz - 1 - i].re = u[i].re;
 		u[pz - 1 - i].im = u[i].im;
-	}else if (i == 0) {
-		u[0].re = u[0].re*2.0;
-		u[0].im = u[0].im*2.0;
+	}else if (i == 0 || i==nz) {
+	//}else if (i == 0) {
+		u[i].re = u[i].re*2.0;
+		u[i].im = u[i].im*2.0;
 	}
 }
 
-//preprocessing of chebyshev transfor, phy to spect
+//preprocessing of chebyshev transform, physical to spectral
 __global__ void cheby_pre_p2s(complex* u, const size_t pitch, const int hmx, const int my, const int mz) {
 	const int mx = (hmx - 1) * 2;
 	const int pz = mz / 2 + 1;
@@ -477,6 +509,7 @@ __global__ void cheby_pre_p2s(complex* u, const size_t pitch, const int hmx, con
 	u[mz - iz].im = u[iz].im;
 }
 
+//post-processing of chebyshev transform, physical to spectral
 __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int hmx, const int my, const int mz) {
 	const int mx = (hmx - 1) * 2;
 	const int pz = mz / 2 + 1;
@@ -496,13 +529,13 @@ __global__ void cheby_post_p2s(complex* u, const size_t pitch, const int hmx, co
 	u[iz].re = u[iz].re*factor;
 	u[iz].im = u[iz].im*factor;
 
-	if (iz == 0) {
-		u[0].re = u[0].re*0.5;
-		u[0].im = u[0].im*0.5;
+	if (iz == 0 || iz == pz-1) {
+		u[iz].re = u[iz].re*0.5;
+		u[iz].im = u[iz].im*0.5;
 	}
 }
 
-__host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
+__host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mode pad) {
 //	const size_t pitch = tPtr.pitch;
 	const int nx = (hmx - 1) * 2 / 3 * 2;
 	const int ny = my / 3 * 2;
@@ -523,42 +556,108 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz) {
 	cufftResult res;
 	cudaError_t err;
 	float time;
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(start_trans);
-
-	cheby_pre_p2s<<<dim3(hnx,ny),mz/2+1>>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
-#ifdef KERNEL_SYNCHRONIZED
-	err = cudaDeviceSynchronize();
-	assert(err == cudaSuccess);
 #endif
-	cudaEventRecord(end_trans);
-	cudaEventSynchronize(end_trans);
-	cudaEventElapsedTime(&time, start_trans, end_trans);
-	std::cout << "cheby_pre_p2s_time = " << time / 1000.0 << std::endl;
 
-	cudaEventRecord(start_trans);
-	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
-		(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
-	assert(res == CUFFT_SUCCESS);
 
-	cudaEventRecord(end_trans);
-	cudaEventSynchronize(end_trans);
-	cudaEventElapsedTime(&time, start_trans, end_trans);
-	std::cout << "cheby fft p2s time = " << time / 1000.0 << std::endl;
-
-	//err = cudaDeviceSynchronize();
-	//assert(err == cudaSuccess);
-
-	cudaEventRecord(start_trans);
-	cheby_post_p2s<<<dim3(hnx,ny),mz/2+1>>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
+	// Transform with dealiasing
+	if (pad == Padding) {
+		cheby_pre_p2s <<< dim3(hnx, ny), mz / 2 + 1 >> > ((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
 #ifdef KERNEL_SYNCHRONIZED
-	err = cudaDeviceSynchronize();
-	assert(err == cudaSuccess);
+		err = cudaDeviceSynchronize();
+		assert(err == cudaSuccess);
 #endif
-	cudaEventRecord(end_trans);
-	cudaEventSynchronize(end_trans);
-	cudaEventElapsedTime(&time, start_trans, end_trans);
-	std::cout << "cheby_post_p2s_time = " << time / 1000.0 << std::endl;
+
+#ifdef CURPCF_CUDA_PROFILING
+		cudaEventRecord(end_trans);
+		cudaEventSynchronize(end_trans);
+		cudaEventElapsedTime(&time, start_trans, end_trans);
+		std::cout << "cheby_pre_p2s_time = " << time / 1000.0 << std::endl;
+
+		cudaEventRecord(start_trans);
+#endif 
+
+		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
+			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
+		assert(res == CUFFT_SUCCESS);
+
+#ifdef CURPCF_CUDA_PROFILING
+		cudaEventRecord(end_trans);
+		cudaEventSynchronize(end_trans);
+		cudaEventElapsedTime(&time, start_trans, end_trans);
+		std::cout << "cheby fft p2s time = " << time / 1000.0 << std::endl;
+
+		//err = cudaDeviceSynchronize();
+		//assert(err == cudaSuccess);
+
+		cudaEventRecord(start_trans);
+#endif
+
+		cheby_post_p2s << <dim3(hnx, ny), mz / 2 + 1 >> > ((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
+#ifdef KERNEL_SYNCHRONIZED
+		err = cudaDeviceSynchronize();
+		assert(err == cudaSuccess);
+#endif
+
+#ifdef CURPCF_CUDA_PROFILING
+		cudaEventRecord(end_trans);
+		cudaEventSynchronize(end_trans);
+		cudaEventElapsedTime(&time, start_trans, end_trans);
+		std::cout << "cheby_post_p2s_time = " << time / 1000.0 << std::endl;
+#endif
+	}
+	else //Transform without dealiasing
+	{
+		{
+			cheby_pre_p2s << <dim3(hnx, ny), mz / 4 + 1 >> > ((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz/2);
+#ifdef KERNEL_SYNCHRONIZED
+			err = cudaDeviceSynchronize();
+			assert(err == cudaSuccess);
+#endif
+
+#ifdef CURPCF_CUDA_PROFILING
+			cudaEventRecord(end_trans);
+			cudaEventSynchronize(end_trans);
+			cudaEventElapsedTime(&time, start_trans, end_trans);
+			std::cout << "cheby_pre_p2s_time = " << time / 1000.0 << std::endl;
+
+			cudaEventRecord(start_trans);
+#endif
+
+			res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,
+				(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
+			assert(res == CUFFT_SUCCESS);
+
+#ifdef CURPCF_CUDA_PROFILING
+			cudaEventRecord(end_trans);
+			cudaEventSynchronize(end_trans);
+			cudaEventElapsedTime(&time, start_trans, end_trans);
+			std::cout << "cheby fft p2s time = " << time / 1000.0 << std::endl;
+
+			//err = cudaDeviceSynchronize();
+			//assert(err == cudaSuccess);
+
+			cudaEventRecord(start_trans);
+#endif
+
+			cheby_post_p2s <<<dim3(hnx, ny), mz / 4 + 1 >> > ((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz/2);
+#ifdef KERNEL_SYNCHRONIZED
+			err = cudaDeviceSynchronize();
+			assert(err == cudaSuccess);
+#endif
+
+#ifdef CURPCF_CUDA_PROFILING
+			cudaEventRecord(end_trans);
+			cudaEventSynchronize(end_trans);
+			cudaEventElapsedTime(&time, start_trans, end_trans);
+			std::cout << "cheby_post_p2s_time = " << time / 1000.0 << std::endl;
+#endif
+		}
+	}
 }
+
+//spectral to physical chebyshev transform in wall-normall direction
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mode doPadding) {
 //	const size_t pitch = tPtr.pitch;
 //	const int pz = mz / 2 + 1;
@@ -566,28 +665,25 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	const int ny = my/3*2;
 	const int hnx = nx/2+1;
 
-	//int threadDimx = 16;
-	//int threadDimy = 16;
 
-	//int blockDimx = hnx / threadDimx ;
-	//int blockDimy = ny / threadDimy ;
-
-	//if (hnx%threadDimx != 0) blockDimx++;
-	//if (ny%threadDimy != 0) blockDimy++;
-
-	//dim3 nthread(threadDimx, threadDimy);
-	//dim3 nBlock(blockDimx, blockDimy);
 	cufftResult res;
 	cudaError_t err;
 	float time;
 
 	if(doPadding == Padding){
+
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_trans);
+#endif
+
 		cheby_pre_s2p_pad<<<dim3(hnx,ny), mz/4+1 >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
+
 #ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
-#endif		
+#endif	
+
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -595,28 +691,34 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 
 
 		cudaEventRecord(start_trans);
+#endif
+
 		res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)tPtr.ptr,
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
-		
+
+#ifdef CURPCF_CUDA_PROFILING		
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "cheby fft s2p padding time = " << time / 1000.0 << std::endl;
-
+#endif
 
 
 		//err = cudaDeviceSynchronize();
 		//ASSERT(err == cudaSuccess);
 	}
-	else if(doPadding == No_Padding){
-
+	else if(doPadding == No_Padding)
+	{
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_trans);
-		cheby_pre_s2p_noPad<<<dim3(hnx,ny), mz/4+1 >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
+#endif
+		cheby_pre_s2p_noPad<<<dim3(hnx,ny), mz/4 >>>((complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
 #ifdef KERNEL_SYNCHRONIZED
 		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 #endif
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -624,15 +726,18 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 
 
 		cudaEventRecord(start_trans);
+#endif
+
 		res = CUFFTEXEC_C2C(planZ_no_pad, (CUFFTCOMPLEX*)tPtr.ptr,
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 		
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
 		std::cout << "cheby fft s2p no pad time = " << time / 1000.0 << std::endl;
-
+#endif
 		//err = cudaDeviceSynchronize();
 		//ASSERT(err == cudaSuccess);
 	}

@@ -9,3 +9,5 @@
 void cuCheck(cudaError_t ret, std::string s = "");
 
 
+//#define CURPCF_CUDA_PROFILING
+

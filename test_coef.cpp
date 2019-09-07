@@ -35,7 +35,7 @@ TestResult Test_coef_v() {
 	RPCF_Paras para;
 	para.numPara.mx = 96;
 	para.numPara.my = 96;
-	para.numPara.mz = 62;
+	para.numPara.mz = 200;
 	para.numPara.dt = 0.005;
 	para.numPara.Re = 2600;
 	para.numPara.n_pi_x = 8;
@@ -72,7 +72,8 @@ TestResult Test_coef_v() {
 
 	// test matrix 2;
 	str = "test_data\\coef_v\\coef_x_017_y_063.dat";
-	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
+	//inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
+	inc = pb.nz*pb.nz*((pb.nx / 2 + 1)*(63) + 17);
 	matrix2d<complex> coef_v2((pb.matrix_coeff_v + inc), pb.nz, pb.nz);
 	infile.close();
 	infile.open(str);
@@ -101,7 +102,7 @@ TestResult Test_coef_omega() {
 	RPCF_Paras para;
 	para.numPara.mx = 96;
 	para.numPara.my = 96;
-	para.numPara.mz = 100;
+	para.numPara.mz = 200;
 	para.numPara.dt = 0.005;
 	para.numPara.Re = 2600;
 	para.numPara.n_pi_x = 8;
@@ -138,7 +139,7 @@ TestResult Test_coef_omega() {
 
 	// test matrix 2;
 	str = "test_data\\coef_omega\\coef_x_017_y_063.dat";
-	inc = pb.nz*pb.nz*((pb.mx / 2 + 1)*(63 + 32) + 17);
+	inc = pb.nz*pb.nz*((pb.nx / 2 + 1)*(63) + 17);
 	matrix2d<complex> coef_omega2((pb.matrix_coeff_omega + inc), pb.nz, pb.nz);
 	infile.close();
 	infile.open(str);

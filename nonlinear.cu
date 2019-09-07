@@ -9,11 +9,11 @@ __host__ int addCoriolisForce(problem& pb);
 
 __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-	real* pLambX, real* pLambY, real* pLambZ, int mz, real Ro);
+	real* pLambX, real* pLambY, real* pLambZ, int mz, real Ro, real meanU);
 
 __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz);
 __global__ void computeLambVectorKernel(cudaPitchedPtrList pList, 
-	int mx, int my, int mz, real Ro);
+	const int mx, const int my, const int mz, real Ro);
 
 //__host__ void saveZeroWaveLamb(problem& pb);
 
@@ -24,20 +24,21 @@ bool cudaTimeInitialized = false;
 // Get the nonliear part of RHS
 __host__ int getNonlinear(problem& pb) {
 	float time;
-
+	
+#ifdef CURPCF_CUDA_PROFILING	
 	if (!cudaTimeInitialized) {
 		cudaEventCreate(&__start);
 		cudaEventCreate(&__stop);
 		cudaTimeInitialized = true;
 	}
+	cudaEventRecord(__start, 0); 
+#endif 
 
-	
 	// spec --> phys, tPtr(z,x,y) --> Ptr(x,y,z)
 	//transform(BACKWARD, pb);
-	cudaEventRecord(__start, 0); 
-
 	transform(BACKWARD, pb);
 
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
@@ -45,58 +46,69 @@ __host__ int getNonlinear(problem& pb) {
 
 
 	cudaEventRecord(__start, 0);
-	// use Ptr in pb
-	addMeanFlow(pb);
+#endif
 
+	// use Ptr in pb
+	// Note: This function is deprecated.
+	//addMeanFlow(pb);
+
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
 	std::cout << "add mean flow time = " << time / 1000.0 << std::endl;
 
 	cudaEventRecord(__start, 0);
-	
+#endif
+
 	computeLambVector(pb);
 
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
 	std::cout << "get lamb time = " << time/1000.0 << std::endl;
 
+
+	cudaEventRecord(__start, 0);
+#endif
+
 	// phys --> spec, Ptr(x,y,z) --> tPtr(z,x,y)
 	// the forward transform only deals with lamb vectors !
 	// see the implementation of the function for further details.
-
-	cudaEventRecord(__start, 0);
-
 	transform(FORWARD, pb);
 
-
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
 	std::cout << "transform forward time = " << time/1000.0 << std::endl;
-
+#endif
 	// This step is completed in computeLambVector()
 	//addCoriolisForce(pb);
 
 	// this operation will be finished in get_rhs_v;
 	//saveZeroWaveLamb(pb);
 
-	// Get the right hand side (RHS) part of the equation.
-	// transform the nonlinear RHS part into phys space
-	// transform(BACKWARD, pb);
-	// the transfomr is done inside the function.
+	
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__start, 0);
+#endif
 
+	// Get the nonlinear part of right hand side (RHS) of the equation.
 	rhsNonlinear(pb);
 
+#ifdef CURPCF_CUDA_PROFILING
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);
 	cudaEventElapsedTime(&time, __start, __stop);
 	std::cout << "get rhs non time = " << time / 1000.0 << std::endl;
+#endif
 	return 0;
 }
 
+
+// deprecated
 __host__ int addMeanFlow(problem & pb)
 {
 	cudaError_t err;
@@ -109,137 +121,25 @@ __host__ int addMeanFlow(problem & pb)
 	//if (pb.mz % nthready != 0) nDimy++;
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
-	addMeanFlowKernel <<<pb.nDim, pb.nThread>>>(pb.dptr_u, pb.px, pb.py, pb.pz);
+	addMeanFlowKernel <<<pb.npDim, pb.nThread>>>(pb.dptr_u, pb.px, pb.py, pb.pz);
 	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
 	return int();
-}
-
-__host__ int computeLambVector(problem & pb)
-{
-	//cudaExtent& pExtent = pb.pExtent;
-	//make_cudaExtent(
-	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
-
-	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
-	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
-	ASSERT(pb.dptr_lamb_z.ptr == nullptr);
-	pb.dptr_lamb_x = pb.dptr_u;
-	pb.dptr_lamb_y = pb.dptr_v;
-	pb.dptr_lamb_z = pb.dptr_w;
-	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), pExtent), "allocate");
-	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), pExtent), "allocate");
-	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), pExtent), "allocate");
-
-	cudaPitchedPtrList pList;
-	pList.dptr_u = pb.dptr_u;
-	pList.dptr_v = pb.dptr_v;
-	pList.dptr_w = pb.dptr_w;
-	pList.dptr_omega_x = pb.dptr_omega_x;
-	pList.dptr_omega_y = pb.dptr_omega_y;
-	pList.dptr_omega_z = pb.dptr_omega_z;
-	pList.dptr_lamb_x = pb.dptr_lamb_x;
-	pList.dptr_lamb_y = pb.dptr_lamb_y;
-	pList.dptr_lamb_z = pb.dptr_lamb_z;
-
-	cudaError_t err;
-
-	//int nthreadx = 16;
-	//int nthready = 16;
-	//int nDimx = pb.py / nthreadx;
-	//int nDimy = pb.pz / nthready;
-	//if (pb.py % nthreadx != 0) nDimx++;
-	//if (pb.pz % nthready != 0) nDimy++;
-	//dim3 nThread(nthreadx, nthready);
-	//dim3 nDim(nDimx, nDimy);
-	dim3 nDim(pb.my, pb.pz);
-	//computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz, pb.Ro);
-	computeLambVectorKernel<<<nDim,pb.mx>>>(pList, pb.px, pb.py, pb.pz, pb.Ro);
-	err = cudaDeviceSynchronize();
-	ASSERT(err == cudaSuccess);
-
-	//safeCudaFree(pb.dptr_u.ptr);
-	//safeCudaFree(pb.dptr_v.ptr);
-	//safeCudaFree(pb.dptr_w.ptr);
-	//safeCudaFree(pb.dptr_omega_x.ptr);
-	//safeCudaFree(pb.dptr_omega_y.ptr);
-	//safeCudaFree(pb.dptr_omega_z.ptr);
-	pb.dptr_u.ptr = NULL;
-	pb.dptr_v.ptr = NULL;
-	pb.dptr_w.ptr = NULL;
-	myCudaFree(pb.dptr_omega_z, XYZ_3D);
-	myCudaFree(pb.dptr_omega_y, XYZ_3D);
-	myCudaFree(pb.dptr_omega_x, XYZ_3D);
-
-	return 0;
 }
 
 __host__ int rhsNonlinear(problem & pb)
 {
 	// get datas
 	cudaPitchedPtrList tPlist(pb,TRANSPOSED);
-/*
-	int dim[3];
-	int tDim[3];
-	dim[0] = pb.mx;
-	dim[1] = pb.my;
-	dim[2] = pb.mz;
-	tDim[0] = pb.mz;
-	tDim[1] = pb.mx;
-	tDim[2] = pb.my;
-*/
+
 	cudaError_t err;
-	int nthreadx = 16;
-	int nthready = 16;
 	const int hnx = pb.mx/ 3 * 2 / 2+1;
 	const int ny = pb.my / 3 * 2;
-	int nDimx = hnx / nthreadx;
-	int nDimy = ny / nthready;
-	if (hnx % nthreadx != 0) nDimx++;
-	if (ny%nthready != 0)nDimy++;
-	dim3 nThread(nthreadx, nthready);
-	dim3 nDim(nDimx, nDimy);
-
+	 
 	//rhsNonlinearKernel<<<nDim,nThread>>>(tPlist, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
-	rhsNonlinearKernel<<<dim3(hnx-1,ny),pb.nz>>>(tPlist, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
+	rhsNonlinearKernel<<<dim3(hnx,ny),pb.nz>>>(tPlist, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
 	err = cudaDeviceSynchronize();
 	ASSERT(err == cudaSuccess);
-
-	/*
-	//data type mismatch here!
-	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)pb.dptr_tLamb_x.ptr,
-		(CUFFTCOMPLEX*)pb.dptr_tLamb_x.ptr,CUFFT_INVERSE); 
-	ASSERT(res == CUFFT_SUCCESS);
-	res = CUFFTEXEC_C2C(planZ_pad, (CUFFTCOMPLEX*)pb.dptr_tLamb_z.ptr,
-		(CUFFTCOMPLEX*)pb.dptr_tLamb_z.ptr,CUFFT_INVERSE);
-	ASSERT(res == CUFFT_SUCCESS);
-
-	int nthreadx = 7;
-	int nthready = 6;
-	ASSERT((pb.mx/2+1) % nthreadx == 0);
-	ASSERT(pb.my % nthready == 0);
-	dim3 thread_num(nthreadx, nthready);
-	normalize << <1, thread_num >> >
-		(pb.dptr_tLamb_x, pb.mz * 2, pb.mx / 2 + 1, pb.my, 1.0 / pb.mz);
-	err = cudaDeviceSynchronize();
-	ASSERT(err == cudaSuccess); 
-	
-	normalize << <1, thread_num >> >
-		(pb.dptr_tLamb_z, pb.mz * 2, pb.mx / 2 + 1, pb.my, 1.0 / pb.mz);
-	err = cudaDeviceSynchronize();
-	ASSERT(err == cudaSuccess);
-
-	//swap of old RHS value and new
-	swap(pb.nonlinear_v, pb.nonlinear_v_p);
-	swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
-
-	//copy RHS from device to host.
-	size_t tSize = pb.dptr_tLamb_x.pitch*(pb.mx/2+1)*pb.my;
-	err = cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tSize, cudaMemcpyDeviceToHost);
-	ASSERT(err == cudaSuccess);
-	err = cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_z.ptr, tSize, cudaMemcpyDeviceToHost);
-	ASSERT(err == cudaSuccess);
-	*/
 
 	return int();
 }
@@ -283,8 +183,6 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	real tres_u_im;
 	//temp result v imaginary part part
 	real tres_w_im;
-
-	
 
 	// the following variables are in spectral space
 	//complex* dp_u = (complex*)plist.dptr_u.ptr; //actually dptr_tu, so on...
@@ -338,6 +236,9 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 		dp_lamb_x[i].im = tres_u_im;
 		dp_lamb_y[i].re = tres_w_re;
 		dp_lamb_y[i].im = tres_w_im;
+
+		//dp_lamb_x[i] = cache_lamb_z;
+		//dp_lamb_y[i] = cache_lamb_y;
 }
 
 __host__ int addCoriolisForce(problem & pb)
@@ -403,6 +304,65 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 //		pLambX, pLambY, pLambZ, mx);
 //}
 
+__host__ int computeLambVector(problem & pb)
+{
+	//cudaExtent& pExtent = pb.pExtent;
+	//make_cudaExtent(
+	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
+
+	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
+	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
+	ASSERT(pb.dptr_lamb_z.ptr == nullptr);
+	pb.dptr_lamb_x = pb.dptr_u;
+	pb.dptr_lamb_y = pb.dptr_v;
+	pb.dptr_lamb_z = pb.dptr_w;
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), pExtent), "allocate");
+	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_z), pExtent), "allocate");
+
+	cudaPitchedPtrList pList;
+	pList.dptr_u = pb.dptr_u;
+	pList.dptr_v = pb.dptr_v;
+	pList.dptr_w = pb.dptr_w;
+	pList.dptr_omega_x = pb.dptr_omega_x;
+	pList.dptr_omega_y = pb.dptr_omega_y;
+	pList.dptr_omega_z = pb.dptr_omega_z;
+	pList.dptr_lamb_x = pb.dptr_lamb_x;
+	pList.dptr_lamb_y = pb.dptr_lamb_y;
+	pList.dptr_lamb_z = pb.dptr_lamb_z;
+
+	cudaError_t err;
+
+	//int nthreadx = 16;
+	//int nthready = 16;
+	//int nDimx = pb.py / nthreadx;
+	//int nDimy = pb.pz / nthready;
+	//if (pb.py % nthreadx != 0) nDimx++;
+	//if (pb.pz % nthready != 0) nDimy++;
+	//dim3 nThread(nthreadx, nthready);
+	//dim3 nDim(nDimx, nDimy);
+	dim3 nDim(pb.my, pb.pz);
+	//computeLambVectorKernel<<<pb.nDim,pb.nThread>>>(pList, pb.px, pb.py, pb.pz, pb.Ro);
+	computeLambVectorKernel << <nDim, pb.mx >> >(pList, pb.px, pb.py, pb.pz, pb.Ro);
+	err = cudaDeviceSynchronize();
+	ASSERT(err == cudaSuccess);
+
+	//safeCudaFree(pb.dptr_u.ptr);
+	//safeCudaFree(pb.dptr_v.ptr);
+	//safeCudaFree(pb.dptr_w.ptr);
+	//safeCudaFree(pb.dptr_omega_x.ptr);
+	//safeCudaFree(pb.dptr_omega_y.ptr);
+	//safeCudaFree(pb.dptr_omega_z.ptr);
+	pb.dptr_u.ptr = NULL;
+	pb.dptr_v.ptr = NULL;
+	pb.dptr_w.ptr = NULL;
+	myCudaFree(pb.dptr_omega_z, XYZ_3D);
+	myCudaFree(pb.dptr_omega_y, XYZ_3D);
+	myCudaFree(pb.dptr_omega_x, XYZ_3D);
+
+	return 0;
+}
+
 __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 	const int mx, const int my, const int pz, real Ro) {
 	//可以合并几个lamb矢量计算到一个kernel中
@@ -427,24 +387,28 @@ __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 
 	//compute the location of data in each thread.
 	int pitch = ptrV.pitch;
-	real* pU = (real*)((char*)ptrU.ptr + pitch * id) + kx;
-	real* pV = (real*)((char*)ptrV.ptr + pitch * id) + kx;
-	real* pW = (real*)((char*)ptrW.ptr + pitch * id) + kx;
-	real* pOmegaX = (real*)((char*)ptrOmegaX.ptr + pitch * id) + kx;
-	real* pOmegaY = (real*)((char*)ptrOmegaY.ptr + pitch * id) + kx;
-	real* pOmegaZ = (real*)((char*)ptrOmegaZ.ptr + pitch * id) + kx;
-	real* pLambX = (real*)((char*)ptrLambX.ptr + pitch * id) + kx;
-	real* pLambY = (real*)((char*)ptrLambY.ptr + pitch * id) + kx;
-	real* pLambZ = (real*)((char*)ptrLambZ.ptr + pitch * id) + kx;
-
+	real* pU = ((real*)((char*)ptrU.ptr + pitch * id)) + kx;
+	real* pV = ((real*)((char*)ptrV.ptr + pitch * id)) + kx;
+	real* pW = ((real*)((char*)ptrW.ptr + pitch * id)) + kx;
+	real* pOmegaX = ((real*)((char*)ptrOmegaX.ptr + pitch * id)) + kx;
+	real* pOmegaY = ((real*)((char*)ptrOmegaY.ptr + pitch * id)) + kx;
+	real* pOmegaZ = ((real*)((char*)ptrOmegaZ.ptr + pitch * id)) + kx;
+	real* pLambX = ((real*)((char*)ptrLambX.ptr + pitch * id)) + kx;
+	real* pLambY = ((real*)((char*)ptrLambY.ptr + pitch * id)) + kx;
+	real* pLambZ = ((real*)((char*)ptrLambZ.ptr + pitch * id)) + kx;
+	
+	real PI = 4.0*atan(1.0);
+	// int nz = (pz - 1) / 2;
+	real y_coord = cos((real)kz / ((real)(pz-1))*PI);
+	real meanU = 0.5*(1 + y_coord);
 	//execute the computation
 	computeLambDevice(pU, pV, pW, pOmegaX, pOmegaY, pOmegaZ,
-		pLambX, pLambY, pLambZ, mx, Ro);
+		pLambX, pLambY, pLambZ, mx, Ro, meanU);
 }
 
 __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-	real* pLambX, real* pLambY, real* pLambZ, int mx, real Ro) {
+	real* pLambX, real* pLambY, real* pLambZ, int mx, real Ro, real meanU) {
 	//int  i = 0;
 	real lx, ly, lz, ox, oy, oz, u, v, w;
 	ox = *pOmegaX;
@@ -456,11 +420,8 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 
 	lx = oz*v - oy*w - Ro*w;
 	ly = ox*w - oz*u;
-	lz = oy*u - ox*v + Ro*u;
+	lz = oy*u - ox*v +Ro*(u + meanU);
 
-	//lx = -pOmegaY[i] * pW[i] + pOmegaZ[i] * pV[i] - Ro*pW[i];
-	//ly = -pOmegaZ[i] * pU[i] + pOmegaX[i] * pW[i] ;
-	//lz = -pOmegaX[i] * pV[i] + pOmegaY[i] * pU[i] + Ro*pU[i];
 	*pLambX = lx;
 	*pLambY = ly;
 	*pLambZ = lz;

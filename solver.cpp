@@ -34,46 +34,62 @@ extern pthread_mutex_t mutex_malloc;
 
 cublasHandle_t __cublas_handle;
 
+void synchronizeGPUsolver() {
+	//pthread_mutex_lock(&mutex_malloc);
+	pthread_cond_wait(&cond_malloc, &mutex_malloc);
+	pthread_mutex_unlock(&mutex_malloc);
+}
+
 int nextStep(problem& pb) {
 
+#ifdef CURPCF_CUDA_PROFILING
 	clock_t start_time, end_time;
 	double cost_eq = 0.0;
 	double cost_rhs_omega = 0.0;
-
+#endif
 
 	get_rhs_v(pb);
 	//cout << "solve eq v" << endl;
 	//solve equation of v from (0,0) to (nx,ny)
+
+#ifdef CURPCF_CUDA_PROFILING
 	start_time = clock();
+#endif
 
 	solveEq(pb.matrix_coeff_v, pb.rhs_v,
 		pb.nz, pb.tPitch, pb.mx, pb.my); 
 	//solveEqGPU(pb.matrix_coeff_v, pb.rhs_v,
 	//	pb.nz, pb.tPitch, pb.mx, pb.my, 0); 
 
+#ifdef CURPCF_CUDA_PROFILING
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
-	//cout << "get rhs omega" << endl;
 	start_time = clock(); 
-	
+#endif	
+
+	//cout << "get rhs omega" << endl;
 	get_rhs_omega(pb);
 
+#ifdef CURPCF_CUDA_PROFILING
 	end_time = clock();
 	cost_rhs_omega += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 	std::cout << "rhs omega time = " << cost_rhs_omega << std::endl;
+	start_time = clock();
+#endif
+
 	//cout << "solve eq omega" << endl;
 	//solve equation of omega from (0,0) to (nx,ny)
-	start_time = clock();
-	
 	solveEq(pb.matrix_coeff_omega, pb.rhs_omega_y,
 		pb.nz, pb.tPitch, pb.mx, pb.my);
 	//solveEqGPU(pb.matrix_coeff_omega, pb.rhs_omega_y, 
 	//	pb.nz, pb.tPitch, pb.mx, pb.my, 1);
 	
+#ifdef CURPCF_CUDA_PROFILING
 	end_time = clock();
 	cost_eq += (double)(end_time - start_time) / CLOCKS_PER_SEC;
 	std::cout << "solve equation time = " << cost_eq << std::endl;
+#endif
 
 	//cout << "save 0 v,oy" << endl;
 
@@ -82,9 +98,10 @@ int nextStep(problem& pb) {
 	
 	//cout << "get velocity" << endl;
 
-	//pthread_mutex_lock(&mutex_malloc);
-	pthread_cond_wait(&cond_malloc, &mutex_malloc);
-	pthread_mutex_unlock(&mutex_malloc);
+	synchronizeGPUsolver();
+
+	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice),"cpy");
+	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice), "cpy");
 
 	getUVW(pb);
 	pb.currenStep++;

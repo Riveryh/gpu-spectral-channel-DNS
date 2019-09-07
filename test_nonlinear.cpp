@@ -74,6 +74,7 @@ TestResult test_nonlinear() {
 
 	//impose input field
 	setFlow(pb2);	
+	pb2.Ro = 0;
 	//compute lamb vector
 	computeLambVector(pb2);
 	//validate lamb vector

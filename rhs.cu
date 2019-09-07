@@ -40,21 +40,30 @@ void init_pthread(problem& pb) {
 	}
 }
 
+// This function runs on a parallel thread for computing nonlinear term.
+// The linear term will be computated by the main thread spontaneously to save time
+// The synchronization is guaranteed by a pthread lock.
 void* func(void* _pb) {
 	while (true) {
 		float time;
+
+		//wating for starting signal of the main thread
 		pthread_mutex_lock(&mutex_nonlinear);
 		pthread_cond_wait(&cond_nonlinear,&mutex_nonlinear);
 		pthread_mutex_unlock(&mutex_nonlinear);
+
+		
+#ifdef CURPCF_CUDA_PROFILING
 		clock_t start_time, end_time;
 		double cost;
-		problem& pb = *((problem*)_pb);
 		start_time = clock();
 		cudaEventRecord(start_non, 0);
+#endif
 
+		problem& pb = *((problem*)_pb);
 		getNonlinear(pb);
 
-
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_non, 0);
 		cudaEventSynchronize(end_non);
 		cudaEventElapsedTime(&time, start_non, end_non);
@@ -62,36 +71,47 @@ void* func(void* _pb) {
 
 
 		cudaEventRecord(start_non, 0);
+#endif 
+
 		// transform the nonlinear term into physical space.
 		cheby_s2p(pb.dptr_tLamb_x, pb.mx / 2 + 1, pb.my, pb.mz, No_Padding);
 		cheby_s2p(pb.dptr_tLamb_y, pb.mx / 2 + 1, pb.my, pb.mz, No_Padding);
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_non, 0);
 		cudaEventSynchronize(end_non);
 		cudaEventElapsedTime(&time, start_non, end_non);
 		std::cout << "cheby_s2p no pad time = " << time / 1000.0 << std::endl;
-
+#endif
 
 		//save previous step
 		swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
 		swap(pb.nonlinear_v, pb.nonlinear_v_p);
 		size_t tsize = pb.tSize;// pb.tPitch * (pb.mx / 2 + 1) * pb.my;
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(start_non, 0);
+#endif
 
 		cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 		cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 
+#ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_non, 0);
 		cudaEventSynchronize(end_non);
 		cudaEventElapsedTime(&time, start_non, end_non);
 		std::cout << "memcpy time = " << time / 1000.0 << std::endl;
+#endif 
+
 		//TODO: NONLINEAR TIME SCHEME
 		save_zero_wave_number_lamb(pb);
 
+#ifdef CURPCF_CUDA_PROFILING
 		end_time = clock();
 		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		std::cout << "get nonlinear time = " << cost << std::endl;
+#endif
+
 		// synchronize with main thread.
 		pthread_mutex_lock(&mutex_v);
 		pthread_cond_signal(&cond_v);
@@ -127,6 +147,7 @@ void* func(void* _pb) {
 		cuCheck(myCudaMalloc(pb.dptr_tv, ZXY_3D), "allocate");
 		cuCheck(myCudaMalloc(pb.dptr_tu, ZXY_3D), "allocate");
 
+		// Tell the main thread the computation is completed
 		pthread_mutex_lock(&mutex_malloc);
 		pthread_cond_signal(&cond_malloc);
 		pthread_mutex_unlock(&mutex_malloc);
@@ -148,6 +169,7 @@ __host__ int get_rhs_v(problem& pb) {
 
 	cudaEventRecord(end_non);
 
+	//waiting for the nonlinear term by GPU
 	pthread_cond_wait(&cond_v, &mutex_v);
 	pthread_mutex_unlock(&mutex_v);
 
@@ -158,7 +180,9 @@ __host__ int get_rhs_v(problem& pb) {
 			for (int k = 4; k < pb.nz; k++) {
 				if (i == 0 && j == 0) continue;
 				size_t inc = pb.tPitch/sizeof(complex)*((pb.nx/2+1)*j+i)+k;
-				pb.rhs_v[inc] = pb.rhs_v[inc] + (pb.nonlinear_v[inc-2]*1.5 - pb.nonlinear_v_p[inc-2]*0.5)*pb.dt;
+				pb.rhs_v[inc] = pb.rhs_v[inc] +(pb.nonlinear_v[inc - 2] * 1.5 - pb.nonlinear_v_p[inc - 2] * 0.5)*pb.dt;
+				//pb.rhs_v[inc] = pb.rhs_v[inc] + (pb.nonlinear_v[inc - 2])*pb.dt;
+				//pb.rhs_v[inc] =  pb.nonlinear_v[inc - 2];
 			}
 		}
 	}

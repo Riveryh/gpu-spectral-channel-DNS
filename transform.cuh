@@ -24,7 +24,7 @@ __host__ void setZeros(complex* ptr, size_t pitch, dim3 dims);
 __global__ void normalizeKernel(real* p, size_t pitch, int mx, int my, int mz, real factor);
 __host__ void normalize(cudaPitchedPtr p, dim3 dims, real factor);
 
-__host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz);
+__host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);
 
 __host__ void cheby_p2s_X3(cudaPitchedPtr tPtr, int mx, int my, int mz);

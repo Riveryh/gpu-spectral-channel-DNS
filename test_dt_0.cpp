@@ -27,8 +27,8 @@ TestResult test_dt_0() {
 		initFlow(pb);
 
 		cout << "output flow" << endl;
-
-		//output_velocity(pb);
+		pb.currenStep = 0;
+		output_velocity(pb);
 		//output_velocity(pb);
 
 		complex* tv = (complex*)malloc(pb.tSize);
@@ -71,27 +71,42 @@ TestResult test_dt_0() {
 	}
 
 	//complex* tv2 = pb.rhs_v;
-	//complex* tv2 = (complex*)malloc(pb.tSize);
-	//cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
+	complex* tv2 = (complex*)malloc(pb.tSize);
+	complex* tv = (complex*)malloc(pb.tSize);
+	cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 	
-	clock_t start_time, end_time;
+	//clock_t start_time, end_time;
+	cudaEvent_t start_trans, end_trans;
+	cudaEventCreate(&start_trans);
+	cudaEventCreate(&end_trans);
+
 	double cost;
 	double total_cost = 0.0;
+	float time;
 	int count = 0;
 	pb.currenStep = pb.para.stepPara.start_step;
 	for (int i = pb.para.stepPara.start_step;
 		i < pb.para.stepPara.end_step; i++) 
 	{
 		std::cout << "step: " << i << std::endl;
-		start_time = clock();
+		//start_time = clock();
+
+		cudaEventRecord(start_trans);
+
 		nextStep(pb);
 		//statistics(pb);
-		end_time = clock();
-		cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-		total_cost += cost;
+		//end_time = clock();
+
+		cudaEventRecord(end_trans);
+		cudaEventSynchronize(end_trans);
+		cudaEventElapsedTime(&time, start_trans, end_trans);
+
+		//cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+		total_cost += time;
 		count++;
-		std::cout << "time_cost:" << cost << std::endl;
-		std::cout << "mean time cost:" << total_cost / count << std::endl;
+		std::cout << "time_cost:" << time / 1000.0 << std::endl;
+		std::cout << "mean time cost:" << total_cost / count / 1000.0 << std::endl;
+		std::cout << "velocity(0,0,0):" << (pb.rhs_v->re) << " " << (pb.rhs_v->im) << std::endl;
 
 		if (i % pb.para.stepPara.save_internal == 0) {
 		//if (i > 320) {
@@ -104,22 +119,23 @@ TestResult test_dt_0() {
 		}
 		//if (i == 340) exit(0);
 	}
-	//output_velocity(pb);
-	//cuCheck(cudaMemcpy(tv2, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 
 	return TestSuccess;
+	//output_velocity(pb);
+	cuCheck(cudaMemcpy(tv2, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 
-	//#pragma omp parallel for
-	//for (int ix = 0; ix < pb.nx / 2 + 1; ix++) {
-	//	for (int iy = 0; iy < pb.ny; iy++) {
-	//		for (int iz = 0; iz < pb.nz; iz++) {
-	//			size_t inc = pb.tPitch / sizeof(complex)
-	//				*((pb.nx / 2 + 1)*iy + ix);
-	//			assert(isEqual(tv[inc].re, tv2[inc].re));
-	//			assert(isEqual(tv[inc].im, tv2[inc].im));
-	//		}
-	//	}
-	//}
+
+	#pragma omp parallel for
+	for (int ix = 0; ix < pb.nx / 2 + 1; ix++) {
+		for (int iy = 0; iy < pb.ny; iy++) {
+			for (int iz = 0; iz < pb.nz; iz++) {
+				size_t inc = pb.tPitch / sizeof(complex)
+					*((pb.nx / 2 + 1)*iy + ix);
+				assert(isEqual(tv[inc].re, tv2[inc].re));
+				assert(isEqual(tv[inc].im, tv2[inc].im));
+			}
+		}
+	}
 
 	return TestSuccess;
 }

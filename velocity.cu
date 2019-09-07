@@ -46,9 +46,11 @@ int getUVW(problem& pb) {
 	pb.dptr_tomega_y = pb.dptr_tu; pb.dptr_tomega_y.ptr = (char*)pb.dptr_tomega_x.ptr + pb.size;
 	pb.dptr_tomega_z = pb.dptr_tu; pb.dptr_tomega_z.ptr = (char*)pb.dptr_tomega_x.ptr + pb.size;*/
 
-	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
-	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
+	// [!!!] Note: the copy operation needs to be done before call getUVW()
+	//cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, tSize, cudaMemcpyHostToDevice),"cpy");
+	//cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, tSize, cudaMemcpyHostToDevice), "cpy");
 	//cuCheck(cudaDeviceSynchronize(),"Mem copy");
+
 	int nthreadx = pb.nz;
 	//int nthready = 16;
 	int nDimx = (pb.nx / 2 + 1);
@@ -124,7 +126,7 @@ __global__ void getVelocityKernel_sm(
 
 	//skip empty wave numbers
 	const int nx = mx / 3 * 2;
-	const int ny = mx / 3 * 2;
+	const int ny = my / 3 * 2;
 	// if (kx >= (nx / 2 + 1) || ky >= ny) return;
 
 	real ialpha = real(kx) / alpha;

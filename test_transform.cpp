@@ -6,14 +6,17 @@ using namespace std;
 #include <cassert>
 
 void compareFlow(problem& pb);
+void compare_S2P_Flow(problem& pb);
 void setFlowForSpectra(problem& pb);
 void compareSpectra(problem& pb);
 
 TestResult test_transform() {
-	problem pb;
+	//problem pb;
+	RPCF_Paras para("parameter.txt");
+	problem pb(para);
 	initCUDA(pb);
 	initFFT(pb);
-
+	
 	int mx = pb.mx;
 	int my = pb.my;
 	int mz = pb.mz;
@@ -39,18 +42,31 @@ TestResult test_transform() {
 	int dim[3] = { pb.mx,pb.my,pb.mz };
 	int tdim[3] = { pb.mz,pb.mx,pb.my };
 
-	myCudaFree(pb.dptr_omega_z, XYZ_3D);
-	myCudaFree(pb.dptr_omega_y, XYZ_3D);
-	myCudaFree(pb.dptr_omega_x, XYZ_3D);
-	myCudaFree(pb.dptr_w, XYZ_3D);
-	myCudaFree(pb.dptr_v, XYZ_3D);
+	//myCudaFree(pb.dptr_omega_z, XYZ_3D);
+	//myCudaFree(pb.dptr_omega_y, XYZ_3D);
+	//myCudaFree(pb.dptr_omega_x, XYZ_3D);
+	//myCudaFree(pb.dptr_w, XYZ_3D);
+	//myCudaFree(pb.dptr_v, XYZ_3D);
 
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
-	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	Padding_mode pad = Padding;
+	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim, pad);
+
+	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_v, pb.dptr_tv, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_w, pb.dptr_tw, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tdim, pad);
+
+	//transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	//transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	//transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
+	//transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim);
 
 	//-------------------------------
 	compareFlow(pb);
@@ -74,6 +90,25 @@ TestResult test_transform() {
 
 	//
 
+	transform_3d_one(FORWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_w, pb.dptr_tw, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_v, pb.dptr_tv, dim, tdim, pad);
+	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tdim, pad);
+
+	pad = No_Padding;
+
+	transform_3d_one(BACKWARD, pb.dptr_u, pb.dptr_tu, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_v, pb.dptr_tv, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_w, pb.dptr_tw, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_x, pb.dptr_tomega_x, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tdim, pad);
+	transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tdim, pad);
+
+	compare_S2P_Flow(pb);
+
+
 	return TestSuccess;
 }
 
@@ -86,8 +121,13 @@ void compareFlow(problem& pb) {
 	real lx = pb.lx;
 	real ly = pb.ly;
 	real* u = pb.hptr_u;
+	real* oy = pb.hptr_omega_y;
+	real* oz = pb.hptr_omega_z;
+
 	size_t size = pitch * my * mz;
 	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaDeviceSynchronize(),"Sync");
 	real PRECISION = 1e-8;
 
@@ -101,7 +141,12 @@ void compareFlow(problem& pb) {
 				real z = cos(real(k) / (pz - 1)*PI);
 				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
 				real ex_u = (1 - z*z)*sin(y)*cos(x);
+				real ex_oy = -2 * z * sin(y)*cos(x);
+				real ex_oz = -(1 - z*z)*cos(y)*cos(x);
+
 				assert(isEqual(ex_u, u[inc], PRECISION));
+				assert(isEqual(ex_oy, oy[inc], PRECISION));
+				assert(isEqual(ex_oz, oz[inc], PRECISION));
 			}
 }
 
@@ -168,4 +213,43 @@ void setFlowForSpectra(problem& pb) {
 			}
 
 	cuCheck(cudaMemcpy(pb.dptr_u.ptr, pb.hptr_u, size, cudaMemcpyHostToDevice), "memcpy");
+}
+
+void compare_S2P_Flow(problem& pb) {
+	int mx = pb.mx;
+	int my = pb.my;
+	int mz = pb.mz;
+	int pz = (mz / 2 + 1);
+	int nz = (mz / 4 + 1);
+	size_t pitch = pb.pitch;
+	real lx = pb.lx;
+	real ly = pb.ly;
+	real* u = pb.hptr_u;
+	real* oy = pb.hptr_omega_y;
+	real* oz = pb.hptr_omega_z;
+
+	size_t size = pitch * my * mz;
+	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
+	cuCheck(cudaDeviceSynchronize(), "Sync");
+	real PRECISION = 1e-8;
+
+	real PI = 4.0*atan(1.0);
+	for (int k = 0; k < nz; k++)
+		for (int j = 0; j < my; j++)
+			for (int i = 0; i < mx; i++)
+			{
+				real x = lx * i / mx;
+				real y = ly * j / my;
+				real z = cos(real(k) / (nz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
+				real ex_u = (1 - z*z)*sin(y)*cos(x);
+				real ex_oy = -2 * z * sin(y)*cos(x);
+				real ex_oz = -(1 - z*z)*cos(y)*cos(x);
+
+				assert(isEqual(ex_u, u[inc], PRECISION));
+				assert(isEqual(ex_oy, oy[inc], PRECISION));
+				assert(isEqual(ex_oz, oz[inc], PRECISION));
+			}
 }
