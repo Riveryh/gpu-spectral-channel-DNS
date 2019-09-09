@@ -104,7 +104,7 @@ int nextStep(problem& pb) {
 	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice), "cpy");
 
 	getUVW(pb);
-	pb.currenStep++;
+	//pb.currenStep++;
 	return 0;
 }
 

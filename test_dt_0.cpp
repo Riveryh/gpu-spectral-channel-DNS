@@ -86,7 +86,7 @@ TestResult test_dt_0() {
 	int count = 0;
 	pb.currenStep = pb.para.stepPara.start_step;
 	for (int i = pb.para.stepPara.start_step;
-		i < pb.para.stepPara.end_step; i++) 
+		i <= pb.para.stepPara.end_step; i++) 
 	{
 		std::cout << "step: " << i << std::endl;
 		//start_time = clock();
@@ -118,6 +118,7 @@ TestResult test_dt_0() {
 			write_recover_data(pb);
 		}
 		//if (i == 340) exit(0);
+		pb.currenStep++;
 	}
 
 	return TestSuccess;
