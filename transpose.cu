@@ -5,16 +5,16 @@
 
 #define TILE_DIM 8
 
-__global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_forward(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
-__global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_backward(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
-__global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_forward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
-__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_backward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
 // dim参数表示的是xyz排列的数据的维度（Real格式），实际上由于transpose时存储的是Complex格式，
@@ -26,9 +26,9 @@ __global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	cudaPitchedPtr tPtr, int* dim, int* tDim) {
 	//storage of host temporal variable
-	complex* buffer, *tbuffer;
+	cuRPCF::complex* buffer, *tbuffer;
 
-	//number of complex
+	//number of cuRPCF::complex
 	int nx = (dim[0] / 2 + 1);
 	int ny = dim[1];
 	int nz = dim[2];
@@ -39,32 +39,32 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	size_t size = Pitch * ny * nz;
 	size_t tsize = tPitch * nx * ny;
 
-	complex* ptr = (complex*)Ptr.ptr;
-	complex* tptr = (complex*)tPtr.ptr;
+	cuRPCF::complex* ptr = (cuRPCF::complex*)Ptr.ptr;
+	cuRPCF::complex* tptr = (cuRPCF::complex*)tPtr.ptr;
 	cudaError_t err;
 
 	//ASSERT(dir == BACKWARD);
-	ASSERT(sizeof(complex) == 2 * sizeof(real));
+	ASSERT(sizeof(cuRPCF::complex) == 2 * sizeof(REAL));
 	ASSERT(dim[0] == tDim[1]);
 	ASSERT(dim[1] == tDim[2]);
 	ASSERT(dim[2] == tDim[0]);
-	ASSERT(Pitch >= nx * sizeof(complex));
-	ASSERT(tPitch >= nz * sizeof(complex));
+	ASSERT(Pitch >= nx * sizeof(cuRPCF::complex));
+	ASSERT(tPitch >= nz * sizeof(cuRPCF::complex));
 	ASSERT(ptr != nullptr);
 	ASSERT(tptr != nullptr);
 
-	buffer = (complex*)malloc(size);
-	tbuffer = (complex*)malloc(tsize);
+	buffer = (cuRPCF::complex*)malloc(size);
+	tbuffer = (cuRPCF::complex*)malloc(tsize);
 
 	//set default value to zeros.
-	for (size_t i = 0; i < size / sizeof(complex); i++) {
+	for (size_t i = 0; i < size / sizeof(cuRPCF::complex); i++) {
 		buffer[i] = 0.0;
 	}
-	for (size_t i = 0; i < tsize / sizeof(complex); i++) {
+	for (size_t i = 0; i < tsize / sizeof(cuRPCF::complex); i++) {
 		tbuffer[i] = 0.0;
 	}
 
-	size_t layerIn = Pitch / sizeof(complex)*ny;
+	size_t layerIn = Pitch / sizeof(cuRPCF::complex)*ny;
 	// Ptr[z][y][x] = tPtr[y][x][z]
 	if (dir == FORWARD) {
 		err = cudaMemcpy(buffer, ptr, size, cudaMemcpyDeviceToHost);
@@ -73,8 +73,8 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 		for (int k = 0; k < nz; k++) {
 			for (int j = 0; j < ny; j++) {
 				for (int i = 0; i < nx; i++) {
-					size_t index1 = k*layerIn + Pitch / sizeof(complex)*j + i;
-					size_t index2 = (nx*j + i)*tPitch / sizeof(complex) + k;
+					size_t index1 = k*layerIn + Pitch / sizeof(cuRPCF::complex)*j + i;
+					size_t index2 = (nx*j + i)*tPitch / sizeof(cuRPCF::complex) + k;
 					tbuffer[index2] = buffer[index1];
 				}
 			}
@@ -94,8 +94,8 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 		for (int k = 0; k < nz; k++) {
 			for (int j = 0; j < ny; j++) {
 				for (int i = 0; i < nx; i++) {
-					size_t index1 = k*layerIn + Pitch / sizeof(complex)*j + i;
-					size_t index2 = (nx*j + i)*tPitch / sizeof(complex) + k;
+					size_t index1 = k*layerIn + Pitch / sizeof(cuRPCF::complex)*j + i;
+					size_t index2 = (nx*j + i)*tPitch / sizeof(cuRPCF::complex) + k;
 					buffer[index1] = tbuffer[index2];
 				}
 			}
@@ -103,9 +103,9 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 		err = cudaMemcpy(ptr, buffer, size, cudaMemcpyHostToDevice);
 		ASSERT(cudaSuccess == err);
 	}
-	//RPCF::write_3d_to_file("input.txt", (real*)buffer, Ptr.pitch,
+	//RPCF::write_3d_to_file("input.txt", (REAL*)buffer, Ptr.pitch,
 	//	nx, ny, nz);
-	//RPCF::write_3d_to_file("output.txt", (real*)tbuffer, tPtr.pitch,
+	//RPCF::write_3d_to_file("output.txt", (REAL*)tbuffer, tPtr.pitch,
 	//	nz, nx, ny);
 	free(buffer);
 	free(tbuffer);
@@ -133,7 +133,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 
-		transpose_forward<<<dim3(hnx,ny),mz/2+1>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_forward<<<dim3(hnx,ny),mz/2+1>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
@@ -152,7 +152,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
 
-		transpose_backward<<<dim3(hnx, ny), mz/2+1 >>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_backward<<<dim3(hnx, ny), mz/2+1 >>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
 
@@ -188,7 +188,7 @@ __host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck(cudaMalloc3D(&(tPtr), tExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
 
-		transpose_forward_sm <<<nBlock, nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_forward_sm <<<nBlock, nThread>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
@@ -207,7 +207,7 @@ __host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//cuCheck( cudaMalloc3D(&(Ptr), pExtent),"cuMalloc");
 		//cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
 
-		transpose_backward_sm <<<nBlock, nThread>>>((complex*)Ptr.ptr, (complex*)tPtr.ptr,
+		transpose_backward_sm <<<nBlock, nThread>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
 
@@ -220,7 +220,7 @@ __host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
 	return 0;
 }
 
-__global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_forward(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
 	int kx = blockIdx.x;
 	int ky = blockIdx.y;
@@ -240,8 +240,8 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 	if (ky > ny / 2) old_ky = ky + dky;
 
 	//for (int kz = 0; kz < mz/2+1; kz++) {
-		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
-		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
+		size_t inc = pitch / sizeof(cuRPCF::complex)*(kz*my + old_ky) + kx;
+		size_t tInc = tPitch / sizeof(cuRPCF::complex)*(ky*hnx + kx) + kz;
 		tu[tInc] = u[inc];
 	//}
 
@@ -250,14 +250,14 @@ __global__ void transpose_forward(complex* u, complex* tu, dim3 dim,
 
 	//if (ky == ny / 2 || kx == hnx - 1) {
 	//	for (int kz = 0; kz < mz / 2 + 1; kz++) {
-	//		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
+	//		size_t tInc = tPitch / sizeof(cuRPCF::complex)*(ky*hnx + kx) + kz;
 	//		tu[tInc] = 0.0;
 	//	}
 	//}
 }
-__global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_forward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	__shared__ complex tile[TILE_DIM][TILE_DIM];
+	__shared__ cuRPCF::complex tile[TILE_DIM][TILE_DIM];
 
 	int kx = blockIdx.x * TILE_DIM + threadIdx.x;
 	int kz = blockIdx.y * TILE_DIM + threadIdx.y;
@@ -282,8 +282,8 @@ __global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
 	if (kx < hnx) {
 		//for (int iz = 0; iz < TILE_DIM && iz + kz<mz / 2 + 1; iz++) {
 		if(kz < mz/2+1){
-			size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
-			assert(inc * sizeof(complex) < size);
+			size_t inc = pitch / sizeof(cuRPCF::complex)*(kz*my + old_ky) + kx;
+			assert(inc * sizeof(cuRPCF::complex) < size);
 			tile[threadIdx.y][threadIdx.x] = u[inc];
 			//printf("block:%d,%d,%d,thread:%d,%d writing to: %x\n",blockIdx.x,blockIdx.y,blockIdx.z, threadIdx.x, threadIdx.y, inc);
 		}
@@ -298,16 +298,16 @@ __global__ void transpose_forward_sm(complex* u, complex* tu, dim3 dim,
 	if (kz < mz / 2 + 1) {
 		//for (int ix = 0; ix < TILE_DIM && ix + kx<hnx; ix++) {
 		if (kx < hnx){
-			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (kx)) + kz;
-			assert(tInc * sizeof(complex) < tSize);
+			size_t tInc = tPitch / sizeof(cuRPCF::complex)*(ky*hnx + (kx)) + kz;
+			assert(tInc * sizeof(cuRPCF::complex) < tSize);
 			tu[tInc] = tile[threadIdx.x][threadIdx.y];
 		}
 	}
 }
 
-__global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_backward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
-	__shared__ complex tile[TILE_DIM][TILE_DIM];
+	__shared__ cuRPCF::complex tile[TILE_DIM][TILE_DIM];
 
 	int kx = blockIdx.x * TILE_DIM + threadIdx.y;
 	int kz = blockIdx.y * TILE_DIM + threadIdx.x;
@@ -332,8 +332,8 @@ __global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 	if (kx < hnx) {
 		//for (int iz = 0; iz < TILE_DIM && iz + kz<mz / 2 + 1; iz++) {
 		if (kz < mz / 2 + 1) {
-			size_t tInc = tPitch / sizeof(complex)*(ky*hnx + (kx)) + kz;
-			assert(tInc * sizeof(complex) < tSize);
+			size_t tInc = tPitch / sizeof(cuRPCF::complex)*(ky*hnx + (kx)) + kz;
+			assert(tInc * sizeof(cuRPCF::complex) < tSize);
 			tile[threadIdx.x][threadIdx.y] = tu[tInc];
 			
 			//printf("block:%d,%d,%d,thread:%d,%d writing to: %x\n",blockIdx.x,blockIdx.y,blockIdx.z, threadIdx.x, threadIdx.y, inc);
@@ -349,13 +349,13 @@ __global__ void transpose_backward_sm(complex* u, complex* tu, dim3 dim,
 	if (kz < mz / 2 + 1) {
 		//for (int ix = 0; ix < TILE_DIM && ix + kx<hnx; ix++) {
 		if (kx < hnx) {
-			size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
-			assert(inc * sizeof(complex) < size);
+			size_t inc = pitch / sizeof(cuRPCF::complex)*(kz*my + old_ky) + kx;
+			assert(inc * sizeof(cuRPCF::complex) < size);
 			u[inc] = tile[threadIdx.y][threadIdx.x];
 		}
 	}
 }
-__global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
+__global__ void transpose_backward(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch) {
 	int kx = blockIdx.x;
 	int ky = blockIdx.y;
@@ -375,8 +375,8 @@ __global__ void transpose_backward(complex* u, complex* tu, dim3 dim,
 	if (ky > ny / 2) old_ky = ky + dky;
 
 	//for (int kx = 0; kx < nx/2+1; kx++) {
-		size_t inc = pitch / sizeof(complex)*(kz*my + old_ky) + kx;
-		size_t tInc = tPitch / sizeof(complex)*(ky*hnx + kx) + kz;
+		size_t inc = pitch / sizeof(cuRPCF::complex)*(kz*my + old_ky) + kx;
+		size_t tInc = tPitch / sizeof(cuRPCF::complex)*(ky*hnx + kx) + kz;
 		u[inc] = tu[tInc];
 	//}
 }

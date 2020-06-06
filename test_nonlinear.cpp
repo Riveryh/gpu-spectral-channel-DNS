@@ -20,17 +20,17 @@ TestResult test_nonlinear() {
 	//size_t size = pitch * my * mz;
 
 	////memory allocation
-	//pb.hptr_u = (real*)malloc(size);
+	//pb.hptr_u = (REAL*)malloc(size);
 	//assert(pb.hptr_u != nullptr);
-	//pb.hptr_v = (real*)malloc(size);
+	//pb.hptr_v = (REAL*)malloc(size);
 	//assert(pb.hptr_v != nullptr);
-	//pb.hptr_w = (real*)malloc(size);
+	//pb.hptr_w = (REAL*)malloc(size);
 	//assert(pb.hptr_w != nullptr);
-	//pb.hptr_omega_x = (real*)malloc(size);
+	//pb.hptr_omega_x = (REAL*)malloc(size);
 	//assert(pb.hptr_omega_x != nullptr);
-	//pb.hptr_omega_y = (real*)malloc(size);
+	//pb.hptr_omega_y = (REAL*)malloc(size);
 	//assert(pb.hptr_omega_y != nullptr);
-	//pb.hptr_omega_z = (real*)malloc(size);
+	//pb.hptr_omega_z = (REAL*)malloc(size);
 	//assert(pb.hptr_omega_z != nullptr);
 
 	//
@@ -51,17 +51,17 @@ TestResult test_nonlinear() {
 	int pitch = pb2.pitch;
 	size_t size = pitch * my * mz;
 	//memory allocation
-	pb2.hptr_u = (real*)malloc(size);
+	pb2.hptr_u = (REAL*)malloc(size);
 	assert(pb2.hptr_u != nullptr);
-	pb2.hptr_v = (real*)malloc(size);
+	pb2.hptr_v = (REAL*)malloc(size);
 	assert(pb2.hptr_v != nullptr);
-	pb2.hptr_w = (real*)malloc(size);
+	pb2.hptr_w = (REAL*)malloc(size);
 	assert(pb2.hptr_w != nullptr);
-	pb2.hptr_omega_x = (real*)malloc(size);
+	pb2.hptr_omega_x = (REAL*)malloc(size);
 	assert(pb2.hptr_omega_x != nullptr);
-	pb2.hptr_omega_y = (real*)malloc(size);
+	pb2.hptr_omega_y = (REAL*)malloc(size);
 	assert(pb2.hptr_omega_y != nullptr);
-	pb2.hptr_omega_z = (real*)malloc(size);
+	pb2.hptr_omega_z = (REAL*)malloc(size);
 	assert(pb2.hptr_omega_z != nullptr);
 
 
@@ -106,25 +106,25 @@ void setFlow(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.pz;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* v = pb.hptr_v;
-	real* w = pb.hptr_w;
-	real* ox = pb.hptr_omega_x;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* v = pb.hptr_v;
+	REAL* w = pb.hptr_w;
+	REAL* ox = pb.hptr_omega_x;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 	size_t size = pitch * my * pz;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
 				u[inc] = (1 - z*z)*sin(y)*cos(x);
 				v[inc] = 0.0;
 				w[inc] = 0.0;
@@ -148,25 +148,25 @@ void setFlow_basic3(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.pz;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* v = pb.hptr_v;
-	real* w = pb.hptr_w;
-	real* ox = pb.hptr_omega_x;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* v = pb.hptr_v;
+	REAL* w = pb.hptr_w;
+	REAL* ox = pb.hptr_omega_x;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 	size_t size = pitch * my * pz;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
 				u[inc] = (1 - z*z)*sin(y);
 				v[inc] = 0.0;
 				w[inc] = 0.0;
@@ -191,11 +191,11 @@ TestResult check_lamb(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* lambx = pb.hptr_omega_x;
-	real* lamby = pb.hptr_omega_y;
-	real* lambz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* lambx = pb.hptr_omega_x;
+	REAL* lamby = pb.hptr_omega_y;
+	REAL* lambz = pb.hptr_omega_z;
 	size_t size = pitch * my * mz;
 
 	// cpy data from gpu memory to cpu memory
@@ -203,20 +203,20 @@ TestResult check_lamb(problem& pb) {
 	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_lambx = 0.0;
-				real ex_lamby = (1 - z*z)*(1 - z*z)*cos(y)*sin(y)*cos(x)*cos(x);
-				real ex_lambz = -2.0*z*(1 - z*z)*sin(y)*sin(y)*cos(x)*cos(x);
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_lambx = 0.0;
+				REAL ex_lamby = (1 - z*z)*(1 - z*z)*cos(y)*sin(y)*cos(x)*cos(x);
+				REAL ex_lambz = -2.0*z*(1 - z*z)*sin(y)*sin(y)*cos(x)*cos(x);
 				assert(isEqual(lambx[inc], ex_lambx, PRECISION));
 				assert(isEqual(lamby[inc], ex_lamby, PRECISION));
 				assert(isEqual(lambz[inc], ex_lambz, PRECISION));
@@ -231,11 +231,11 @@ TestResult check_lamb_basic3(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* lambx = pb.hptr_omega_x;
-	real* lamby = pb.hptr_omega_y;
-	real* lambz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* lambx = pb.hptr_omega_x;
+	REAL* lamby = pb.hptr_omega_y;
+	REAL* lambz = pb.hptr_omega_z;
 	size_t size = pitch * my * pz;
 
 	// cpy data from gpu memory to cpu memory
@@ -243,20 +243,20 @@ TestResult check_lamb_basic3(problem& pb) {
 	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_lambx = 0.0;
-				real ex_lamby = (1 - z*z)*(1 - z*z)*cos(y)*sin(y);
-				real ex_lambz = -2.0*z*(1 - z*z)*sin(y)*sin(y);
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_lambx = 0.0;
+				REAL ex_lamby = (1 - z*z)*(1 - z*z)*cos(y)*sin(y);
+				REAL ex_lambz = -2.0*z*(1 - z*z)*sin(y)*sin(y);
 				assert(isEqual(lambx[inc], ex_lambx, PRECISION));
 				assert(isEqual(lamby[inc], ex_lamby, PRECISION));
 				assert(isEqual(lambz[inc], ex_lambz, PRECISION));
@@ -273,25 +273,25 @@ void set_lamb_nonlinear_basic(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* lambx = pb.hptr_omega_x;
-	real* lamby = pb.hptr_omega_y;
-	real* lambz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* lambx = pb.hptr_omega_x;
+	REAL* lamby = pb.hptr_omega_y;
+	REAL* lambz = pb.hptr_omega_z;
 	size_t size = pitch * my * mz;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_lambx = (1 - z*z)*sin(x);
-				real ex_lamby = 0.0;
-				real ex_lambz = 0.0;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_lambx = (1 - z*z)*sin(x);
+				REAL ex_lamby = 0.0;
+				REAL ex_lambz = 0.0;
 				lambx[inc] = ex_lambx;
 				lamby[inc] = ex_lamby;
 				lambz[inc] = ex_lambz;
@@ -310,16 +310,16 @@ TestResult check_nonlinear_basic(problem& pb) {
 	int mz = pb.mz;
 	int pz = mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* nonlinear_v = pb.hptr_omega_x;
-	real* nonlinear_omega_y = pb.hptr_omega_y;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* nonlinear_v = pb.hptr_omega_x;
+	REAL* nonlinear_omega_y = pb.hptr_omega_y;
 
 	size_t size = pitch * my * mz;
-	real alpha = pb.aphi;
-	real beta = pb.beta;
+	REAL alpha = pb.aphi;
+	REAL beta = pb.beta;
 
-	real PRECISION = 1e-4;
+	REAL PRECISION = 1e-4;
 
 	int indim[3];
 	int outdim[3];
@@ -341,22 +341,22 @@ TestResult check_nonlinear_basic(problem& pb) {
 	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				/*real ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				/*REAL ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
 				+ cos(2 * y) - sin(2 * x)*sin(2 * y))
 				+ (1 - z*z)*(1 - z*z)*sin(2 * x)*(2 * cos(2 * x) + 1);
-				real ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
+				REAL ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
 				sin(y)*sin(x) + cos(y)*cos(x));*/
-				real ex_rhsn_v = cos(x)*(-2 * z);
-				real ex_rhsn_o = 0.0;
+				REAL ex_rhsn_v = cos(x)*(-2 * z);
+				REAL ex_rhsn_o = 0.0;
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));
 			}
@@ -371,16 +371,16 @@ TestResult check_nonlinear_basic3(problem& pb) {
 	int mz = pb.mz;
 	int pz = mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* nonlinear_v = pb.hptr_omega_x;
-	real* nonlinear_omega_y = pb.hptr_omega_y;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* nonlinear_v = pb.hptr_omega_x;
+	REAL* nonlinear_omega_y = pb.hptr_omega_y;
 
 	size_t size = pitch * my * pz;
-	real alpha = pb.aphi;
-	real beta = pb.beta;
+	REAL alpha = pb.aphi;
+	REAL beta = pb.beta;
 
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
 	int indim[3];
 	int outdim[3];
@@ -403,22 +403,22 @@ TestResult check_nonlinear_basic3(problem& pb) {
 	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				/*real ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				/*REAL ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
 				+ cos(2 * y) - sin(2 * x)*sin(2 * y))
 				+ (1 - z*z)*(1 - z*z)*sin(2 * x)*(2 * cos(2 * x) + 1);
-				real ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
+				REAL ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
 				sin(y)*sin(x) + cos(y)*cos(x));*/
-				real ex_rhsn_v = 0.0; //4 * z*(1 - z*z)*cos(2 * y);
-				real ex_rhsn_o = 0.0;
+				REAL ex_rhsn_v = 0.0; //4 * z*(1 - z*z)*cos(2 * y);
+				REAL ex_rhsn_o = 0.0;
 
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));
@@ -432,25 +432,25 @@ void set_lamb_nonlinear_basic2(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* lambx = pb.hptr_omega_x;
-	real* lamby = pb.hptr_omega_y;
-	real* lambz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* lambx = pb.hptr_omega_x;
+	REAL* lamby = pb.hptr_omega_y;
+	REAL* lambz = pb.hptr_omega_z;
 	size_t size = pitch * my * mz;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_lambx = 0.0;
-				real ex_lamby = 0.0;
-				real ex_lambz = sin(23*x)*z;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_lambx = 0.0;
+				REAL ex_lamby = 0.0;
+				REAL ex_lambz = sin(23*x)*z;
 				lambx[inc] = ex_lambx;
 				lamby[inc] = ex_lamby;
 				lambz[inc] = ex_lambz;
@@ -469,16 +469,16 @@ TestResult check_nonlinear_basic2(problem& pb) {
 	int mz = pb.mz;
 	int pz = mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* nonlinear_v = pb.hptr_omega_x;
-	real* nonlinear_omega_y = pb.hptr_omega_y;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* nonlinear_v = pb.hptr_omega_x;
+	REAL* nonlinear_omega_y = pb.hptr_omega_y;
 
 	size_t size = pitch * my * mz;
-	real alpha = pb.aphi;
-	real beta = pb.beta;
+	REAL alpha = pb.aphi;
+	REAL beta = pb.beta;
 
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
 	int indim[3];
 	int outdim[3];
@@ -500,22 +500,22 @@ TestResult check_nonlinear_basic2(problem& pb) {
 	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_z.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				/*real ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				/*REAL ex_rhsn_v = -2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
 				+ cos(2 * y) - sin(2 * x)*sin(2 * y))
 				+ (1 - z*z)*(1 - z*z)*sin(2 * x)*(2 * cos(2 * x) + 1);
-				real ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
+				REAL ex_rhsn_o = 4*z*(1-z*z)*sin(y)*cos(x)*(
 				sin(y)*sin(x) + cos(y)*cos(x));*/
-				real ex_rhsn_v = +23*23*sin(23*x)*z;
-				real ex_rhsn_o = 0.0;
+				REAL ex_rhsn_v = +23*23*sin(23*x)*z;
+				REAL ex_rhsn_o = 0.0;
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));
 			}
@@ -530,16 +530,16 @@ TestResult check_nonlinear_complex(problem& pb) {
 	int mz = pb.mz;
 	int pz = mz / 2 + 1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* nonlinear_v = pb.hptr_omega_x;
-	real* nonlinear_omega_y = pb.hptr_omega_y;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* nonlinear_v = pb.hptr_omega_x;
+	REAL* nonlinear_omega_y = pb.hptr_omega_y;
 
 	size_t size = pitch * my * mz;
-	real alpha = pb.aphi;
-	real beta = pb.beta;
+	REAL alpha = pb.aphi;
+	REAL beta = pb.beta;
 
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
 	int indim[3];
 	int outdim[3];
@@ -563,8 +563,8 @@ TestResult check_nonlinear_complex(problem& pb) {
 	//cheby_s2p(pb.dptr_tLamb_y, mx, my, mz);
 	//cheby_s2p(pb.dptr_tLamb_z, mx, my, mz);
 
-	//nonlinear_v = (real*)malloc(pb.tSize);
-	//nonlinear_omega_y = (real*)malloc(pb.tSize);
+	//nonlinear_v = (REAL*)malloc(pb.tSize);
+	//nonlinear_omega_y = (REAL*)malloc(pb.tSize);
 
 	//err = cudaMemcpy(nonlinear_v, pb.dptr_tLamb_x.ptr, pb.tSize, cudaMemcpyDeviceToHost);
 	//ASSERT(err == cudaSuccess);
@@ -576,25 +576,25 @@ TestResult check_nonlinear_complex(problem& pb) {
 	err = cudaMemcpy(nonlinear_omega_y, pb.dptr_lamb_y.ptr, size, cudaMemcpyDeviceToHost);
 	ASSERT(err == cudaSuccess);
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_rhsn_v = -(1 - z*z)*(2*z)*(cos(2 * x) - cos(2 * y) - 2 * cos(2 * y)*cos(2 * x))
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_rhsn_v = -(1 - z*z)*(2*z)*(cos(2 * x) - cos(2 * y) - 2 * cos(2 * y)*cos(2 * x))
 					+ 2*(1-z*z)*(-2*z)*cos(2*y)*cos(x)*cos(x);
 					//-2.0*(z - z*z*z)*(cos(2 * x)*cos(2 * y)
 				//+ cos(2 * y) - sin(2 * x)*sin(2 * y))
 				//+ (1 - z*z)*(1 - z*z)*sin(2 * x)*(2 * cos(2 * x) + 1);
-				real ex_rhsn_o = -(1 - z*z)*(1 - z*z)*cos(y)*sin(y)*2*cos(x)*sin(x);
+				REAL ex_rhsn_o = -(1 - z*z)*(1 - z*z)*cos(y)*sin(y)*2*cos(x)*sin(x);
 					//4*z*(1-z*z)*sin(y)*cos(x)*(
 				//sin(y)*sin(x) + cos(y)*cos(x));
-				//real ex_rhsn_v = cos(x)*(-2 * z);
-				//real ex_rhsn_o = 0.0;
+				//REAL ex_rhsn_v = cos(x)*(-2 * z);
+				//REAL ex_rhsn_o = 0.0;
 				assert(isEqual(ex_rhsn_v, nonlinear_v[inc], PRECISION));
 				assert(isEqual(ex_rhsn_o, nonlinear_omega_y[inc], PRECISION));
 			}

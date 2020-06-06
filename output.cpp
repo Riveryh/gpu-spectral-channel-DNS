@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void write_velocity(const char* filename, real* u, real* v, real* w,
+void write_velocity(const char* filename, REAL* u, REAL* v, REAL* w,
 	size_t pitch, int px, int py, int pz);
 
 void output_velocity(problem & pb)
@@ -26,12 +26,12 @@ void output_velocity(problem & pb)
 	transform_3d_one(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
 
-	pb.hptr_u = (real*)malloc(pb.pSize);
-	pb.hptr_v = (real*)malloc(pb.pSize);
-	pb.hptr_w = (real*)malloc(pb.pSize);
-	pb.hptr_omega_x = (real*)malloc(pb.pSize);
-	pb.hptr_omega_y = (real*)malloc(pb.pSize);
-	pb.hptr_omega_z = (real*)malloc(pb.pSize);
+	pb.hptr_u = (REAL*)malloc(pb.pSize);
+	pb.hptr_v = (REAL*)malloc(pb.pSize);
+	pb.hptr_w = (REAL*)malloc(pb.pSize);
+	pb.hptr_omega_x = (REAL*)malloc(pb.pSize);
+	pb.hptr_omega_y = (REAL*)malloc(pb.pSize);
+	pb.hptr_omega_z = (REAL*)malloc(pb.pSize);
 	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.pSize, cudaMemcpyDeviceToHost),"memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
@@ -63,31 +63,31 @@ void output_velocity(problem & pb)
 	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim);
 }
 
-void write_velocity(const char* filename, real* u, real* v, real* w,
+void write_velocity(const char* filename, REAL* u, REAL* v, REAL* w,
 	size_t pitch, int px,int py, int pz) {
 	ofstream outfile;
 	outfile.open(filename, ios::binary);
 	for(int k=0;k<pz;k++)	{
 		for (int j = 0; j < py; j++) {
 			//for (int i = 0; i < px; i++) {
-				size_t inc = pitch*(py*k + j) / sizeof(real);
-				outfile.write((char*)(u + inc), sizeof(real)*px);
+				size_t inc = pitch*(py*k + j) / sizeof(REAL);
+				outfile.write((char*)(u + inc), sizeof(REAL)*px);
 			//}
 		}
 	}
 	for (int k = 0; k<pz; k++) {
 		for (int j = 0; j < py; j++) {
 			//for (int i = 0; i < px; i++) {
-			size_t inc = pitch*(py*k + j) / sizeof(real);
-			outfile.write((char*)(v + inc), sizeof(real)*px);
+			size_t inc = pitch*(py*k + j) / sizeof(REAL);
+			outfile.write((char*)(v + inc), sizeof(REAL)*px);
 			//}
 		}
 	}
 	for (int k = 0; k<pz; k++) {
 		for (int j = 0; j < py; j++) {
 			//for (int i = 0; i < px; i++) {
-			size_t inc = pitch*(py*k + j) / sizeof(real);
-			outfile.write((char*)(w + inc), sizeof(real)*px);
+			size_t inc = pitch*(py*k + j) / sizeof(REAL);
+			outfile.write((char*)(w + inc), sizeof(REAL)*px);
 			//}
 		}
 	}	
@@ -109,12 +109,12 @@ void write_recover_data(problem& pb, char* filename) {
 	outfile.write((char*)&pb.pSize, sizeof(size_t));
 	outfile.write((char*)&pb.tSize, sizeof(size_t));
 
-	outfile.write((char*)pb.lambx0, sizeof(complex)*pb.nz);
-	outfile.write((char*)pb.lambz0, sizeof(complex)*pb.nz);
-	outfile.write((char*)pb.lambx0_p, sizeof(complex)*pb.nz);
-	outfile.write((char*)pb.lambz0_p, sizeof(complex)*pb.nz);
-	outfile.write((char*)pb.tv0, sizeof(complex)*pb.nz);
-	outfile.write((char*)pb.tomega_y_0, sizeof(complex)*pb.nz);
+	outfile.write((char*)pb.lambx0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.write((char*)pb.lambz0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.write((char*)pb.lambx0_p, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.write((char*)pb.lambz0_p, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.write((char*)pb.tv0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.write((char*)pb.tomega_y_0, sizeof(cuRPCF::complex)*pb.nz);
 
 	outfile.write((char*)pb.rhs_v, pb.tSize);
 	outfile.write((char*)pb.rhs_v_p, pb.tSize);
@@ -147,12 +147,12 @@ void read_recover_data(problem& pb, char* filename) {
 	READ_AND_CHECK(outfile, pSize, pb.pSize, sizeof(size_t));
 	READ_AND_CHECK(outfile, tSize, pb.tSize, sizeof(size_t));
 
-	outfile.read((char*)pb.lambx0, sizeof(complex)*pb.nz);
-	outfile.read((char*)pb.lambz0, sizeof(complex)*pb.nz);
-	outfile.read((char*)pb.lambx0_p, sizeof(complex)*pb.nz);
-	outfile.read((char*)pb.lambz0_p, sizeof(complex)*pb.nz);
-	outfile.read((char*)pb.tv0, sizeof(complex)*pb.nz);
-	outfile.read((char*)pb.tomega_y_0, sizeof(complex)*pb.nz);
+	outfile.read((char*)pb.lambx0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.read((char*)pb.lambz0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.read((char*)pb.lambx0_p, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.read((char*)pb.lambz0_p, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.read((char*)pb.tv0, sizeof(cuRPCF::complex)*pb.nz);
+	outfile.read((char*)pb.tomega_y_0, sizeof(cuRPCF::complex)*pb.nz);
 
 	outfile.read((char*)pb.rhs_v, pb.tSize);
 	outfile.read((char*)pb.rhs_v_p, pb.tSize);

@@ -22,8 +22,8 @@ TestResult test_transpose()
 	size_t tSize = pb.tSize;
 
 
-	cudaExtent extent = make_cudaExtent(sizeof(complex)*(mx/2+1), my, pb.pz);
-	cudaExtent tExtent = make_cudaExtent(sizeof(complex)*mz, pb.nx, pb.ny);
+	cudaExtent extent = make_cudaExtent(sizeof(cuRPCF::complex)*(mx/2+1), my, pb.pz);
+	cudaExtent tExtent = make_cudaExtent(sizeof(cuRPCF::complex)*mz, pb.nx, pb.ny);
 
 	cudaPitchedPtr Ptr, tPtr;
 	cuCheck(cudaMalloc3D(&Ptr, extent), "mem alloc");
@@ -32,9 +32,9 @@ TestResult test_transpose()
 	pitch = Ptr.pitch;
 	tPitch = tPtr.pitch;
 
-	complex* data1 = (complex*)malloc(size);
-	complex* data2 = (complex*)malloc(tSize);
-	complex* tData = (complex*)malloc(tSize);
+	cuRPCF::complex* data1 = (cuRPCF::complex*)malloc(size);
+	cuRPCF::complex* data2 = (cuRPCF::complex*)malloc(tSize);
+	cuRPCF::complex* tData = (cuRPCF::complex*)malloc(tSize);
 	
 
 	for (int i = 0; i < pb.nx/2+1; i++) {
@@ -42,10 +42,10 @@ TestResult test_transpose()
 			for (int k = 0; k < pb.pz; k++) {
 				int ky = j;
 				if (ky > pb.ny / 2) ky = j + (pb.my - pb.ny);
-				size_t inc1 = pitch / sizeof(complex)*(my*k + ky) + i;
-				size_t inc2 = tPitch / sizeof(complex)*((pb.nx/2+1)*j+i) + k;
-				assert(inc1 <= size / sizeof(complex));
-				assert(inc2 <= tSize / sizeof(complex));
+				size_t inc1 = pitch / sizeof(cuRPCF::complex)*(my*k + ky) + i;
+				size_t inc2 = tPitch / sizeof(cuRPCF::complex)*((pb.nx/2+1)*j+i) + k;
+				assert(inc1 <= size / sizeof(cuRPCF::complex));
+				assert(inc2 <= tSize / sizeof(cuRPCF::complex));
 				data1[inc1] = 100 * i + j + 0.01*k;
 				data2[inc2] = 100 * i + j + 0.01*k;
 			}
@@ -65,8 +65,8 @@ TestResult test_transpose()
 			for (int k = 0; k < pb.pz; k++) {
 				int ky = j;
 				if (ky > pb.ny / 2) ky = j + (pb.my - pb.ny);
-				size_t inc1 = pitch / sizeof(complex)*(my*k + ky) + i;
-				size_t inc2 = tPitch / sizeof(complex)*((pb.nx / 2 + 1)*j + i) + k;
+				size_t inc1 = pitch / sizeof(cuRPCF::complex)*(my*k + ky) + i;
+				size_t inc2 = tPitch / sizeof(cuRPCF::complex)*((pb.nx / 2 + 1)*j + i) + k;
 				assert(isEqual(data1[inc1].re, tData[inc2].re));
 			}
 		}
@@ -79,8 +79,8 @@ TestResult test_transpose()
 			for (int k = 0; k < pb.pz; k++) {
 				int ky = j;
 				if (ky > pb.ny / 2) ky = j + (pb.my - pb.ny);
-				size_t inc1 = pitch / sizeof(complex)*(my*k + ky) + i;
-				size_t inc2 = tPitch / sizeof(complex)*((pb.nx / 2 + 1)*j + i) + k;
+				size_t inc1 = pitch / sizeof(cuRPCF::complex)*(my*k + ky) + i;
+				size_t inc2 = tPitch / sizeof(cuRPCF::complex)*((pb.nx / 2 + 1)*j + i) + k;
 				assert(isEqual(data1[inc1].re, tData[inc2].re));
 			}
 		}

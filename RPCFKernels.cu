@@ -13,6 +13,7 @@
 #include "transform_multi_gpu.h"
 #include "velocity.h"
 
+
 __host__ void setupCUDA(problem& pb) {
 	cudaDeviceProp prop;
 	int dev_num;
@@ -47,13 +48,13 @@ __host__ int initCUDA(problem&  pb) {
 	
 	cudaError_t err;
 	pb.extent = make_cudaExtent(
-		2*(pb.mx/2+1) * sizeof(real), pb.my, pb.mz);
+		2*(pb.mx/2+1) * sizeof(REAL), pb.my, pb.mz);
 
 	pb.tExtent = make_cudaExtent(
-		pb.mz * sizeof(complex), pb.nx/2+1, pb.ny);
+		pb.mz * sizeof(cuRPCF::complex), pb.nx/2+1, pb.ny);
 
 	pb.pExtent = make_cudaExtent(
-		2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.pz);
+		2 * (pb.mx / 2 + 1) * sizeof(REAL), pb.my, pb.pz);
 	
 //	cudaExtent & extent = pb.extent;
 	cudaExtent & tExtent = pb.tExtent;
@@ -87,10 +88,10 @@ __host__ int initCUDA(problem&  pb) {
 
 	pb.tSize = pb.tPitch * (pb.nx / 2 + 1) * pb.ny;
 //	size_t& tsize = pb.tSize;
-	//pb.nonlinear_v = (complex*)malloc(tsize);
-	//pb.nonlinear_v_p = (complex*)malloc(tsize);
-	//pb.nonlinear_omega_y = (complex*)malloc(tsize);
-	//pb.nonlinear_omega_y_p = (complex*)malloc(tsize);
+	//pb.nonlinear_v = (cuRPCF::complex*)malloc(tsize);
+	//pb.nonlinear_v_p = (cuRPCF::complex*)malloc(tsize);
+	//pb.nonlinear_omega_y = (cuRPCF::complex*)malloc(tsize);
+	//pb.nonlinear_omega_y_p = (cuRPCF::complex*)malloc(tsize);
 	//ASSERT(pb.nonlinear_v != nullptr);
 	//ASSERT(pb.nonlinear_v_p != nullptr);
 	//ASSERT(pb.nonlinear_omega_y != nullptr);
@@ -133,8 +134,8 @@ __host__ int initCUDA(problem&  pb) {
 
 // MARK :: this part is the modified CORRECT initial condition, remove comment mark before use
 // ____________________________ BEGIN________________________//
-//__device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
-//	const real PI = 4*atan(1.0);
+//__device__ REAL _get_init_u(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL PI = 4*atan(1.0);
 //	return EPSILON_INIT*lx*sin(PI*z)
 //		*(cos(2 * PI*x / lx)*sin(2.0*PI*y / ly)
 //			+ 0.5*cos(4.0*PI*x / lx)*sin(2 * PI*y / ly)
@@ -146,8 +147,8 @@ __host__ int initCUDA(problem&  pb) {
 //	//	*sin(4.0*PI*y)));
 //}
 //
-//__device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
-//	const real PI = 4 * atan(1.0);
+//__device__ REAL _get_init_v(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL PI = 4 * atan(1.0);
 //	return -EPSILON_INIT*ly*sin(PI*z)
 //		*(0.5*sin(2 * PI*x / lx)*cos(2.0*PI*y / ly)
 //			+ 0.5*sin(4.0*PI*x / lx)*cos(2.0 * PI*y / ly)
@@ -158,8 +159,8 @@ __host__ int initCUDA(problem&  pb) {
 //	//	*sin(4.0*PI*y));
 //}
 //
-//__device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
-//	const real PI = 4 * atan(1.0);
+//__device__ REAL _get_init_w(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL PI = 4 * atan(1.0);
 //	return EPSILON_INIT*(-1.0)*(1.0+cos(PI*z))
 //		*(sin(2*PI*x/lx)*sin(2*PI*y/ly)
 //			+sin(4*PI*x/lx)*sin(2*PI*y/ly)
@@ -171,8 +172,8 @@ __host__ int initCUDA(problem&  pb) {
 //	//	*cos(4.0*PI*y));
 //}
 //
-//__device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
-//	const real pi = 4 * atan(1.0);
+//__device__ REAL _get_init_omegax(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL pi = 4 * atan(1.0);
 //	return (-EPSILON_INIT*ly*pi*cos(pi*z)*(0.5*sin(2.0*pi*x/lx) 
 //		*cos(2.0*pi*y/ly) + 0.5*sin(4.0*pi*x/lx) 
 //		*cos(2.0*pi*y/ly) + 0.25*sin(2.0*pi*x/lx) 
@@ -184,8 +185,8 @@ __host__ int initCUDA(problem&  pb) {
 //			*cos(4.0*pi*y/ly)));
 //}
 //
-//__device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
-//	const real pi = 4 * atan(1.0);
+//__device__ REAL _get_init_omegaz(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL pi = 4 * atan(1.0);
 //	return EPSILON_INIT*2.0*pi*sin(pi*z)*  
 //		(lx / ly*(cos(2.0*pi*x/lx)*cos(2.0*pi*y/ly) 
 //			+0.5*cos(4.0*pi*x/lx)*cos(2.0*pi*y/ly) 
@@ -197,8 +198,8 @@ __host__ int initCUDA(problem&  pb) {
 //}
 //
 //
-//__device__ real _get_init_omegay(real x, real y, real z, real lx, real ly) {
-//	const real PI = 4 * atan(1.0);
+//__device__ REAL _get_init_omegay(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+//	const REAL PI = 4 * atan(1.0);
 //	return
 //		EPSILON_INIT*(-1.0) *(1.0 + cos(PI*z))
 //		*2*PI/lx*(
@@ -217,8 +218,8 @@ __host__ int initCUDA(problem&  pb) {
 //_____________________________END_______________________________
 
 
-__device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
-	const real PI = 4 * atan(1.0);
+__device__ REAL _get_init_u(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL PI = 4 * atan(1.0);
 	return EPSILON_INIT*lx*sin(1.5*PI*z)
 		*(cos(2 * PI*x / lx)*sin(2.0*PI*y / ly)
 			+ 0.5*cos(4.0*PI*x / lx)*sin(2 * PI*y / ly)
@@ -230,8 +231,8 @@ __device__ real _get_init_u(real x, real y, real z, real lx, real ly) {
 	//	*sin(4.0*PI*y)));
 }
 
-__device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
-	const real PI = 4 * atan(1.0);
+__device__ REAL _get_init_v(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL PI = 4 * atan(1.0);
 	return -EPSILON_INIT*ly*sin(1.5*PI*z)
 		*(0.5*sin(2 * PI*x / lx)*cos(2.0*PI*y / ly)
 			+ 0.5*sin(4.0*PI*x / lx)*cos(2.0 * PI*y / ly)
@@ -242,8 +243,8 @@ __device__ real _get_init_v(real x, real y, real z, real lx, real ly) {
 	//	*sin(4.0*PI*y));
 }
 
-__device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
-	const real PI = 4 * atan(1.0);
+__device__ REAL _get_init_w(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL PI = 4 * atan(1.0);
 	return EPSILON_INIT*(-2.0/3.0)*(1.0 + cos(1.5*PI*z))
 		*(sin(2 * PI*x / lx)*sin(2 * PI*y / ly)
 			+ sin(4 * PI*x / lx)*sin(2 * PI*y / ly)
@@ -255,8 +256,8 @@ __device__ real _get_init_w(real x, real y, real z, real lx, real ly) {
 	//	*cos(4.0*PI*y));
 }
 
-__device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
-	const real pi = 4 * atan(1.0);
+__device__ REAL _get_init_omegax(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL pi = 4 * atan(1.0);
 	return (-EPSILON_INIT*ly*1.5*pi*cos(1.5*pi*z)*(0.5*sin(2.0*pi*x / lx)
 		*cos(2.0*pi*y / ly) + 0.5*sin(4.0*pi*x / lx)
 		*cos(2.0*pi*y / ly) + 0.25*sin(2.0*pi*x / lx)
@@ -268,8 +269,8 @@ __device__ real _get_init_omegax(real x, real y, real z, real lx, real ly) {
 			*cos(4.0*pi*y / ly)));
 }
 
-__device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
-	const real pi = 4 * atan(1.0);
+__device__ REAL _get_init_omegaz(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL pi = 4 * atan(1.0);
 	return EPSILON_INIT*2.0*pi*sin(1.5*pi*z)*
 		(lx / ly*(cos(2.0*pi*x / lx)*cos(2.0*pi*y / ly)
 			+ 0.5*cos(4.0*pi*x / lx)*cos(2.0*pi*y / ly)
@@ -281,8 +282,8 @@ __device__ real _get_init_omegaz(real x, real y, real z, real lx, real ly) {
 }
 
 
-__device__ real _get_init_omegay(real x, real y, real z, real lx, real ly) {
-	const real PI = 4 * atan(1.0);
+__device__ REAL _get_init_omegay(REAL x, REAL y, REAL z, REAL lx, REAL ly) {
+	const REAL PI = 4 * atan(1.0);
 	return
 		EPSILON_INIT*(-1.0) *(1.0 + cos(1.5*PI*z))
 		* 2 * PI / lx*(
@@ -300,9 +301,9 @@ __device__ real _get_init_omegay(real x, real y, real z, real lx, real ly) {
 // compute initial flow, save the data to pointer defined in pb.
 // assuming the pointer are already initialized by initCUDA.
 __global__ void init_flow_kernel(
-	real* dptr_u, real* dptr_v, real* dptr_w, 
-	real* dptr_ox, real* dptr_oy, real* dptr_oz, 
-	real lx, real ly,
+	REAL* dptr_u, REAL* dptr_v, REAL* dptr_w, 
+	REAL* dptr_ox, REAL* dptr_oy, REAL* dptr_oz, 
+	REAL lx, REAL ly,
 	int px, int py, int pz, int pitch) {
 
 	int y = threadIdx.x + blockDim.x*blockIdx.x;
@@ -310,14 +311,14 @@ __global__ void init_flow_kernel(
 
 	if (y >= py || z >= pz) return;
 
-	const real pi = 4 * atan(1.0);
+	const REAL pi = 4 * atan(1.0);
 
-	real xx, yy, zz;
-	real* u_row, *v_row, *w_row, *ox_row, *oy_row, *oz_row;
+	REAL xx, yy, zz;
+	REAL* u_row, *v_row, *w_row, *ox_row, *oy_row, *oz_row;
 	//ASSERT(pitch > 0);
 	//ASSERT(dptr_u!=nullptr);
 
-	size_t inc = pitch*(py*z + y)/sizeof(real);
+	size_t inc = pitch*(py*z + y)/sizeof(REAL);
 
 	u_row = dptr_u + inc;
 	v_row = dptr_v + inc;
@@ -368,20 +369,20 @@ __host__ int initFlow(problem& pb) {
 	//dim3 nThread(nthreadx, nthready);
 	//dim3 nDim(nDimx, nDimy);
 
-	init_flow_kernel <<<pb.npDim, pb.nThread>>> ((real*)pb.dptr_u.ptr,
-		(real*)pb.dptr_v.ptr,		(real*)pb.dptr_w.ptr, 
-		(real*)pb.dptr_omega_x.ptr,	(real*)pb.dptr_omega_y.ptr,
-		(real*)pb.dptr_omega_z.ptr,
+	init_flow_kernel <<<pb.npDim, pb.nThread>>> ((REAL*)pb.dptr_u.ptr,
+		(REAL*)pb.dptr_v.ptr,		(REAL*)pb.dptr_w.ptr, 
+		(REAL*)pb.dptr_omega_x.ptr,	(REAL*)pb.dptr_omega_y.ptr,
+		(REAL*)pb.dptr_omega_z.ptr,
 		pb.lx, pb.ly, pb.px, pb.py, pb.nz, pb.dptr_u.pitch);
 	//system("pause");
 	err = cudaDeviceSynchronize(); // CudaErrorLaunchFailure
 	ASSERT(err == cudaSuccess);
 
-	real* buffer;
+	REAL* buffer;
 	size_t& size = pb.pSize; //pb.dptr_u.pitch*pb.my*pb.mz;
 	size_t& tSize = pb.tSize;// pb.tPitch*(pb.mx / 2 + 1)*pb.my;
 
-	//buffer = (real*)malloc(size);
+	//buffer = (REAL*)malloc(size);
 	//cuCheck(cudaMemcpy(buffer, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost),"memcpy");
 	//err = cudaDeviceSynchronize();
 	//ASSERT(err == cudaSuccess);
@@ -419,7 +420,7 @@ __host__ int initFlow(problem& pb) {
 	for (int j = 0; j < pb.ny; j++) {
 		for (int i = 0; i < (pb.nx / 2 + 1); i++) {
 			for (int k = 0; k < pb.mz; k++) {
-				size_t inc = k+pb.tPitch/sizeof(complex)*(j*(pb.nx / 2 + 1) + i);
+				size_t inc = k+pb.tPitch/sizeof(cuRPCF::complex)*(j*(pb.nx / 2 + 1) + i);
 				pb.rhs_v_p[inc] = pb.rhs_v[inc];
 			}
 		}
@@ -435,9 +436,9 @@ __host__ int initFlow(problem& pb) {
 //}
 
 
-__host__ __device__ void ddz(real* u, int N) {
-	real buffer[MAX_NZ*4];
-	real dmat;
+__host__ __device__ void ddz(REAL* u, int N) {
+	REAL buffer[MAX_NZ*4];
+	REAL dmat;
 	for (int i = 0; i < N; i++) {
 		buffer[i] = 0;
 		for (int j = i+1; j < N; j=j+2) {
@@ -451,17 +452,17 @@ __host__ __device__ void ddz(real* u, int N) {
 	}
 }
 
-__host__ __device__ void ddz(complex *u, int N) {
-	complex buffer[MAX_NZ];
-	real dmat;
-	complex buffer_u[MAX_NZ];
+__host__ __device__ void ddz(cuRPCF::complex *u, int N) {
+	cuRPCF::complex buffer[MAX_NZ];
+	REAL dmat;
+	cuRPCF::complex buffer_u[MAX_NZ];
 	for (int i = 0; i < N; i++) {
 		buffer_u[i] = u[i];
 	}
 	for (int i = 0; i < N; i++) {
-		buffer[i] = complex(0.0,0.0);
+		buffer[i] = cuRPCF::complex(0.0,0.0);
 		for (int j = i + 1; j < N; j = j + 2) {
-			dmat = 2 * real(j);
+			dmat = 2 * REAL(j);
 			buffer[i] = buffer[i] + buffer_u[j] * dmat;
 		}
 	}
@@ -472,16 +473,16 @@ __host__ __device__ void ddz(complex *u, int N) {
 }
 
 
-__device__ void ddz_sm(real* u, int N, int kz) {
-	real buffer;
-	real dmat;
+__device__ void ddz_sm(REAL* u, int N, int kz) {
+	REAL buffer;
+	REAL dmat;
 	
 	//wait all threads to load data before computing
 	__syncthreads();
 
 	buffer = 0.0;
 	for (int j = kz + 1; j < N; j = j + 2) {
-		dmat = 2 * real(j);
+		dmat = 2 * REAL(j);
 		buffer = buffer + u[j] * dmat;
 	}
 	//wait all threads to finish computation before overwriting array.
@@ -495,16 +496,16 @@ __device__ void ddz_sm(real* u, int N, int kz) {
 	}
 }
 
-__device__ void ddz_sm(complex *u, int N, int kz) {
-	complex buffer;
-	real dmat;
+__device__ void ddz_sm(cuRPCF::complex *u, int N, int kz) {
+	cuRPCF::complex buffer;
+	REAL dmat;
 
 	//wait all threads to load data before computing
 	__syncthreads();
 
-	buffer = complex(0.0,0.0);
+	buffer = cuRPCF::complex(0.0,0.0);
 	for (int j = kz + 1; j < N; j = j + 2) {
-		dmat = 2 * real(j);
+		dmat = 2 * REAL(j);
 		buffer = buffer + u[j] * dmat;
 	}	
 	//wait all threads to finish computation before overwriting array.
@@ -520,28 +521,28 @@ __device__ void ddz_sm(complex *u, int N, int kz) {
 
 __host__ __device__
 void get_ialpha_ibeta(int kx, int ky, int ny,
-	real alpha, real beta,
-	real& ialpha, real& ibeta )
+	REAL alpha, REAL beta,
+	REAL& ialpha, REAL& ibeta )
 {
-	ialpha = (real)kx / alpha;
-	ibeta = (real)ky / beta;
+	ialpha = (REAL)kx / alpha;
+	ibeta = (REAL)ky / beta;
 	if (ky >= ny / 2 + 1) {
-		ibeta = real(ky - ny) / beta;
+		ibeta = REAL(ky - ny) / beta;
 	}
 }
 
 // This kernel function is used to perform multiply between matrix and vector;
 __global__
-void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitch) {
+void m_multi_v_kernel(cuRPCF::complex* _mat, cuRPCF::complex* _v, const int N, const size_t pitch) {
 	const int iMat = blockIdx.x;
 	const int J = threadIdx.x;
 	const int tid = J;
-	__shared__ complex UI[MAX_NZ];
-	__shared__ complex buffer[MAX_NZ];
-	complex* mat = _mat + iMat*N*N + J*N;
-	complex* v = _v + pitch / sizeof(complex)*iMat;
-	//complex mat_cache[MAX_NZ];
-	//complex v_cache[MAX_NZ];
+	__shared__ cuRPCF::complex UI[MAX_NZ];
+	__shared__ cuRPCF::complex buffer[MAX_NZ];
+	cuRPCF::complex* mat = _mat + iMat*N*N + J*N;
+	cuRPCF::complex* v = _v + pitch / sizeof(cuRPCF::complex)*iMat;
+	//cuRPCF::complex mat_cache[MAX_NZ];
+	//cuRPCF::complex v_cache[MAX_NZ];
 
 	//for (int i = 0; i < N; i++) {
 	//	mat_cache[i] = mat[i];
@@ -549,13 +550,13 @@ void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitc
 	//for (int i = 0; i < N; i++) {
 	//	v_cache[i] = v[i];
 	//}
-	//complex res = complex(0.0, 0.0);
+	//cuRPCF::complex res = cuRPCF::complex(0.0, 0.0);
 	//for (int k = 0; k < N; k++) {
 	//	res = res + mat_cache[k] * v_cache[k];
 	//}
 
-	complex res[MAX_NZ];
-	__shared__ complex reduction[MAX_NZ];
+	cuRPCF::complex res[MAX_NZ];
+	__shared__ cuRPCF::complex reduction[MAX_NZ];
 	// for each row
 	for (int i = 0; i < N; i++) {
 		UI[J] = mat[i*N + J];
@@ -575,8 +576,8 @@ void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitc
 	__syncthreads();
 	v[J] = res[J];
 
-	//complex res[MAX_NZ];
-	////complex* temp = (complex*)malloc(N*sizeof(complex));
+	//cuRPCF::complex res[MAX_NZ];
+	////cuRPCF::complex* temp = (cuRPCF::complex*)malloc(N*sizeof(cuRPCF::complex));
 	
 	//for (int i = 0; i < N; i++) {
 	//	UI[J] = mat[i*N + J];
@@ -596,7 +597,7 @@ void m_multi_v_kernel(complex* _mat, complex* _v, const int N, const size_t pitc
 }
 
 
-__host__ cudaError_t m_multi_v_gpu(complex* _mat, complex* v, const int N, const size_t pitch, const int batch) {
+__host__ cudaError_t m_multi_v_gpu(cuRPCF::complex* _mat, cuRPCF::complex* v, const int N, const size_t pitch, const int batch) {
 	m_multi_v_kernel <<<batch, N >>>(_mat, v, N, pitch);
 	return cudaDeviceSynchronize();
 }

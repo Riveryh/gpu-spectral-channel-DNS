@@ -11,10 +11,10 @@
 #include <iostream>
 using namespace std;
 
-real statistic_max(real* u, size_t pitch, int mx, int my, int mz) {
-	real max = 0.0;
+REAL statistic_max(REAL* u, size_t pitch, int mx, int my, int mz) {
+	REAL max = 0.0;
 	PITCHED_LOOP_BEGIN(mx, my, mz)
-		size_t inc = PITCHED_INCREMENT(pitch / sizeof(real));
+		size_t inc = PITCHED_INCREMENT(pitch / sizeof(REAL));
 		if (max < abs(u[inc])) {
 			max = abs(u[inc]);
 		}
@@ -32,12 +32,12 @@ void statistics(problem& pb) {
 	transform_3d_one(BACKWARD, pb.dptr_omega_y, pb.dptr_tomega_y, dim, tDim);
 	transform_3d_one(BACKWARD, pb.dptr_omega_z, pb.dptr_tomega_z, dim, tDim);
 
-	pb.hptr_u = (real*)malloc(pb.size);
-	pb.hptr_v = (real*)malloc(pb.size);
-	pb.hptr_w = (real*)malloc(pb.size);
-	pb.hptr_omega_x = (real*)malloc(pb.size);
-	pb.hptr_omega_y = (real*)malloc(pb.size);
-	pb.hptr_omega_z = (real*)malloc(pb.size);
+	pb.hptr_u = (REAL*)malloc(pb.size);
+	pb.hptr_v = (REAL*)malloc(pb.size);
+	pb.hptr_w = (REAL*)malloc(pb.size);
+	pb.hptr_omega_x = (REAL*)malloc(pb.size);
+	pb.hptr_omega_y = (REAL*)malloc(pb.size);
+	pb.hptr_omega_z = (REAL*)malloc(pb.size);
 	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");

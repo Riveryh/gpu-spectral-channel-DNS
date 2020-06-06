@@ -18,11 +18,11 @@ __host__ int initFFT(problem& pb);
 
 __host__ int transform(DIRECTION dir,problem& pb);
 
-__global__ void setZerosKernel(complex* ptr, size_t pitch, int mx, int my, int mz);
-__host__ void setZeros(complex* ptr, size_t pitch, dim3 dims);
+__global__ void setZerosKernel(cuRPCF::complex* ptr, size_t pitch, int mx, int my, int mz);
+__host__ void setZeros(cuRPCF::complex* ptr, size_t pitch, dim3 dims);
 
-__global__ void normalizeKernel(real* p, size_t pitch, int mx, int my, int mz, real factor);
-__host__ void normalize(cudaPitchedPtr p, dim3 dims, real factor);
+__global__ void normalizeKernel(REAL* p, size_t pitch, int mx, int my, int mz, REAL factor);
+__host__ void normalize(cudaPitchedPtr p, dim3 dims, REAL factor);
 
 __host__ void cheby_p2s(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);
 __host__ void cheby_s2p(cudaPitchedPtr tPtr, int mx, int my, int mz, Padding_mode padding = Padding);

@@ -7,13 +7,13 @@ __host__ int addMeanFlow(problem& pb);
 
 __host__ int addCoriolisForce(problem& pb);
 
-__device__ void computeLambDevice(real* pU, real* pV, real* pW,
-	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-	real* pLambX, real* pLambY, real* pLambZ, int mz, real Ro, real meanU);
+__device__ void computeLambDevice(REAL* pU, REAL* pV, REAL* pW,
+	REAL* pOmegaX, REAL* pOmegaY, REAL* pOmegaZ,
+	REAL* pLambX, REAL* pLambY, REAL* pLambZ, int mz, REAL Ro, REAL meanU);
 
 __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz);
 __global__ void computeLambVectorKernel(cudaPitchedPtrList pList, 
-	const int mx, const int my, const int mz, real Ro);
+	const int mx, const int my, const int mz, REAL Ro);
 
 //__host__ void saveZeroWaveLamb(problem& pb);
 
@@ -144,7 +144,7 @@ __host__ int rhsNonlinear(problem & pb)
 	return int();
 }
 __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
-	int mx, int my, int mz, real alpha, real beta)
+	int mx, int my, int mz, REAL alpha, REAL beta)
 {
 	int kx = blockIdx.x;
 	int ky = blockIdx.y; 
@@ -162,39 +162,39 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 	if (kx >= nx / 2 + 1)return;
 	if (ky >= ny) return;
 
-	real ialpha = real(kx) / alpha;
-	real ibeta = real(ky) / beta;	
+	REAL ialpha = REAL(kx) / alpha;
+	REAL ibeta = REAL(ky) / beta;	
 	if (ky >= ny / 2 + 1) {
-		ibeta = real(ky - ny) / beta;
+		ibeta = REAL(ky - ny) / beta;
 	}
 
-	real kmn = ialpha*ialpha + ibeta*ibeta;
+	REAL kmn = ialpha*ialpha + ibeta*ibeta;
 
-	//temp vector for derivative real part
-	__shared__ real tdz_re[MAX_NZ];
-	//temp result u real part
-	real tres_u_re;
-	//temp result w real part
-	real tres_w_re;
+	//temp vector for derivative REAL part
+	__shared__ REAL tdz_re[MAX_NZ];
+	//temp result u REAL part
+	REAL tres_u_re;
+	//temp result w REAL part
+	REAL tres_w_re;
 
 	//temp vector for derivative imaginary part
-	__shared__ real tdz_im[MAX_NZ];
+	__shared__ REAL tdz_im[MAX_NZ];
 	//temp result u imaginary part
-	real tres_u_im;
+	REAL tres_u_im;
 	//temp result v imaginary part part
-	real tres_w_im;
+	REAL tres_w_im;
 
 	// the following variables are in spectral space
-	//complex* dp_u = (complex*)plist.dptr_u.ptr; //actually dptr_tu, so on...
-	//complex* dp_v = (complex*)plist.dptr_v.ptr;
-	//complex* dp_w = (complex*)plist.dptr_w.ptr;
+	//cuRPCF::complex* dp_u = (cuRPCF::complex*)plist.dptr_u.ptr; //actually dptr_tu, so on...
+	//cuRPCF::complex* dp_v = (cuRPCF::complex*)plist.dptr_v.ptr;
+	//cuRPCF::complex* dp_w = (cuRPCF::complex*)plist.dptr_w.ptr;
 
-	complex* dp_lamb_x = (complex*)plist.dptr_lamb_x.ptr;
-	complex* dp_lamb_y = (complex*)plist.dptr_lamb_y.ptr;
-	complex* dp_lamb_z = (complex*)plist.dptr_lamb_z.ptr;
+	cuRPCF::complex* dp_lamb_x = (cuRPCF::complex*)plist.dptr_lamb_x.ptr;
+	cuRPCF::complex* dp_lamb_y = (cuRPCF::complex*)plist.dptr_lamb_y.ptr;
+	cuRPCF::complex* dp_lamb_z = (cuRPCF::complex*)plist.dptr_lamb_z.ptr;
 
 	// change location of pointers.
-	size_t dist = (kx + (nx/2+1)*ky)*pitch / sizeof(complex);
+	size_t dist = (kx + (nx/2+1)*ky)*pitch / sizeof(cuRPCF::complex);
 	//dp_u = dp_u + dist;
 	//dp_v = dp_v + dist;
 	//dp_w = dp_w + dist;
@@ -204,9 +204,9 @@ __global__ void rhsNonlinearKernel(cudaPitchedPtrList plist,
 
 	int i = kz;
 
-	complex cache_lamb_x = dp_lamb_x[i];
-	complex cache_lamb_y = dp_lamb_y[i];
-	complex cache_lamb_z = dp_lamb_z[i];
+	cuRPCF::complex cache_lamb_x = dp_lamb_x[i];
+	cuRPCF::complex cache_lamb_y = dp_lamb_y[i];
+	cuRPCF::complex cache_lamb_z = dp_lamb_z[i];
 
 		tdz_re[i] = cache_lamb_x.re;
 		tdz_im[i] = cache_lamb_x.im;
@@ -254,13 +254,13 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 	if (iy >= py || iz >= pz) return;
 	size_t id = py*iz + iy;
 
-	const real PI = 4.0*atan(1.0);
-	real z = cos((real)iz / (pz - 1)*PI);
-	real mean_u = 0.5*(z + 1);
+	const REAL PI = 4.0*atan(1.0);
+	REAL z = cos((REAL)iz / (pz - 1)*PI);
+	REAL mean_u = 0.5*(z + 1);
 
-	real* dp_u;
+	REAL* dp_u;
 	int pitch = ptr.pitch;
-	dp_u = (real*)ptr.ptr + pitch/sizeof(real) * id;
+	dp_u = (REAL*)ptr.ptr + pitch/sizeof(REAL) * id;
 	for (int i = 0; i < px; i++) {
 		dp_u[i] = dp_u[i] + mean_u;
 	}
@@ -289,15 +289,15 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 //
 //	//compute the location of data in each thread.
 //	int pitch = ptrV.pitch;
-//	real* pU = (real*)((char*)ptrU.ptr + pitch * id);
-//	real* pV = (real*)((char*)ptrV.ptr + pitch * id);
-//	real* pW = (real*)((char*)ptrW.ptr + pitch * id);
-//	real* pOmegaX = (real*)((char*)ptrOmegaX.ptr + pitch * id);
-//	real* pOmegaY = (real*)((char*)ptrOmegaY.ptr + pitch * id);
-//	real* pOmegaZ = (real*)((char*)ptrOmegaZ.ptr + pitch * id);
-//	real* pLambX = (real*)((char*)ptrLambX.ptr + pitch * id);
-//	real* pLambY = (real*)((char*)ptrLambY.ptr + pitch * id);
-//	real* pLambZ = (real*)((char*)ptrLambZ.ptr + pitch * id);
+//	REAL* pU = (REAL*)((char*)ptrU.ptr + pitch * id);
+//	REAL* pV = (REAL*)((char*)ptrV.ptr + pitch * id);
+//	REAL* pW = (REAL*)((char*)ptrW.ptr + pitch * id);
+//	REAL* pOmegaX = (REAL*)((char*)ptrOmegaX.ptr + pitch * id);
+//	REAL* pOmegaY = (REAL*)((char*)ptrOmegaY.ptr + pitch * id);
+//	REAL* pOmegaZ = (REAL*)((char*)ptrOmegaZ.ptr + pitch * id);
+//	REAL* pLambX = (REAL*)((char*)ptrLambX.ptr + pitch * id);
+//	REAL* pLambY = (REAL*)((char*)ptrLambY.ptr + pitch * id);
+//	REAL* pLambZ = (REAL*)((char*)ptrLambZ.ptr + pitch * id);
 //
 //	//execute the computation
 //	computeLambDevice(pU, pV, pW, pOmegaX, pOmegaY, pOmegaZ,
@@ -308,7 +308,7 @@ __host__ int computeLambVector(problem & pb)
 {
 	//cudaExtent& pExtent = pb.pExtent;
 	//make_cudaExtent(
-	//	2 * (pb.mx / 2 + 1) * sizeof(real), pb.my, pb.mz);
+	//	2 * (pb.mx / 2 + 1) * sizeof(REAL), pb.my, pb.mz);
 
 	ASSERT(pb.dptr_lamb_x.ptr == nullptr);
 	ASSERT(pb.dptr_lamb_y.ptr == nullptr);
@@ -364,7 +364,7 @@ __host__ int computeLambVector(problem & pb)
 }
 
 __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
-	const int mx, const int my, const int pz, real Ro) {
+	const int mx, const int my, const int pz, REAL Ro) {
 	//可以合并几个lamb矢量计算到一个kernel中
 	int ky = blockIdx.x;
 	int kz = blockIdx.y;
@@ -387,30 +387,30 @@ __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 
 	//compute the location of data in each thread.
 	int pitch = ptrV.pitch;
-	real* pU = ((real*)((char*)ptrU.ptr + pitch * id)) + kx;
-	real* pV = ((real*)((char*)ptrV.ptr + pitch * id)) + kx;
-	real* pW = ((real*)((char*)ptrW.ptr + pitch * id)) + kx;
-	real* pOmegaX = ((real*)((char*)ptrOmegaX.ptr + pitch * id)) + kx;
-	real* pOmegaY = ((real*)((char*)ptrOmegaY.ptr + pitch * id)) + kx;
-	real* pOmegaZ = ((real*)((char*)ptrOmegaZ.ptr + pitch * id)) + kx;
-	real* pLambX = ((real*)((char*)ptrLambX.ptr + pitch * id)) + kx;
-	real* pLambY = ((real*)((char*)ptrLambY.ptr + pitch * id)) + kx;
-	real* pLambZ = ((real*)((char*)ptrLambZ.ptr + pitch * id)) + kx;
+	REAL* pU = ((REAL*)((char*)ptrU.ptr + pitch * id)) + kx;
+	REAL* pV = ((REAL*)((char*)ptrV.ptr + pitch * id)) + kx;
+	REAL* pW = ((REAL*)((char*)ptrW.ptr + pitch * id)) + kx;
+	REAL* pOmegaX = ((REAL*)((char*)ptrOmegaX.ptr + pitch * id)) + kx;
+	REAL* pOmegaY = ((REAL*)((char*)ptrOmegaY.ptr + pitch * id)) + kx;
+	REAL* pOmegaZ = ((REAL*)((char*)ptrOmegaZ.ptr + pitch * id)) + kx;
+	REAL* pLambX = ((REAL*)((char*)ptrLambX.ptr + pitch * id)) + kx;
+	REAL* pLambY = ((REAL*)((char*)ptrLambY.ptr + pitch * id)) + kx;
+	REAL* pLambZ = ((REAL*)((char*)ptrLambZ.ptr + pitch * id)) + kx;
 	
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	// int nz = (pz - 1) / 2;
-	real y_coord = cos((real)kz / ((real)(pz-1))*PI);
-	real meanU = 0.5*(1 + y_coord);
+	REAL y_coord = cos((REAL)kz / ((REAL)(pz-1))*PI);
+	REAL meanU = 0.5*(1 + y_coord);
 	//execute the computation
 	computeLambDevice(pU, pV, pW, pOmegaX, pOmegaY, pOmegaZ,
 		pLambX, pLambY, pLambZ, mx, Ro, meanU);
 }
 
-__device__ void computeLambDevice(real* pU, real* pV, real* pW,
-	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-	real* pLambX, real* pLambY, real* pLambZ, int mx, real Ro, real meanU) {
+__device__ void computeLambDevice(REAL* pU, REAL* pV, REAL* pW,
+	REAL* pOmegaX, REAL* pOmegaY, REAL* pOmegaZ,
+	REAL* pLambX, REAL* pLambY, REAL* pLambZ, int mx, REAL Ro, REAL meanU) {
 	//int  i = 0;
-	real lx, ly, lz, ox, oy, oz, u, v, w;
+	REAL lx, ly, lz, ox, oy, oz, u, v, w;
 	ox = *pOmegaX;
 	oy = *pOmegaY;
 	oz = *pOmegaZ;
@@ -427,21 +427,21 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 	*pLambZ = lz;
 }
 //
-//__device__ void computeLambDevice_non(real* pU, real* pV, real* pW,
-//	real* pOmegaX, real* pOmegaY, real* pOmegaZ,
-//	real* pLambX, real* pLambY, real* pLambZ, int mx) {
+//__device__ void computeLambDevice_non(REAL* pU, REAL* pV, REAL* pW,
+//	REAL* pOmegaX, REAL* pOmegaY, REAL* pOmegaZ,
+//	REAL* pLambX, REAL* pLambY, REAL* pLambZ, int mx) {
 //
-//	real tU[CACHE_SIZE];
-//	real tV[CACHE_SIZE];
-//	real tW[CACHE_SIZE];
+//	REAL tU[CACHE_SIZE];
+//	REAL tV[CACHE_SIZE];
+//	REAL tW[CACHE_SIZE];
 //	
-//	real tOmegaX[CACHE_SIZE];
-//	real tOmegaY[CACHE_SIZE];
-//	real tOmegaZ[CACHE_SIZE];
+//	REAL tOmegaX[CACHE_SIZE];
+//	REAL tOmegaY[CACHE_SIZE];
+//	REAL tOmegaZ[CACHE_SIZE];
 //
-//	real tLambX[CACHE_SIZE];
-//	real tLambY[CACHE_SIZE];
-//	real tLambZ[CACHE_SIZE];
+//	REAL tLambX[CACHE_SIZE];
+//	REAL tLambY[CACHE_SIZE];
+//	REAL tLambZ[CACHE_SIZE];
 //
 //	int nCycle = mx / CACHE_SIZE + 1;
 //	ASSERT(mx < CACHE_SIZE);
@@ -500,15 +500,15 @@ __device__ void computeLambDevice(real* pU, real* pV, real* pW,
 
 //__host__ void saveZeroWaveLamb(problem & pb)
 //{
-//	swap(pb.lambx0, pb.lambx0_p);
-//	swap(pb.lambz0, pb.lambz0_p);
+//	cuRPCF::swap(pb.lambx0, pb.lambx0_p);
+//	cuRPCF::swap(pb.lambz0, pb.lambz0_p);
 //
-//	complex* lambx = (complex*)pb.dptr_tLamb_x.ptr;
-//	complex* lambz = (complex*)pb.dptr_tLamb_y.ptr;	//change of y,z definition here!
+//	cuRPCF::complex* lambx = (cuRPCF::complex*)pb.dptr_tLamb_x.ptr;
+//	cuRPCF::complex* lambz = (cuRPCF::complex*)pb.dptr_tLamb_y.ptr;	//change of y,z definition here!
 //	cudaError err;
-//	err = cudaMemcpy(pb.lambx0, lambx, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
+//	err = cudaMemcpy(pb.lambx0, lambx, pb.nz * sizeof(cuRPCF::complex), cudaMemcpyDeviceToHost);
 //	ASSERT(err == cudaSuccess);
-//	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(complex), cudaMemcpyDeviceToHost);
+//	err = cudaMemcpy(pb.lambz0, lambz, pb.nz * sizeof(cuRPCF::complex), cudaMemcpyDeviceToHost);
 //	ASSERT(err == cudaSuccess);
 //
 //}

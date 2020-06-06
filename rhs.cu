@@ -85,8 +85,8 @@ void* func(void* _pb) {
 #endif
 
 		//save previous step
-		swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
-		swap(pb.nonlinear_v, pb.nonlinear_v_p);
+		cuRPCF::swap(pb.nonlinear_omega_y, pb.nonlinear_omega_y_p);
+		cuRPCF::swap(pb.nonlinear_v, pb.nonlinear_v_p);
 		size_t tsize = pb.tSize;// pb.tPitch * (pb.mx / 2 + 1) * pb.my;
 
 #ifdef CURPCF_CUDA_PROFILING
@@ -179,7 +179,7 @@ __host__ int get_rhs_v(problem& pb) {
 		for (int j = 0; j < pb.ny; j++) {
 			for (int k = 4; k < pb.nz; k++) {
 				if (i == 0 && j == 0) continue;
-				size_t inc = pb.tPitch/sizeof(complex)*((pb.nx/2+1)*j+i)+k;
+				size_t inc = pb.tPitch/sizeof(cuRPCF::complex)*((pb.nx/2+1)*j+i)+k;
 				pb.rhs_v[inc] = pb.rhs_v[inc] +(pb.nonlinear_v[inc - 2] * 1.5 - pb.nonlinear_v_p[inc - 2] * 0.5)*pb.dt;
 				//pb.rhs_v[inc] = pb.rhs_v[inc] + (pb.nonlinear_v[inc - 2])*pb.dt;
 				//pb.rhs_v[inc] =  pb.nonlinear_v[inc - 2];
@@ -200,8 +200,8 @@ __host__ int get_rhs_omega(problem& pb) {
 }
 
 void save_zero_wave_number_lamb(problem& pb) {
-	swap(pb.lambx0, pb.lambx0_p);
-	swap(pb.lambz0, pb.lambz0_p);
+	cuRPCF::swap(pb.lambx0, pb.lambx0_p);
+	cuRPCF::swap(pb.lambz0, pb.lambz0_p);
 	for (int i = 0; i < pb.nz; i++) {
 		pb.lambx0[i] = pb.nonlinear_v[i];
 		pb.lambz0[i] = pb.nonlinear_omega_y[i];

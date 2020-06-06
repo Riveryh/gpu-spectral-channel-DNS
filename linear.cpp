@@ -15,19 +15,19 @@ int get_linear_v(problem & pb)
 		for (int j = 0; j < ny; j++) {
 			if (i == 0 && j == 0) continue;
 
-			size_t inc = pb.tPitch/sizeof(complex)*(j*hnx+i);
-			complex* rhs_v = pb.rhs_v + inc;
-			complex* nonlinear_v = pb.nonlinear_v + inc;
-			complex* nonlinear_v_p = pb.nonlinear_v_p + inc;
-			complex* rhs_v_p = pb.rhs_v_p + inc;
-			//complex* rhs_omega_y = pb.rhs_omega_y + inc;
-			//complex* nonlinear_omega_y = pb.nonlinear_omega_y + inc;
-			real ialpha = (real)i / pb.aphi;
-			real ibeta = (real)j / pb.beta;
+			size_t inc = pb.tPitch/sizeof(cuRPCF::complex)*(j*hnx+i);
+			cuRPCF::complex* rhs_v = pb.rhs_v + inc;
+			cuRPCF::complex* nonlinear_v = pb.nonlinear_v + inc;
+			cuRPCF::complex* nonlinear_v_p = pb.nonlinear_v_p + inc;
+			cuRPCF::complex* rhs_v_p = pb.rhs_v_p + inc;
+			//cuRPCF::complex* rhs_omega_y = pb.rhs_omega_y + inc;
+			//cuRPCF::complex* nonlinear_omega_y = pb.nonlinear_omega_y + inc;
+			REAL ialpha = (REAL)i / pb.aphi;
+			REAL ibeta = (REAL)j / pb.beta;
 			if(j>= ny / 2 + 1) {
-				ibeta = real(j - ny) / pb.beta;
+				ibeta = REAL(j - ny) / pb.beta;
 			}
-			real kmn = ialpha*ialpha + ibeta*ibeta;
+			REAL kmn = ialpha*ialpha + ibeta*ibeta;
 
 			_get_linear_v(rhs_v, nonlinear_v, nonlinear_v_p, rhs_v_p, pb.nz-1, pb._U0, pb._ddU0,
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
@@ -60,19 +60,19 @@ int get_linear_omega_y(problem& pb)
 		for (int j = 0; j < ny; j++) {
 			if (i == 0 && j == 0) continue;
 			
-			size_t inc = pb.tPitch / sizeof(complex)*(j*hnx + i);
-			complex* rhs_v = pb.rhs_v + inc;
-			complex* nonlinear_v = pb.nonlinear_v + inc;
-			complex* rhs_v_p = pb.rhs_v_p + inc;
-			complex* rhs_omega_y = pb.rhs_omega_y + inc;
-			complex* nonlinear_omega_y = pb.nonlinear_omega_y + inc;
-			complex* nonlinear_omega_y_p = pb.nonlinear_omega_y_p + inc;
-			real ialpha = (real)i / pb.aphi;
-			real ibeta = (real)j / pb.beta;
+			size_t inc = pb.tPitch / sizeof(cuRPCF::complex)*(j*hnx + i);
+			cuRPCF::complex* rhs_v = pb.rhs_v + inc;
+			cuRPCF::complex* nonlinear_v = pb.nonlinear_v + inc;
+			cuRPCF::complex* rhs_v_p = pb.rhs_v_p + inc;
+			cuRPCF::complex* rhs_omega_y = pb.rhs_omega_y + inc;
+			cuRPCF::complex* nonlinear_omega_y = pb.nonlinear_omega_y + inc;
+			cuRPCF::complex* nonlinear_omega_y_p = pb.nonlinear_omega_y_p + inc;
+			REAL ialpha = (REAL)i / pb.aphi;
+			REAL ibeta = (REAL)j / pb.beta;
 			if (j >= ny / 2 + 1) {
-				ibeta = real(j - ny) / pb.beta;
+				ibeta = REAL(j - ny) / pb.beta;
 			}
-			real kmn = ialpha*ialpha + ibeta*ibeta;
+			REAL kmn = ialpha*ialpha + ibeta*ibeta;
 
 			_get_linear_omega_y(rhs_omega_y, nonlinear_omega_y, nonlinear_omega_y_p,
 				rhs_v, rhs_v_p,
@@ -83,20 +83,20 @@ int get_linear_omega_y(problem& pb)
 	return 0;
 }
 
-int _get_linear_v(complex* rhs_v, 
-	complex* nonlinear_v, complex* nonlinear_v_p,
-	complex* rhs_v_p,
-				int N, real* U, real* ddU,
-				real* T0, real* T2, real* T4,
-				real Re, real dt, real kmn, real alpha)
+int _get_linear_v(cuRPCF::complex* rhs_v, 
+	cuRPCF::complex* nonlinear_v, cuRPCF::complex* nonlinear_v_p,
+	cuRPCF::complex* rhs_v_p,
+				int N, REAL* U, REAL* ddU,
+				REAL* T0, REAL* T2, REAL* T4,
+				REAL Re, REAL dt, REAL kmn, REAL alpha)
 {
-	complex* rhs_temp = (complex*)malloc((N+1)*sizeof(complex));
+	cuRPCF::complex* rhs_temp = (cuRPCF::complex*)malloc((N+1)*sizeof(cuRPCF::complex));
 	assert(rhs_temp != nullptr);
 	for (int i = 4; i <= N; i++) {
-		rhs_temp[i] = complex(0.0,0.0);
+		rhs_temp[i] = cuRPCF::complex(0.0,0.0);
 		for (int j = 0; j <= N; j++) {
 			size_t inc_2_0 = (N + 1)*(i-2) + j;
-			rhs_temp[i] = rhs_temp[i] + rhs_v[j] * complex(
+			rhs_temp[i] = rhs_temp[i] + rhs_v[j] * cuRPCF::complex(
 				T4[inc_2_0]*dt*0.5/Re+(1-kmn*dt/Re)*T2[inc_2_0]
 				-kmn*(1-kmn*dt*0.5/Re)*T0[inc_2_0]
 				//T2[inc_2_0] - kmn*T0[inc_2_0]
@@ -114,37 +114,37 @@ int _get_linear_v(complex* rhs_v,
 	}
 
 	//boundary conditions
-	rhs_v[0] = complex(0.0, 0.0);
-	rhs_v[1] = complex(0.0, 0.0);
-	rhs_v[2] = complex(0.0, 0.0);
-	rhs_v[3] = complex(0.0, 0.0);
+	rhs_v[0] = cuRPCF::complex(0.0, 0.0);
+	rhs_v[1] = cuRPCF::complex(0.0, 0.0);
+	rhs_v[2] = cuRPCF::complex(0.0, 0.0);
+	rhs_v[3] = cuRPCF::complex(0.0, 0.0);
 
 	//remove pointer
 	free(rhs_temp);
 	return 0;
 }
 
-int _get_linear_omega_y(complex* rhs_omega_y, 
-	complex* nonlinear_omega_y,	complex* nonlinear_omega_y_p,
-	complex* rhs_v, complex* rhs_v_p,
-	int N, real*U, real*dU,
-	real*T0, real*T2,
-	real Re, real dt, real kmn,
-	real alpha, real beta)
+int _get_linear_omega_y(cuRPCF::complex* rhs_omega_y, 
+	cuRPCF::complex* nonlinear_omega_y,	cuRPCF::complex* nonlinear_omega_y_p,
+	cuRPCF::complex* rhs_v, cuRPCF::complex* rhs_v_p,
+	int N, REAL*U, REAL*dU,
+	REAL*T0, REAL*T2,
+	REAL Re, REAL dt, REAL kmn,
+	REAL alpha, REAL beta)
 {
-	complex* rhs_temp = (complex*)malloc((N + 1) * sizeof(complex));
+	cuRPCF::complex* rhs_temp = (cuRPCF::complex*)malloc((N + 1) * sizeof(cuRPCF::complex));
 	assert(rhs_temp != nullptr);
 	for (int i = 2; i <= N; i++) {
-		rhs_temp[i] = complex(0.0, 0.0);
+		rhs_temp[i] = cuRPCF::complex(0.0, 0.0);
 		for (int j = 0; j <= N; j++) {
 			size_t inc_1_0 = (N + 1)*(i-1) + j;
-			rhs_temp[i] = rhs_temp[i] + rhs_omega_y[j] * complex(
+			rhs_temp[i] = rhs_temp[i] + rhs_omega_y[j] * cuRPCF::complex(
 				T2[inc_1_0]*0.5/Re*dt + (1-kmn*dt*0.5/Re)*T0[inc_1_0]
 				//T2[inc_1_0] * 0.5 / Re*dt + (0 - kmn*dt*0.5 / Re)*T0[inc_1_0]
 				,
 				-alpha*dt*0.5*U[i-1]*T0[inc_1_0]
 			);
-			rhs_temp[i] = rhs_temp[i] + (rhs_v_p[j]+rhs_v[j]) * complex(
+			rhs_temp[i] = rhs_temp[i] + (rhs_v_p[j]+rhs_v[j]) * cuRPCF::complex(
 				0.0
 				,
 				-0.5*beta*dU[i-1]*dt*T0[inc_1_0]
@@ -162,24 +162,24 @@ int _get_linear_omega_y(complex* rhs_omega_y,
 	}
 	
 	//boundary conditions
-	rhs_omega_y[0] = complex(0.0, 0.0);
-	rhs_omega_y[1] = complex(0.0, 0.0);
+	rhs_omega_y[0] = cuRPCF::complex(0.0, 0.0);
+	rhs_omega_y[1] = cuRPCF::complex(0.0, 0.0);
 
 	//remove pointer
 	free(rhs_temp);
 	return 0;
 }
 
-int _get_linear_u0(complex* rhs_u0, complex* lambx0, complex* lambx0_p, 
-	int N, real* T0, real* T2, real Re, real dt) 
+int _get_linear_u0(cuRPCF::complex* rhs_u0, cuRPCF::complex* lambx0, cuRPCF::complex* lambx0_p, 
+	int N, REAL* T0, REAL* T2, REAL Re, REAL dt) 
 {
-	complex* rhs_temp = (complex*)malloc((N + 1) * sizeof(complex));
+	cuRPCF::complex* rhs_temp = (cuRPCF::complex*)malloc((N + 1) * sizeof(cuRPCF::complex));
 	assert(rhs_temp != nullptr);
 	for (int i = 2; i <= N; i++) {
-		rhs_temp[i] = complex(0.0, 0.0);
+		rhs_temp[i] = cuRPCF::complex(0.0, 0.0);
 		for (int j = 0; j <= N; j++) {
 			size_t inc_1_0 = (N + 1)*(i - 1) + j;
-			rhs_temp[i] = rhs_temp[i] + rhs_u0[j] * complex(
+			rhs_temp[i] = rhs_temp[i] + rhs_u0[j] * cuRPCF::complex(
 				T0[inc_1_0] + dt*0.5 / Re*T2[inc_1_0], 0.0);
 		}
 	}
@@ -191,15 +191,15 @@ int _get_linear_u0(complex* rhs_u0, complex* lambx0, complex* lambx0_p,
 	}
 
 	//boundary conditions
-	rhs_u0[0] = complex(0.0, 0.0);
-	rhs_u0[1] = complex(0.0, 0.0);
+	rhs_u0[0] = cuRPCF::complex(0.0, 0.0);
+	rhs_u0[1] = cuRPCF::complex(0.0, 0.0);
 
 	//remove pointer
 	free(rhs_temp);
 	return 0;
 }
 
-int _get_linear_w0(complex* rhs_w0, complex* lambz0, complex* lambz0_p,
-	int N, real* T0, real* T2, real Re, real dt) {
+int _get_linear_w0(cuRPCF::complex* rhs_w0, cuRPCF::complex* lambz0, cuRPCF::complex* lambz0_p,
+	int N, REAL* T0, REAL* T2, REAL Re, REAL dt) {
 	return _get_linear_u0(rhs_w0, lambz0, lambz0_p,N, T0, T2, Re, dt);
 }

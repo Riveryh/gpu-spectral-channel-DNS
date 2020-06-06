@@ -24,11 +24,11 @@ __host__ int initFlow(problem& pb);
 
 //__host__ int computeNonlinear(problem& pb);
 
-__host__ __device__ void ddz(real* u, int N);
-__host__ __device__ void ddz(complex* u, int N);
+__host__ __device__ void ddz(REAL* u, int N);
+__host__ __device__ void ddz(cuRPCF::complex* u, int N);
 
 
-__device__ void ddz_sm(real* u, int N, int kz);
-__device__ void ddz_sm(complex* u, int N, int kz);
+__device__ void ddz_sm(REAL* u, int N, int kz);
+__device__ void ddz_sm(cuRPCF::complex* u, int N, int kz);
 
 

@@ -31,7 +31,7 @@ TestResult test_dt_0() {
 		output_velocity(pb);
 		//output_velocity(pb);
 
-		complex* tv = (complex*)malloc(pb.tSize);
+		cuRPCF::complex* tv = (cuRPCF::complex*)malloc(pb.tSize);
 
 
 		cout << "first step" << endl;
@@ -70,9 +70,9 @@ TestResult test_dt_0() {
 		exit(-1);
 	}
 
-	//complex* tv2 = pb.rhs_v;
-	complex* tv2 = (complex*)malloc(pb.tSize);
-	complex* tv = (complex*)malloc(pb.tSize);
+	//cuRPCF::complex* tv2 = pb.rhs_v;
+	cuRPCF::complex* tv2 = (cuRPCF::complex*)malloc(pb.tSize);
+	cuRPCF::complex* tv = (cuRPCF::complex*)malloc(pb.tSize);
 	cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 	
 	//clock_t start_time, end_time;
@@ -130,7 +130,7 @@ TestResult test_dt_0() {
 	for (int ix = 0; ix < pb.nx / 2 + 1; ix++) {
 		for (int iy = 0; iy < pb.ny; iy++) {
 			for (int iz = 0; iz < pb.nz; iz++) {
-				size_t inc = pb.tPitch / sizeof(complex)
+				size_t inc = pb.tPitch / sizeof(cuRPCF::complex)
 					*((pb.nx / 2 + 1)*iy + ix);
 				assert(isEqual(tv[inc].re, tv2[inc].re));
 				assert(isEqual(tv[inc].im, tv2[inc].im));

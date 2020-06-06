@@ -20,8 +20,8 @@ int init_FFT_MGPU(problem& pb) {
 	const int mz = pb.mz;
 	const int inPitch = pb.pitch;
 	const int outPitch = pb.tPitch;
-	const int pmx = inPitch / sizeof(real);
-	const int pmz = outPitch / sizeof(complex);
+	const int pmx = inPitch / sizeof(REAL);
+	const int pmz = outPitch / sizeof(cuRPCF::complex);
 	const int nx = mx / 3 * 2;
 	const int ny = my / 3 * 2;
 
@@ -122,7 +122,7 @@ int transform_one_mGPU(DIRECTION dir, cudaPitchedPtr& Ptr, cudaPitchedPtr& tPtr,
 		cuCheck(myCudaMalloc(Ptr, XYZ_3D, dev_id), "my cudaMalloc");
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 		cuCheck(myCudaFree(tPtr, ZXY_3D, dev_id), "my cuda free at transform");
-		setZeros((complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
+		setZeros((cuRPCF::complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
 		cuFFTcheck(CUFFTEXEC_C2R(planXYc2r_M[dev_id], (CUFFTCOMPLEX*)Ptr.ptr,(CUFFTREAL*)Ptr.ptr), "XY backward");
 	}
 	else {

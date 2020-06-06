@@ -8,11 +8,11 @@
 #undef REAL_FLOAT
 
 #ifdef REAL_DOUBLE
-#define real double
+#define REAL double
 #undef REAL_FLOAT
 #endif
 #ifdef REAL_FLOAT
-#define real float
+#define REAL float
 #undef REAL_DOUBLE
 #endif
 #include "cuda_runtime.h"
@@ -35,54 +35,55 @@
 
 #define nullptr NULL
 
-struct complex {
-	real re;
-	real im;
-	__host__ __device__ complex() {};
-	__host__ __device__ complex(real ire, real iim) :re(ire), im(iim) {};
-	__host__ __device__ complex& operator=(complex c) {
-		this->re = c.re;
-		this->im = c.im;
-		return *this;
-	}
-	__host__ __device__ complex& operator=(real r) {
-		this->re = r;
-		this->im = 0.0;
-		return *this;
-	}
-	__host__ __device__ complex operator*(real r) {
-		real tre = this->re * r;
-		real tim = this->im * r;
-		return complex(tre, tim);
-	}
-	__host__ __device__ complex operator*(complex c) {
-		real tre = this->re*c.re - this->im*c.im;
-		real tim = this->re*c.im + this->im*c.re;
-		return complex(tre, tim);
-	}
-	__host__ __device__ complex operator+(complex c) {
-		real tre = this->re + c.re;
-		real tim = this->im + c.im;
-		return complex(tre, tim);
-	}
-	__host__ __device__ complex operator-(complex c) {
-		real tre = this->re - c.re;
-		real tim = this->im - c.im;
-		return complex(tre, tim);
-	}
-	__host__ __device__ complex operator+(real r) {
-		real tre = this->re + r;
-		real tim = this->im;
-		return complex(tre, tim);
-	}
-
-};
+namespace cuRPCF{
+	struct complex {
+		REAL re;
+		REAL im;
+		__host__ __device__ cuRPCF::complex() {};
+		__host__ __device__ cuRPCF::complex(REAL ire, REAL iim) :re(ire), im(iim) {};
+		__host__ __device__ cuRPCF::complex& operator=(cuRPCF::complex c) {
+			this->re = c.re;
+			this->im = c.im;
+			return *this;
+		}
+		__host__ __device__ cuRPCF::complex& operator=(REAL r) {
+			this->re = r;
+			this->im = 0.0;
+			return *this;
+		}
+		__host__ __device__ cuRPCF::complex operator*(REAL r) {
+			REAL tre = this->re * r;
+			REAL tim = this->im * r;
+			return cuRPCF::complex(tre, tim);
+		}
+		__host__ __device__ cuRPCF::complex operator*(cuRPCF::complex c) {
+			REAL tre = this->re * c.re - this->im * c.im;
+			REAL tim = this->re * c.im + this->im * c.re;
+			return cuRPCF::complex(tre, tim);
+		}
+		__host__ __device__ cuRPCF::complex operator+(cuRPCF::complex c) {
+			REAL tre = this->re + c.re;
+			REAL tim = this->im + c.im;
+			return cuRPCF::complex(tre, tim);
+		}
+		__host__ __device__ cuRPCF::complex operator-(cuRPCF::complex c) {
+			REAL tre = this->re - c.re;
+			REAL tim = this->im - c.im;
+			return cuRPCF::complex(tre, tim);
+		}
+		__host__ __device__ cuRPCF::complex operator+(REAL r) {
+			REAL tre = this->re + r;
+			REAL tim = this->im;
+			return cuRPCF::complex(tre, tim);
+		}
+	};
+}
 
 //
 //struct parameter {
-//	real Ro;
-//	real Re;
-//	real dt;
+//	REAL Ro;
+//	REAL Re;
+//	REAL dt;
 //	int start_step;
 //	int save_step;
 //	int output_step;
@@ -155,19 +156,19 @@ public:
 //struct Flow {
 //	parameter para;
 //	int		nnx, nny, nnz;
-//	matrix3d<real> u;
-//	matrix3d<real> v;
-//	matrix3d<real> w;
-//	matrix3d<real> omega_x;
-//	matrix3d<real> omega_y;
-//	matrix3d<real> omega_z;
+//	matrix3d<REAL> u;
+//	matrix3d<REAL> v;
+//	matrix3d<REAL> w;
+//	matrix3d<REAL> omega_x;
+//	matrix3d<REAL> omega_y;
+//	matrix3d<REAL> omega_z;
 //
-//	matrix3d<complex> u_k;
-//	matrix3d<complex> v_k;
-//	matrix3d<complex> w_k;
-//	matrix3d<complex> omega_x_k;
-//	matrix3d<complex> omega_y_k;
-//	matrix3d<complex> omega_z_k;
+//	matrix3d<cuRPCF::complex> u_k;
+//	matrix3d<cuRPCF::complex> v_k;
+//	matrix3d<cuRPCF::complex> w_k;
+//	matrix3d<cuRPCF::complex> omega_x_k;
+//	matrix3d<cuRPCF::complex> omega_y_k;
+//	matrix3d<cuRPCF::complex> omega_z_k;
 //
 //	Flow(int i, int j, int k);
 //
@@ -178,35 +179,35 @@ public:
 //	int solveEQ();
 //
 //	int phy_to_spec();
-//	int phy_to_spec(real*, complex*);
+//	int phy_to_spec(REAL*, cuRPCF::complex*);
 //	int spec_to_phy();
-//	int spec_to_phy(complex*, real*);
+//	int spec_to_phy(cuRPCF::complex*, REAL*);
 //
-//	real& get_real(real* ,int i, int j, int k);
-//	complex& get_complex(complex*, int i, int j, int k);
+//	REAL& get_real(REAL* ,int i, int j, int k);
+//	cuRPCF::complex& get_complex(cuRPCF::complex*, int i, int j, int k);
 //};
 
 struct problem {
 	int nx, ny, nz;	// the number of mesh
 	int mx, my, mz;	// number of allocated memory
 	int px, py, pz; // number of mesh for dealiasing
-	//const real PI = 4*atan(1.0l);
-	real aphi;
-	real beta;
-	real lx;
-	real ly;
-	real dt;
-	real Re;
-	real Ro;
-	real *_U0, *_dU0, *_ddU0;
+	//const REAL PI = 4*atan(1.0l);
+	REAL aphi;
+	REAL beta;
+	REAL lx;
+	REAL ly;
+	REAL dt;
+	REAL Re;
+	REAL Ro;
+	REAL *_U0, *_dU0, *_ddU0;
 	int currenStep;
 	RPCF_Paras para;
 	//
-	//matrix2d<real> T0;
-	//matrix2d<real> T2;
-	//matrix2d<real> T4;
+	//matrix2d<REAL> T0;
+	//matrix2d<REAL> T2;
+	//matrix2d<REAL> T4;
 	
-	real* T0, *T2, *T4;
+	REAL* T0, *T2, *T4;
 
 	cudaExtent extent;
 	cudaExtent tExtent;
@@ -235,7 +236,7 @@ struct problem {
 	cudaPitchedPtr dptr_lamb_y;
 	cudaPitchedPtr dptr_lamb_z;
 
-	real* dp_meanU;
+	REAL* dp_meanU;
 
 	// device pointer of transposed u,v,w,...
 	cudaPitchedPtr dptr_tu;
@@ -255,46 +256,46 @@ struct problem {
 	//cudaPitchedPtr dptr_rhs_omega_y_p;
 
 	// host pointer of u,v,w,... used for stroage of output.
-	real* hptr_u;
-	real* hptr_v;
-	real* hptr_w;
-	real* hptr_omega_x;
-	real* hptr_omega_y;
-	real* hptr_omega_z;
+	REAL* hptr_u;
+	REAL* hptr_v;
+	REAL* hptr_w;
+	REAL* hptr_omega_x;
+	REAL* hptr_omega_y;
+	REAL* hptr_omega_z;
 
 	// host pointer of nonlinear term in v equation
-	complex* nonlinear_v;
+	cuRPCF::complex* nonlinear_v;
 
 	// host pointer of nonlinear term in omegaY equation
-	complex* nonlinear_omega_y;
+	cuRPCF::complex* nonlinear_omega_y;
 
 	// host pointer of nonlinear term in v equation of previous step
-	complex* nonlinear_v_p;
+	cuRPCF::complex* nonlinear_v_p;
 
 	// host pointer of nonlinear term in omegaY equation of previous step
-	complex* nonlinear_omega_y_p;
+	cuRPCF::complex* nonlinear_omega_y_p;
 
-	complex* matrix_coeff_v;
-	complex* matrix_coeff_omega;
+	cuRPCF::complex* matrix_coeff_v;
+	cuRPCF::complex* matrix_coeff_omega;
 
 	// after solving the equation, the pointer contains v and omega;
 	// after running getRHS, this pointer contains the right hand side
 	// part value of the equation.
-	complex* rhs_v;
-	complex* rhs_omega_y;
-	complex* rhs_v_p;
-	//complex* rhs_omega_y_p;
+	cuRPCF::complex* rhs_v;
+	cuRPCF::complex* rhs_omega_y;
+	cuRPCF::complex* rhs_v_p;
+	//cuRPCF::complex* rhs_omega_y_p;
 
 	// save the zero-wave number lamb vector to solve (0,0) 
 	// wave number equation.
-	complex* lambx0;
-	complex* lambz0;
-	complex* lambx0_p;
-	complex* lambz0_p;
+	cuRPCF::complex* lambx0;
+	cuRPCF::complex* lambz0;
+	cuRPCF::complex* lambx0_p;
+	cuRPCF::complex* lambz0_p;
 
 	//zero-wave nubmer velocity in spectral space
-	complex* tv0;
-	complex* tomega_y_0;
+	cuRPCF::complex* tv0;
+	cuRPCF::complex* tomega_y_0;
 	
 	problem() :
 		mx(128),
@@ -400,17 +401,18 @@ struct cudaPitchedPtrList {
 //	}
 //}
 
-template<class T>
-inline void swap(T& a, T& b) {
-	T temp;
-	temp = a;
-	a = b;
-	b = temp;
+namespace cuRPCF{
+	template<class T>
+	inline void swap(T& a, T& b) {
+		T temp;
+		temp = a;
+		a = b;
+		b = temp;
+	}
 }
 
-
 #define RPCF_EQUAL_PRECISION 1e-8
-bool isEqual(real a, real b, real precision = RPCF_EQUAL_PRECISION);
+bool isEqual(REAL a, REAL b, REAL precision = RPCF_EQUAL_PRECISION);
 
 
 

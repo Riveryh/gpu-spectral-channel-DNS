@@ -36,15 +36,15 @@ using namespace std;
 //void problem::memcpy_device_to_host() {
 //	size_t isize = dptr_u.pitch*ny*nz;
 //	cudaError_t cuerr;
-//	//isize = 1 * sizeof(real);
+//	//isize = 1 * sizeof(REAL);
 //	if (hptr_omega_z==nullptr) {		
 //		std::cout << "allocated " << endl;
-//		hptr_u = (real*)malloc(isize);
-//		hptr_v = (real*)malloc(isize);
-//		hptr_w = (real*)malloc(isize);
-//		hptr_omega_x = (real*)malloc(isize);
-//		hptr_omega_y = (real*)malloc(isize);
-//		hptr_omega_z = (real*)malloc(isize);
+//		hptr_u = (REAL*)malloc(isize);
+//		hptr_v = (REAL*)malloc(isize);
+//		hptr_w = (REAL*)malloc(isize);
+//		hptr_omega_x = (REAL*)malloc(isize);
+//		hptr_omega_y = (REAL*)malloc(isize);
+//		hptr_omega_z = (REAL*)malloc(isize);
 //	}
 //	cuerr = cudaSuccess;
 //	cuerr = cudaMemcpy(hptr_u, dptr_u.ptr, isize, cudaMemcpyDeviceToHost);
@@ -62,7 +62,7 @@ using namespace std;
 //}
 
 
-int RPCF::write_3d_to_file(char* filename,real* pu, int pitch, int nx, int ny, int nz) {
+int RPCF::write_3d_to_file(char* filename,REAL* pu, int pitch, int nx, int ny, int nz) {
 	ofstream outfile(filename,fstream::out);
 	// skip this part
 	//return 0;
@@ -70,7 +70,7 @@ int RPCF::write_3d_to_file(char* filename,real* pu, int pitch, int nx, int ny, i
 	for (int k = 0; k < nz; k++) {
 		size_t slice = pitch*ny*k;
 		for (int j = 0; j < ny; j++) {
-			real* row = (real*)((char*)pu + slice + j*pitch);
+			REAL* row = (REAL*)((char*)pu + slice + j*pitch);
 			for (int i = 0; i < nx; i++) {
 				outfile << row[i] << "\t";
 			}
@@ -95,7 +95,7 @@ void cuCheck(cudaError_t ret, string s) {
 	}
 }
 
-bool isEqual(real a, real b, real precision ){
+bool isEqual(REAL a, REAL b, REAL precision ){
 	if (abs(a - b) <= precision) {
 		return true;
 	}
@@ -161,14 +161,14 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	int pz = mz / 2 + 1;
 
 	cudaExtent ext = make_cudaExtent(
-		sizeof(complex)*(mx/2+1),my,pz
+		sizeof(cuRPCF::complex)*(mx/2+1),my,pz
 	);
 	cuCheck(cudaMalloc3D(&testPtr, ext), "mem test");
 	__myPPitch = testPtr.pitch;
 	cudaFree(testPtr.ptr);
 
 	ext = make_cudaExtent(
-		sizeof(complex)*mz, nx / 2 + 1, ny
+		sizeof(cuRPCF::complex)*mz, nx / 2 + 1, ny
 	);
 	cuCheck(cudaMalloc3D(&testPtr, ext), "mem test");
 	__myTPitch = testPtr.pitch;

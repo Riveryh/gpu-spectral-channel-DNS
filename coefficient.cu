@@ -4,8 +4,8 @@
 #include <cmath>
 #include <cassert>
 
-__host__ __device__ int _get_coefficient_v(complex* mcv, int N, real* U, real* ddU, real* T0, real* T2,
-	real* T4, real Re, real dt, real kmn, real alpha)
+__host__ __device__ int _get_coefficient_v(cuRPCF::complex* mcv, int N, REAL* U, REAL* ddU, REAL* T0, REAL* T2,
+	REAL* T4, REAL Re, REAL dt, REAL kmn, REAL alpha)
 {
 	assert(mcv != nullptr);
 	assert(U != nullptr);
@@ -28,16 +28,16 @@ __host__ __device__ int _get_coefficient_v(complex* mcv, int N, real* U, real* d
 
 	//boundary conditions
 	for (int j = 0; j <= N; j++) {
-		mcv[(N + 1) * 0 + j] = complex(1.0, 0.0);
-		mcv[(N + 1) * 1 + j] = complex((j%2==0)?1.0:-1.0, 0.0);
-		mcv[(N + 1) * 2 + j] = complex(j*j, 0.0);
-		mcv[(N + 1) * 3 + j] = complex(((j%2==0) ? -1.0 : 1.0)*j*j,0.0);
+		mcv[(N + 1) * 0 + j] = cuRPCF::complex(1.0, 0.0);
+		mcv[(N + 1) * 1 + j] = cuRPCF::complex((j%2==0)?1.0:-1.0, 0.0);
+		mcv[(N + 1) * 2 + j] = cuRPCF::complex(j*j, 0.0);
+		mcv[(N + 1) * 3 + j] = cuRPCF::complex(((j%2==0) ? -1.0 : 1.0)*j*j,0.0);
 	}
 	return 0;
 }
 
-__host__ __device__ int _get_coefficient_omega(complex* mcv, int N, real* U, real* T0, real* T2,
-	real* T4, real Re, real dt, real kmn, real alpha)
+__host__ __device__ int _get_coefficient_omega(cuRPCF::complex* mcv, int N, REAL* U, REAL* T0, REAL* T2,
+	REAL* T4, REAL Re, REAL dt, REAL kmn, REAL alpha)
 {
 	assert(mcv != nullptr);
 	assert(U != nullptr);
@@ -57,13 +57,13 @@ __host__ __device__ int _get_coefficient_omega(complex* mcv, int N, real* U, rea
 
 	//boundary conditions
 	for (int j = 0; j <= N; j++) {
-		mcv[(N + 1) * 0 + j] = complex(1.0, 0.0);
-		mcv[(N + 1) * 1 + j] = complex((j%2 == 0) ? 1.0 : -1.0, 0.0);
+		mcv[(N + 1) * 0 + j] = cuRPCF::complex(1.0, 0.0);
+		mcv[(N + 1) * 1 + j] = cuRPCF::complex((j%2 == 0) ? 1.0 : -1.0, 0.0);
 	}
 	return 0;
 }
 
-__host__ __device__ int _get_coef_u0(complex* coef_u0, int N, real* T0, real* T2, real Re, real dt) {
+__host__ __device__ int _get_coef_u0(cuRPCF::complex* coef_u0, int N, REAL* T0, REAL* T2, REAL Re, REAL dt) {
 	for (int i = 2; i <= N; i++) {
 		for (int j = 0; j <= N; j++) {
 			size_t inc = (N + 1)*i + j;
@@ -74,23 +74,23 @@ __host__ __device__ int _get_coef_u0(complex* coef_u0, int N, real* T0, real* T2
 
 	//boundary conditions
 	for (int j = 0; j <= N; j++) {
-		coef_u0[(N + 1) * 0 + j] = complex(1.0, 0.0);
-		coef_u0[(N + 1) * 1 + j] = complex((j%2==0)?1.0:-1.0, 0.0);
+		coef_u0[(N + 1) * 0 + j] = cuRPCF::complex(1.0, 0.0);
+		coef_u0[(N + 1) * 1 + j] = cuRPCF::complex((j%2==0)?1.0:-1.0, 0.0);
 	}
 	return 0;
 }
 
-__host__ __device__ int _get_coef_w0(complex* coef_w0, int N, real* T0, real* T2, real Re, real dt) {
+__host__ __device__ int _get_coef_w0(cuRPCF::complex* coef_w0, int N, REAL* T0, REAL* T2, REAL Re, REAL dt) {
 	return 
 		_get_coef_u0(coef_w0, N, T0, T2, Re, dt);
 }
 
-__host__ __device__ int get_T_matrix(int N, real* T0, real* T2, real* T4) {
-	real PI = 4.0*atan(1.0);
-	real* T1;
-	real* T3;
-	T1 = (real*)malloc((N + 1)*(N + 1) * sizeof(real));
-	T3 = (real*)malloc((N + 1)*(N + 1) * sizeof(real));
+__host__ __device__ int get_T_matrix(int N, REAL* T0, REAL* T2, REAL* T4) {
+	REAL PI = 4.0*atan(1.0);
+	REAL* T1;
+	REAL* T3;
+	T1 = (REAL*)malloc((N + 1)*(N + 1) * sizeof(REAL));
+	T3 = (REAL*)malloc((N + 1)*(N + 1) * sizeof(REAL));
 	ASSERT(T0 != nullptr);
 	ASSERT(T1 != nullptr);
 	ASSERT(T2 != nullptr);
@@ -146,11 +146,11 @@ __host__ __device__ int get_T_matrix(int N, real* T0, real* T2, real* T4) {
 	return 0;
 }
 
-__host__ __device__ int get_U(int N, real * U, real * dU, real * ddU)
+__host__ __device__ int get_U(int N, REAL * U, REAL * dU, REAL * ddU)
 {
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int i = 0; i < N; i++) {
-		real z = cos((real)i / (N - 1)* PI);
+		REAL z = cos((REAL)i / (N - 1)* PI);
 		U[i] = 0.5*(1+z);
 		dU[i] = 0.5;
 		ddU[i] = 0.0;

@@ -5,8 +5,8 @@
 #include <cassert>
 TestResult test_m_multi_v() {
 	const int N = 100;
-	complex* mat1 = (complex*)malloc(N*N * sizeof(complex));
-	complex* mat2 = (complex*)malloc(N * sizeof(complex));
+	cuRPCF::complex* mat1 = (cuRPCF::complex*)malloc(N*N * sizeof(cuRPCF::complex));
+	cuRPCF::complex* mat2 = (cuRPCF::complex*)malloc(N * sizeof(cuRPCF::complex));
 	assert(mat1 != nullptr);
 	assert(mat2 != nullptr);
 	for (int i = 0; i < N; i++) {
@@ -14,11 +14,11 @@ TestResult test_m_multi_v() {
 			size_t inc = N*i + j;
 			mat1[inc] = (i == j) ? 10.0 : 0.0;
 		}
-		mat2[i] = complex((real)i, 0.0);
+		mat2[i] = cuRPCF::complex((REAL)i, 0.0);
 	}
 	m_multi_v(mat1, mat2, N);
 	for (int i = 0; i < N; i++) {
-		assert(isEqual(mat2[i].re, 10*(real)i, 1e-8));
+		assert(isEqual(mat2[i].re, 10*(REAL)i, 1e-8));
 		assert(isEqual(mat2[i].im, 0.0, 1e-8));
 	}
 	return TestSuccess;
@@ -26,8 +26,8 @@ TestResult test_m_multi_v() {
 
 TestResult test_inverse() {
 	const int N = 100;
-	complex* mat1 = (complex*)malloc(N*N * sizeof(complex));
-	complex* mat2 = (complex*)malloc(N*N * sizeof(complex));
+	cuRPCF::complex* mat1 = (cuRPCF::complex*)malloc(N*N * sizeof(cuRPCF::complex));
+	cuRPCF::complex* mat2 = (cuRPCF::complex*)malloc(N*N * sizeof(cuRPCF::complex));
 	assert(mat1 != nullptr);
 	assert(mat2 != nullptr);
 	for (int i = 0; i < N; i++) {

@@ -24,17 +24,17 @@ TestResult test_transform() {
 
 	size_t size = pitch * my * mz;
 	//memory allocation
-	pb.hptr_u = (real*)malloc(size);
+	pb.hptr_u = (REAL*)malloc(size);
 	assert(pb.hptr_u != nullptr);
-	pb.hptr_v = (real*)malloc(size);
+	pb.hptr_v = (REAL*)malloc(size);
 	assert(pb.hptr_v != nullptr);
-	pb.hptr_w = (real*)malloc(size);
+	pb.hptr_w = (REAL*)malloc(size);
 	assert(pb.hptr_w != nullptr);
-	pb.hptr_omega_x = (real*)malloc(size);
+	pb.hptr_omega_x = (REAL*)malloc(size);
 	assert(pb.hptr_omega_x != nullptr);
-	pb.hptr_omega_y = (real*)malloc(size);
+	pb.hptr_omega_y = (REAL*)malloc(size);
 	assert(pb.hptr_omega_y != nullptr);
-	pb.hptr_omega_z = (real*)malloc(size);
+	pb.hptr_omega_z = (REAL*)malloc(size);
 	assert(pb.hptr_omega_z != nullptr);
 
 	setFlow(pb);
@@ -80,7 +80,7 @@ TestResult test_transform() {
 	//int pitch = pb2.pitch;
 	//size_t size2 = pitch * my * mz;
 	////memory allocation
-	//pb2.hptr_u = (real*)malloc(size2);
+	//pb2.hptr_u = (REAL*)malloc(size2);
 	//assert(pb2.hptr_u != nullptr);
 	//int dim2[3] = { pb2.mx,pb2.my,pb2.mz };
 	//int tdim2[3] = { pb2.mz,pb2.mx,pb2.my };
@@ -118,31 +118,31 @@ void compareFlow(problem& pb) {
 	int mz = pb.mz;
 	int pz = (mz / 2 + 1);
 	size_t pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 
 	size_t size = pitch * my * mz;
 	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaDeviceSynchronize(),"Sync");
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_u = (1 - z*z)*sin(y)*cos(x);
-				real ex_oy = -2 * z * sin(y)*cos(x);
-				real ex_oz = -(1 - z*z)*cos(y)*cos(x);
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_u = (1 - z*z)*sin(y)*cos(x);
+				REAL ex_oy = -2 * z * sin(y)*cos(x);
+				REAL ex_oz = -(1 - z*z)*cos(y)*cos(x);
 
 				assert(isEqual(ex_u, u[inc], PRECISION));
 				assert(isEqual(ex_oy, oy[inc], PRECISION));
@@ -156,21 +156,21 @@ void compareSpectra(problem& pb) {
 	int my = pb.my;
 	int mz = pb.mz;
 	int pitch = pb.tPitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	complex* u;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	cuRPCF::complex* u;
 	size_t size = pitch * (mx / 2 + 1)*my;
-	u =(complex*)malloc(size);
+	u =(cuRPCF::complex*)malloc(size);
 	assert(u != nullptr);
 	cuCheck(cudaMemcpy(u, pb.dptr_tu.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int j = 0; j < my; j++)
 		for (int i = 0; i < mx/2+1; i++)
 			for (int k=0; k < mz/2+1; k++)
 			{
-				size_t inc = pitch*((mx / 2 + 1)*j + i) / sizeof(complex) + k;
+				size_t inc = pitch*((mx / 2 + 1)*j + i) / sizeof(cuRPCF::complex) + k;
 				if (i == 0 && j == 0) {
 					if (k == 0) {
 						assert(isEqual(u[inc].re, 0.5, PRECISION));
@@ -195,20 +195,20 @@ void setFlowForSpectra(problem& pb) {
 	int py = pb.my;
 	int pz = pb.mz/2+1;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
 	size_t size = pitch * py * pz;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < py; j++)
 			for (int i = 0; i < px; i++)
 			{
-				real x = lx * i / px;
-				real y = ly * j / py;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * py * k + pitch *j) / sizeof(real) + i;
+				REAL x = lx * i / px;
+				REAL y = ly * j / py;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * py * k + pitch *j) / sizeof(REAL) + i;
 				u[inc] = 1 - z*z;
 			}
 
@@ -222,31 +222,31 @@ void compare_S2P_Flow(problem& pb) {
 	int pz = (mz / 2 + 1);
 	int nz = (mz / 4 + 1);
 	size_t pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 
 	size_t size = pitch * my * mz;
 	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 	cuCheck(cudaDeviceSynchronize(), "Sync");
-	real PRECISION = 1e-8;
+	REAL PRECISION = 1e-8;
 
-	real PI = 4.0*atan(1.0);
+	REAL PI = 4.0*atan(1.0);
 	for (int k = 0; k < nz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (nz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
-				real ex_u = (1 - z*z)*sin(y)*cos(x);
-				real ex_oy = -2 * z * sin(y)*cos(x);
-				real ex_oz = -(1 - z*z)*cos(y)*cos(x);
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (nz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
+				REAL ex_u = (1 - z*z)*sin(y)*cos(x);
+				REAL ex_oy = -2 * z * sin(y)*cos(x);
+				REAL ex_oz = -(1 - z*z)*cos(y)*cos(x);
 
 				assert(isEqual(ex_u, u[inc], PRECISION));
 				assert(isEqual(ex_oy, oy[inc], PRECISION));

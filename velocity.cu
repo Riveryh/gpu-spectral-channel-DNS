@@ -7,13 +7,13 @@
 #include <iostream>
 
 __global__ void getVelocityKernel(
-	complex* u, complex* v, complex*w,
-	complex* ox, complex*oy, complex* oz,
-	int tPitch, int mx, int my, int mz, real alpha, real beta);
+	cuRPCF::complex* u, cuRPCF::complex* v, cuRPCF::complex*w,
+	cuRPCF::complex* ox, cuRPCF::complex*oy, cuRPCF::complex* oz,
+	int tPitch, int mx, int my, int mz, REAL alpha, REAL beta);
 __global__ void getVelocityKernel_sm(
-	complex* u, complex* v, complex*w,
-	complex* ox, complex* oy, complex* oz,
-	int tPitch, int mx, int my, int mz, real alpha, real beta);
+	cuRPCF::complex* u, cuRPCF::complex* v, cuRPCF::complex*w,
+	cuRPCF::complex* ox, cuRPCF::complex* oy, cuRPCF::complex* oz,
+	int tPitch, int mx, int my, int mz, REAL alpha, REAL beta);
 void get_velocity_zero(problem& pb);
 
 extern cudaEvent_t __start, __stop;
@@ -24,7 +24,7 @@ int getUVW(problem& pb) {
 	float time;
 //	cudaExtent tExtent = pb.tExtent;
 	//make_cudaExtent(
-	//	pb.mz * sizeof(complex), pb.mx/2+1, pb.my);
+	//	pb.mz * sizeof(cuRPCF::complex), pb.mx/2+1, pb.my);
 	//cuCheck(cudaDeviceReset(),"reset");
 	ASSERT(pb.dptr_tu.ptr != nullptr);
 	ASSERT(pb.dptr_tv.ptr != nullptr);
@@ -70,9 +70,9 @@ int getUVW(problem& pb) {
 	cudaEventRecord(__start, 0);
 	
 	getVelocityKernel_sm <<<nDim,nthreadx>>>(
-		(complex*)pb.dptr_tu.ptr, (complex*)pb.dptr_tv.ptr,
-		(complex*)pb.dptr_tw.ptr, (complex*)pb.dptr_tomega_x.ptr, 
-		(complex*)pb.dptr_tomega_y.ptr, (complex*)pb.dptr_tomega_z.ptr,
+		(cuRPCF::complex*)pb.dptr_tu.ptr, (cuRPCF::complex*)pb.dptr_tv.ptr,
+		(cuRPCF::complex*)pb.dptr_tw.ptr, (cuRPCF::complex*)pb.dptr_tomega_x.ptr, 
+		(cuRPCF::complex*)pb.dptr_tomega_y.ptr, (cuRPCF::complex*)pb.dptr_tomega_z.ptr,
 		pb.tPitch, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
 	cuCheck(cudaDeviceSynchronize(), "get velocity kernel");
 	
@@ -88,9 +88,9 @@ int getUVW(problem& pb) {
 }
 
 __global__ void getVelocityKernel_sm(
-	complex* u, complex* v, complex*w,
-	complex* ox, complex* oy, complex* oz,
-	int tPitch, int mx, int my, int mz, real alpha, real beta)
+	cuRPCF::complex* u, cuRPCF::complex* v, cuRPCF::complex*w,
+	cuRPCF::complex* ox, cuRPCF::complex* oy, cuRPCF::complex* oz,
+	int tPitch, int mx, int my, int mz, REAL alpha, REAL beta)
 {
 	const int kz = threadIdx.x;
 	const int kx = blockIdx.x;
@@ -98,8 +98,8 @@ __global__ void getVelocityKernel_sm(
 //	const int pz = mz / 2 + 1;
 	const int nz = mz / 4 + 1;
 
-	__shared__ complex tdz[MAX_NZ];
-	__shared__ complex tdz1[MAX_NZ];
+	__shared__ cuRPCF::complex tdz[MAX_NZ];
+	__shared__ cuRPCF::complex tdz1[MAX_NZ];
 	
 	if (kz >= nz)return;
 	//solve the zero wave number case.
@@ -129,18 +129,18 @@ __global__ void getVelocityKernel_sm(
 	const int ny = my / 3 * 2;
 	// if (kx >= (nx / 2 + 1) || ky >= ny) return;
 
-	real ialpha = real(kx) / alpha;
-	real ibeta = real(ky) / beta;
+	REAL ialpha = REAL(kx) / alpha;
+	REAL ibeta = REAL(ky) / beta;
 	if (ky >= ny / 2 + 1) {
-		ibeta = real(ky - ny) / beta;
+		ibeta = REAL(ky - ny) / beta;
 	}
 
 	const int i = kz;
 
-	real kmn = ialpha*ialpha + ibeta*ibeta;
-	real kmn1 = 1.0 / kmn;
+	REAL kmn = ialpha*ialpha + ibeta*ibeta;
+	REAL kmn1 = 1.0 / kmn;
 
-	size_t dist = (kx + (nx / 2 + 1)*ky)*tPitch/ sizeof(complex);
+	size_t dist = (kx + (nx / 2 + 1)*ky)*tPitch/ sizeof(cuRPCF::complex);
 	u = u + dist;
 	v = v + dist;
 	w = w + dist;
@@ -151,37 +151,37 @@ __global__ void getVelocityKernel_sm(
 	tdz[kz] = w[kz];
 	ddz_sm(tdz, nz, kz);
 
-	u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
-		- complex(0.0, ibeta*kmn1) * oz[i];
-	v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-	+ complex(0.0, ialpha*kmn1) * oz[i];
+	u[i] = cuRPCF::complex(0.0, ialpha*kmn1) * tdz[i]
+		- cuRPCF::complex(0.0, ibeta*kmn1) * oz[i];
+	v[i] = cuRPCF::complex(0.0, ibeta*kmn1) * tdz[i]
+	+ cuRPCF::complex(0.0, ialpha*kmn1) * oz[i];
 	//u[i] = w[i];
 	//v[i] = w[i];
 
 	tdz[i] = v[i];
 	ddz_sm(tdz, nz, kz);
 	
-	ox[i] = tdz[i] + complex(0.0, -1.0*ibeta)*w[i];
+	ox[i] = tdz[i] + cuRPCF::complex(0.0, -1.0*ibeta)*w[i];
 
 	tdz[i] = u[i];
 	ddz_sm(tdz, nz, kz);
 
-	oy[i] = tdz[i]*(-1.0) + complex(0.0, ialpha)*w[i];
+	oy[i] = tdz[i]*(-1.0) + cuRPCF::complex(0.0, ialpha)*w[i];
 }
 
 
 __global__ void getVelocityKernel(
-	complex* u, complex* v, complex*w,
-	complex* ox, complex* oy, complex* oz,
-	int tPitch, int mx, int my, int mz, real alpha, real beta)
+	cuRPCF::complex* u, cuRPCF::complex* v, cuRPCF::complex*w,
+	cuRPCF::complex* ox, cuRPCF::complex* oy, cuRPCF::complex* oz,
+	int tPitch, int mx, int my, int mz, REAL alpha, REAL beta)
 {
 	const int kx = threadIdx.x + blockDim.x*blockIdx.x;
 	const int ky = threadIdx.y + blockDim.y*blockIdx.y;
 	//	const int pz = mz / 2 + 1;
 	const int nz = mz / 4 + 1;
 
-	complex tdz[MAX_NZ];
-	complex tdz1[MAX_NZ];
+	cuRPCF::complex tdz[MAX_NZ];
+	cuRPCF::complex tdz1[MAX_NZ];
 
 	//solve the zero wave number case.
 	if (kx == 0 && ky == 0) {
@@ -208,16 +208,16 @@ __global__ void getVelocityKernel(
 	const int ny = mx / 3 * 2;
 	if (kx >= (nx / 2 + 1) || ky >= ny) return;
 
-	real ialpha = real(kx) / alpha;
-	real ibeta = real(ky) / beta;
+	REAL ialpha = REAL(kx) / alpha;
+	REAL ibeta = REAL(ky) / beta;
 	if (ky >= ny / 2 + 1) {
-		ibeta = real(ky - ny) / beta;
+		ibeta = REAL(ky - ny) / beta;
 	}
 
-	real kmn = ialpha*ialpha + ibeta*ibeta;
-	real kmn1 = 1.0 / kmn;
+	REAL kmn = ialpha*ialpha + ibeta*ibeta;
+	REAL kmn1 = 1.0 / kmn;
 
-	size_t dist = (kx + (nx / 2 + 1)*ky)*tPitch / sizeof(complex);
+	size_t dist = (kx + (nx / 2 + 1)*ky)*tPitch / sizeof(cuRPCF::complex);
 	u = u + dist;
 	v = v + dist;
 	w = w + dist;
@@ -232,10 +232,10 @@ __global__ void getVelocityKernel(
 	ddz(tdz, nz);
 
 	for (int i = 0; i < nz; i++) {
-		u[i] = complex(0.0, ialpha*kmn1) * tdz[i]
-			- complex(0.0, ibeta*kmn1) * oz[i];
-		v[i] = complex(0.0, ibeta*kmn1) * tdz[i]
-			+ complex(0.0, ialpha*kmn1) * oz[i];
+		u[i] = cuRPCF::complex(0.0, ialpha*kmn1) * tdz[i]
+			- cuRPCF::complex(0.0, ibeta*kmn1) * oz[i];
+		v[i] = cuRPCF::complex(0.0, ibeta*kmn1) * tdz[i]
+			+ cuRPCF::complex(0.0, ialpha*kmn1) * oz[i];
 		//u[i] = w[i];
 		//v[i] = w[i];
 	}
@@ -245,19 +245,19 @@ __global__ void getVelocityKernel(
 	}
 	ddz(tdz, nz);
 	for (int i = 0; i < nz; i++) {
-		ox[i] = tdz[i] + complex(0.0, -1.0*ibeta)*w[i];
+		ox[i] = tdz[i] + cuRPCF::complex(0.0, -1.0*ibeta)*w[i];
 	}
 	for (int i = 0; i < nz; i++) {
 		tdz[i] = u[i];
 	}
 	ddz(tdz, nz);
 	for (int i = 0; i < nz; i++) {
-		oy[i] = tdz[i] * (-1.0) + complex(0.0, ialpha)*w[i];
+		oy[i] = tdz[i] * (-1.0) + cuRPCF::complex(0.0, ialpha)*w[i];
 	}
 }
 
 void get_velocity_zero(problem & pb)
 {
-//	complex* w = pb.rhs_omega_y;
-//	complex* u = pb.rhs_v;	
+//	cuRPCF::complex* w = pb.rhs_omega_y;
+//	cuRPCF::complex* u = pb.rhs_v;	
 }

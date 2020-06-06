@@ -16,17 +16,17 @@
 
 using namespace std;
 //// compute multiply of matrix and vector
-//void multiplyMatrix(complex* mul, complex* v, const int n);
+//void multiplyMatrix(cuRPCF::complex* mul, cuRPCF::complex* v, const int n);
 //
 //// compute coeffecient matrix of v
-//void getCoefV(complex * coefv, int n, real kmn, real alpha,
-//	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4,
-//	real* U0, real* dU0, real* ddU0, const real dt, const real Re);
+//void getCoefV(cuRPCF::complex * coefv, int n, REAL kmn, REAL alpha,
+//	matrix2d<REAL>& T0, matrix2d<REAL>& T2, matrix2d<REAL>& T4,
+//	REAL* U0, REAL* dU0, REAL* ddU0, const REAL dt, const REAL Re);
 //
 //// compute coeffecient matrix of omega
-//void getCoefOmega(complex * coefOmega, int n, real kmn, real alpha,
-//	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4,
-//	real* U0, real* dU0, real* ddU0, const real dt, const real Re);
+//void getCoefOmega(cuRPCF::complex * coefOmega, int n, REAL kmn, REAL alpha,
+//	matrix2d<REAL>& T0, matrix2d<REAL>& T2, matrix2d<REAL>& T4,
+//	REAL* U0, REAL* dU0, REAL* ddU0, const REAL dt, const REAL Re);
 
 
 extern pthread_cond_t cond_malloc;
@@ -112,7 +112,7 @@ int startLoop(problem& pb) {
 	return 0;
 }
 
-int solveEq(complex* inv_coef, complex* rhs, int N,
+int solveEq(cuRPCF::complex* inv_coef, cuRPCF::complex* rhs, int N,
 			size_t pitch, int mx, int my) {
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
@@ -121,9 +121,9 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 		//cout << "solver omp id:" << omp_get_thread_num() << " i=" << i<<endl;		
 		for (int j = 0; j < ny; j++) {			
 			size_t inc_m = N*N*((nx/2+1)*j + i);
-			size_t inc_rhs = pitch / sizeof(complex) * ((nx/2+1)*j + i);
-			complex* _inv_coef_ = inv_coef + inc_m;
-			complex* _rhs_ = rhs + inc_rhs;
+			size_t inc_rhs = pitch / sizeof(cuRPCF::complex) * ((nx/2+1)*j + i);
+			cuRPCF::complex* _inv_coef_ = inv_coef + inc_m;
+			cuRPCF::complex* _rhs_ = rhs + inc_rhs;
 			m_multi_v(_inv_coef_, _rhs_ , N);
 		}
 	}
@@ -131,9 +131,9 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 }
 
 
-//void multiplyMatrix(complex * mul, complex * v, const int n)
+//void multiplyMatrix(cuRPCF::complex * mul, cuRPCF::complex * v, const int n)
 //{
-//	complex* temp = (complex*)malloc(n * sizeof(complex));
+//	cuRPCF::complex* temp = (cuRPCF::complex*)malloc(n * sizeof(cuRPCF::complex));
 //	for (int i = 0; i < n; i++) {
 //		auto* ai = mul + n*i;
 //		temp[i].re = 0.0;
@@ -149,13 +149,13 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 //	free(temp);
 //}
 //
-//void getCoefV(complex * coefv, int n, real kmn, real alpha, 
-//	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4, 
-//	real* U0, real* dU0, real* ddU0 ,const real dt,const real Re)
+//void getCoefV(cuRPCF::complex * coefv, int n, REAL kmn, REAL alpha, 
+//	matrix2d<REAL>& T0, matrix2d<REAL>& T2, matrix2d<REAL>& T4, 
+//	REAL* U0, REAL* dU0, REAL* ddU0 ,const REAL dt,const REAL Re)
 //{
 //	for (int i = 4; i < n; i++) {
 //		for (int j = 0; j < n; j++) {
-//			complex* coefIJ = coefv + (i*n + j);
+//			cuRPCF::complex* coefIJ = coefv + (i*n + j);
 //			coefIJ->re = -T4(i - 2, j)*dt*0.5 / Re 
 //				+ (1 + kmn*dt / Re)*T2(i - 2, j)
 //				- kmn*(1 + kmn*dt*0.5 / Re)*T0(i - 2, j);
@@ -167,24 +167,24 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 //
 //	
 //	for (int j = 0; j < n; j++) {
-//		complex* a0j = coefv + j;
-//		complex* a1j = coefv + n + j;
-//		complex* a2j = coefv + 2 * n + j;
-//		complex* a3j = coefv + 3 * n + j;
-//		*a0j = complex(0, 0);
-//		*a1j = complex((j % 2 == 0) ? 1 : -1, 0);
-//		*a2j = complex(j*j, 0);
-//		*a3j = complex(((j % 2 == 0) ? -1 : 1)*j*j, 0);
+//		cuRPCF::complex* a0j = coefv + j;
+//		cuRPCF::complex* a1j = coefv + n + j;
+//		cuRPCF::complex* a2j = coefv + 2 * n + j;
+//		cuRPCF::complex* a3j = coefv + 3 * n + j;
+//		*a0j = cuRPCF::complex(0, 0);
+//		*a1j = cuRPCF::complex((j % 2 == 0) ? 1 : -1, 0);
+//		*a2j = cuRPCF::complex(j*j, 0);
+//		*a3j = cuRPCF::complex(((j % 2 == 0) ? -1 : 1)*j*j, 0);
 //	}
 //}
 //
-//void getCoefOmega(complex * coefOmega, int n, real kmn, real alpha,
-//	matrix2d<real>& T0, matrix2d<real>& T2, matrix2d<real>& T4,
-//	real* U0, real* dU0, real* ddU0, const real dt, const real Re)
+//void getCoefOmega(cuRPCF::complex * coefOmega, int n, REAL kmn, REAL alpha,
+//	matrix2d<REAL>& T0, matrix2d<REAL>& T2, matrix2d<REAL>& T4,
+//	REAL* U0, REAL* dU0, REAL* ddU0, const REAL dt, const REAL Re)
 //{
 //	for (int i = 2; i < n; i++) {
 //		for (int j = 0; j < n; j++) {
-//			complex* coefIJ = coefOmega + (i*n + j);
+//			cuRPCF::complex* coefIJ = coefOmega + (i*n + j);
 //			coefIJ->re = -T2(i - 1, j)*dt*0.5 / Re
 //				+ (1 + kmn*dt*0.5 / Re)*T0(i - 1, j);
 //			coefIJ->im = alpha*dt*0.5*U0[i - 1] * T0(i - 1, j);
@@ -192,16 +192,16 @@ int solveEq(complex* inv_coef, complex* rhs, int N,
 //	}
 //	
 //	for (int j = 0; j < n; j++) {
-//		complex* a0j = coefOmega + j;
-//		complex* a1j = coefOmega + n + j;
-//		*a0j = complex(1, 0);
-//		*a1j = complex((j % 2 == 0) ? 1 : -1, 0);
+//		cuRPCF::complex* a0j = coefOmega + j;
+//		cuRPCF::complex* a1j = coefOmega + n + j;
+//		*a0j = cuRPCF::complex(1, 0);
+//		*a1j = cuRPCF::complex((j % 2 == 0) ? 1 : -1, 0);
 //	}
 //}
 
-complex* __dev_coef_v = NULL;
-complex* __dev_coef_omega = NULL;
-complex* __dev_rhs = NULL;
+cuRPCF::complex* __dev_coef_v = NULL;
+cuRPCF::complex* __dev_coef_omega = NULL;
+cuRPCF::complex* __dev_rhs = NULL;
 int initGPUSolver(problem& pb) {
 	cublasStatus_t stat;
 	stat = cublasCreate(&__cublas_handle);
@@ -209,12 +209,12 @@ int initGPUSolver(problem& pb) {
 		printf("CUBLAS initialization failed\n");
 		return EXIT_FAILURE;
 	}
-	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(complex);
+	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(cuRPCF::complex);
 	size_t tSize = pb.tSize;
 	cuCheck(cudaSetDevice(dev_id[1]));
 	cuCheck(cudaMalloc(&__dev_coef_v, mSize*2 + tSize),"alloc solver data");
-	__dev_coef_omega = __dev_coef_v + mSize / sizeof(complex);
-	__dev_rhs = __dev_coef_omega + mSize / sizeof(complex);
+	__dev_coef_omega = __dev_coef_v + mSize / sizeof(cuRPCF::complex);
+	__dev_rhs = __dev_coef_omega + mSize / sizeof(cuRPCF::complex);
 	cuCheck(cudaMemcpy(__dev_coef_v, pb.matrix_coeff_v, mSize, cudaMemcpyHostToDevice),"memcpy");
 	cuCheck(cudaMemcpy(__dev_coef_omega, pb.matrix_coeff_omega, mSize, cudaMemcpyHostToDevice), "memcpy");
 	cuCheck(cudaSetDevice(dev_id[0]));
@@ -231,11 +231,11 @@ int initSolver(problem& pb, bool inversed)
 	const int ny = pb.ny;
 
 	size_t& tSize = pb.tSize;
-	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(complex);
+	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(cuRPCF::complex);
 
 	cout << "malloc matrix memory" << endl;
-	pb.matrix_coeff_v = (complex*)malloc(mSize);
-	pb.matrix_coeff_omega = (complex*)malloc(mSize);
+	pb.matrix_coeff_v = (cuRPCF::complex*)malloc(mSize);
+	pb.matrix_coeff_omega = (cuRPCF::complex*)malloc(mSize);
 
 	cout << "malloc nonlinear memory" << endl;
 	cudaMallocHost(&pb.nonlinear_v, tSize);
@@ -249,23 +249,23 @@ int initSolver(problem& pb, bool inversed)
 	cudaMallocHost(&pb.rhs_omega_y, tSize);
 
 	cout << "malloc zerowave number memory" << endl;
-	cudaMallocHost(&pb.lambx0, sizeof(complex)*pb.nz);
-	cudaMallocHost(&pb.lambx0_p, sizeof(complex)*pb.nz);
-	cudaMallocHost(&pb.lambz0, sizeof(complex)*pb.nz);
-	cudaMallocHost(&pb.lambz0_p, sizeof(complex)*pb.nz);
+	cudaMallocHost(&pb.lambx0, sizeof(cuRPCF::complex)*pb.nz);
+	cudaMallocHost(&pb.lambx0_p, sizeof(cuRPCF::complex)*pb.nz);
+	cudaMallocHost(&pb.lambz0, sizeof(cuRPCF::complex)*pb.nz);
+	cudaMallocHost(&pb.lambz0_p, sizeof(cuRPCF::complex)*pb.nz);
 
-	pb.tv0 = (complex*)malloc(sizeof(complex)*pb.nz);
-	pb.tomega_y_0 = (complex*)malloc(sizeof(complex)*pb.nz);
+	pb.tv0 = (cuRPCF::complex*)malloc(sizeof(cuRPCF::complex)*pb.nz);
+	pb.tomega_y_0 = (cuRPCF::complex*)malloc(sizeof(cuRPCF::complex)*pb.nz);
 
 	cout << "malloc U memory" << endl;
-	pb._U0 = (real*)malloc(sizeof(real)*pb.nz);
-	pb._dU0 = (real*)malloc(sizeof(real)*pb.nz);
-	pb._ddU0 = (real*)malloc(sizeof(real)*pb.nz);
+	pb._U0 = (REAL*)malloc(sizeof(REAL)*pb.nz);
+	pb._dU0 = (REAL*)malloc(sizeof(REAL)*pb.nz);
+	pb._ddU0 = (REAL*)malloc(sizeof(REAL)*pb.nz);
 
 	cout << "malloc T memory" << endl;
-	pb.T0 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
-	pb.T2 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
-	pb.T4 = (real*)malloc(sizeof(real)*pb.nz*pb.nz);
+	pb.T0 = (REAL*)malloc(sizeof(REAL)*pb.nz*pb.nz);
+	pb.T2 = (REAL*)malloc(sizeof(REAL)*pb.nz*pb.nz);
+	pb.T4 = (REAL*)malloc(sizeof(REAL)*pb.nz*pb.nz);
 
 	//init T matrix
 	get_T_matrix(pb.nz-1, pb.T0, pb.T2, pb.T4);
@@ -294,14 +294,14 @@ int initSolver(problem& pb, bool inversed)
 				continue;
 			}
 
-			real ialpha, ibeta;
+			REAL ialpha, ibeta;
 			get_ialpha_ibeta(kx, ky, ny, pb.aphi, pb.beta, ialpha, ibeta);
 
-			real kmn = ialpha*ialpha + ibeta*ibeta;
+			REAL kmn = ialpha*ialpha + ibeta*ibeta;
 
 			size_t inc = pb.nz*pb.nz*(hnx*ky + kx);
-			complex* coe_v = pb.matrix_coeff_v + inc;
-			complex* coe_o = pb.matrix_coeff_omega + inc;
+			cuRPCF::complex* coe_v = pb.matrix_coeff_v + inc;
+			cuRPCF::complex* coe_o = pb.matrix_coeff_omega + inc;
 
 			_get_coefficient_v(coe_v, pb.nz-1, pb._U0, pb._ddU0,
 				pb.T0, pb.T2, pb.T4, pb.Re, pb.dt, kmn, ialpha);
@@ -355,39 +355,39 @@ void save_0_v_omega_y(problem& pb) {
 
 extern size_t __myMaxMemorySize[NUM_GPU];
 
-int solveEqGPU(complex* inv_coef, complex* rhs, int N,
+int solveEqGPU(cuRPCF::complex* inv_coef, cuRPCF::complex* rhs, int N,
 	size_t pitch, int mx, int my, int num_equation) {
 	int nx = mx / 3 * 2;
 	int ny = my / 3 * 2;
 
-	//complex* dev_ptr = (complex*)get_fft_buffer_ptr();
+	//cuRPCF::complex* dev_ptr = (cuRPCF::complex*)get_fft_buffer_ptr();
 	
 	size_t free_memory = __myMaxMemorySize[0];
 
-	size_t total_matrix_and_data_size = ((N)*(N) * sizeof(complex) + pitch)*(nx / 2 + 1)*ny;
+	size_t total_matrix_and_data_size = ((N)*(N) * sizeof(cuRPCF::complex) + pitch)*(nx / 2 + 1)*ny;
 	size_t n_parts = 1;
 	//size_t n_parts = total_matrix_and_data_size / free_memory + 1;
 	size_t index_per_part = (nx / 2 + 1)*ny / n_parts;
 	assert((nx / 2 + 1)*ny % n_parts == 0);
-	size_t size_matrix_per_part = (N)*(N)*index_per_part * sizeof(complex);
+	size_t size_matrix_per_part = (N)*(N)*index_per_part * sizeof(cuRPCF::complex);
 	size_t size_rhs_per_part = pitch*index_per_part;
 
 	for (int iPart = 0; iPart < n_parts; iPart++) {
 		size_t start_index = index_per_part * iPart;
 		size_t inc_m = (N)*(N)*start_index;
-		size_t inc_rhs = pitch / sizeof(complex) * start_index;
-		complex* pMatrix = inv_coef + inc_m;
-		complex* pRHS = rhs + inc_rhs;
-		//complex* dev_matrix = dev_ptr;
-		complex* dev_matrix = (num_equation==0 ? __dev_coef_v : __dev_coef_omega);
-		//complex* dev_rhs = dev_ptr + size_matrix_per_part / sizeof(complex);
-		complex* dev_rhs = __dev_rhs;
+		size_t inc_rhs = pitch / sizeof(cuRPCF::complex) * start_index;
+		cuRPCF::complex* pMatrix = inv_coef + inc_m;
+		cuRPCF::complex* pRHS = rhs + inc_rhs;
+		//cuRPCF::complex* dev_matrix = dev_ptr;
+		cuRPCF::complex* dev_matrix = (num_equation==0 ? __dev_coef_v : __dev_coef_omega);
+		//cuRPCF::complex* dev_rhs = dev_ptr + size_matrix_per_part / sizeof(cuRPCF::complex);
+		cuRPCF::complex* dev_rhs = __dev_rhs;
 
 		cudaError_t err;
-		//assert(pMatrix + size_matrix_per_part/sizeof(complex) <= inv_coef + (N)*(N)*(nx/2+1)*ny);
+		//assert(pMatrix + size_matrix_per_part/sizeof(cuRPCF::complex) <= inv_coef + (N)*(N)*(nx/2+1)*ny);
 		//err = cudaMemcpy(dev_matrix, pMatrix, size_matrix_per_part, cudaMemcpyHostToDevice);
 		//assert(err == cudaSuccess);
-		//assert(pRHS + size_rhs_per_part/sizeof(complex) <= rhs + pitch/sizeof(complex)*(nx/2+1)*ny);
+		//assert(pRHS + size_rhs_per_part/sizeof(cuRPCF::complex) <= rhs + pitch/sizeof(cuRPCF::complex)*(nx/2+1)*ny);
 		err = cudaMemcpy(dev_rhs, pRHS, size_rhs_per_part, cudaMemcpyHostToDevice);
 		assert(err == cudaSuccess);
 
@@ -400,11 +400,11 @@ int solveEqGPU(complex* inv_coef, complex* rhs, int N,
 		//for (int i = 0; i < index_per_part; i++) {
 		for (int i = 0; i < 1; i++) {
 			CUBLAS_COMPLEX* p_dev_matrix = (CUBLAS_COMPLEX*)(dev_matrix + (N)*(N)*i);
-			CUBLAS_COMPLEX* p_dev_rhs = (CUBLAS_COMPLEX*)(dev_rhs + pitch / sizeof(complex)*i);
+			CUBLAS_COMPLEX* p_dev_rhs = (CUBLAS_COMPLEX*)(dev_rhs + pitch / sizeof(cuRPCF::complex)*i);
 			//cuStat = CUBLAS_CGEMV(__cublas_handle, CUBLAS_OP_T, N, N, &_cublas_alpha, (CUBLAS_COMPLEX*)dev_matrix,
 			//	N, (CUBLAS_COMPLEX*)dev_rhs, 1, &_cublas_beta, (CUBLAS_COMPLEX*)dev_rhs, 1);
 			//assert(cuStat == CUBLAS_STATUS_SUCCESS);
-			err = m_multi_v_gpu((complex*)p_dev_matrix, (complex*)p_dev_rhs, N, pitch, index_per_part);
+			err = m_multi_v_gpu((cuRPCF::complex*)p_dev_matrix, (cuRPCF::complex*)p_dev_rhs, N, pitch, index_per_part);
 			assert(err == cudaSuccess);
 		}
 

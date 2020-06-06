@@ -3,4 +3,4 @@
 
 void statistics(problem& pb);
 
-real statistic_max(real* u, size_t pitch, int mx, int my, int mz);
+REAL statistic_max(REAL* u, size_t pitch, int mx, int my, int mz);

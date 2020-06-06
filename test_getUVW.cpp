@@ -23,17 +23,17 @@ TestResult test_getUVW() {
 
 	size_t size = pb.pitch * pb.my * pb.mz;
 	//memory allocation
-	pb.hptr_u = (real*)malloc(size);
+	pb.hptr_u = (REAL*)malloc(size);
 	assert(pb.hptr_u != nullptr);
-	pb.hptr_v = (real*)malloc(size);
+	pb.hptr_v = (REAL*)malloc(size);
 	assert(pb.hptr_v != nullptr);
-	pb.hptr_w = (real*)malloc(size);
+	pb.hptr_w = (REAL*)malloc(size);
 	assert(pb.hptr_w != nullptr);
-	pb.hptr_omega_x = (real*)malloc(size);
+	pb.hptr_omega_x = (REAL*)malloc(size);
 	assert(pb.hptr_omega_x != nullptr);
-	pb.hptr_omega_y = (real*)malloc(size);
+	pb.hptr_omega_y = (REAL*)malloc(size);
 	assert(pb.hptr_omega_y != nullptr);
-	pb.hptr_omega_z = (real*)malloc(size);
+	pb.hptr_omega_z = (REAL*)malloc(size);
 	assert(pb.hptr_omega_z != nullptr);
 
 	_setFlow(pb);
@@ -42,7 +42,7 @@ TestResult test_getUVW() {
 	cuCheck(cudaMemcpy(pb.rhs_omega_y, pb.dptr_tomega_z.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 	
 	//get_rhs_v(pb);
-	//RPCF::write_3d_to_file("rhs_v.txt", (real*)pb.rhs_v,
+	//RPCF::write_3d_to_file("rhs_v.txt", (REAL*)pb.rhs_v,
 	//	pb.tPitch, 2*pb.mz, (pb.mx / 2 + 1), pb.my);
 	pb.Ro = 0;
 
@@ -65,16 +65,16 @@ TestResult compare_velocities_and_vortricities(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.pz;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* v = pb.hptr_v;
-	real* w = pb.hptr_w;
-	real* ox = pb.hptr_omega_x;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* v = pb.hptr_v;
+	REAL* w = pb.hptr_w;
+	REAL* ox = pb.hptr_omega_x;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 
-	real _u, _v, _w, _ox, _oy, _oz;
+	REAL _u, _v, _w, _ox, _oy, _oz;
 
 	size_t size = pitch * my * pz;
 
@@ -89,11 +89,11 @@ TestResult compare_velocities_and_vortricities(problem& pb) {
 	tDim[1] = pb.mx;
 	tDim[2] = pb.my;
 
-	//real* hptr_tomega_x = (real*)malloc(pb.tSize);
-	//real* hptr_tomega_z = (real*)malloc(pb.tSize);
-	//real* hptr_tu = (real*)malloc(pb.tSize);
-	//real* hptr_tv = (real*)malloc(pb.tSize);
-	//real* hptr_tw = (real*)malloc(pb.tSize);
+	//REAL* hptr_tomega_x = (REAL*)malloc(pb.tSize);
+	//REAL* hptr_tomega_z = (REAL*)malloc(pb.tSize);
+	//REAL* hptr_tu = (REAL*)malloc(pb.tSize);
+	//REAL* hptr_tv = (REAL*)malloc(pb.tSize);
+	//REAL* hptr_tw = (REAL*)malloc(pb.tSize);
 	//cuCheck(cudaMemcpy(hptr_tomega_x, pb.dptr_tomega_x.ptr, pb.tSize, cudaMemcpyDeviceToHost), "memcpy");
 	//cuCheck(cudaMemcpy(hptr_tomega_z, pb.dptr_tomega_z.ptr, pb.tSize, cudaMemcpyDeviceToHost), "memcpy");
 	//cuCheck(cudaMemcpy(hptr_tu, pb.dptr_tu.ptr, pb.tSize, cudaMemcpyDeviceToHost), "memcpy");
@@ -116,16 +116,16 @@ TestResult compare_velocities_and_vortricities(problem& pb) {
 	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, size, cudaMemcpyDeviceToHost), "memcpy");
 
 
-	real PI = 4.0*atan(1.0);
-	real pi = PI;
+	REAL PI = 4.0*atan(1.0);
+	REAL pi = PI;
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
 				_u = sin(x);
 				_v = cos(y);
 				_w = -z*cos(x) + z*sin(y);
@@ -151,26 +151,26 @@ void _setFlow(problem& pb) {
 	int mz = pb.mz;
 	int pz = pb.pz;
 	int pitch = pb.pitch;
-	real lx = pb.lx;
-	real ly = pb.ly;
-	real* u = pb.hptr_u;
-	real* v = pb.hptr_v;
-	real* w = pb.hptr_w;
-	real* ox = pb.hptr_omega_x;
-	real* oy = pb.hptr_omega_y;
-	real* oz = pb.hptr_omega_z;
+	REAL lx = pb.lx;
+	REAL ly = pb.ly;
+	REAL* u = pb.hptr_u;
+	REAL* v = pb.hptr_v;
+	REAL* w = pb.hptr_w;
+	REAL* ox = pb.hptr_omega_x;
+	REAL* oy = pb.hptr_omega_y;
+	REAL* oz = pb.hptr_omega_z;
 	size_t size = pitch * my * pz;
 
-	real PI = 4.0*atan(1.0); 
-	real pi = PI;
+	REAL PI = 4.0*atan(1.0); 
+	REAL pi = PI;
 	for (int k = 0; k < pz; k++)
 		for (int j = 0; j < my; j++)
 			for (int i = 0; i < mx; i++)
 			{
-				real x = lx * i / mx;
-				real y = ly * j / my;
-				real z = cos(real(k) / (pz - 1)*PI);
-				size_t inc = (pitch * my * k + pitch *j) / sizeof(real) + i;
+				REAL x = lx * i / mx;
+				REAL y = ly * j / my;
+				REAL z = cos(REAL(k) / (pz - 1)*PI);
+				size_t inc = (pitch * my * k + pitch *j) / sizeof(REAL) + i;
 				u[inc] = sin(x);
 				v[inc] = cos(y);
 				w[inc] = -z*cos(x) + z*sin(y);

@@ -1,7 +1,7 @@
 #include "data.h"
 
 void problem::initVars() {
-	const real PI = 4.0*atan(1.0);
+	const REAL PI = 4.0*atan(1.0);
 	lx = 2 * PI*aphi;
 	ly = 2 * PI*beta;
 	hptr_omega_z = nullptr;
