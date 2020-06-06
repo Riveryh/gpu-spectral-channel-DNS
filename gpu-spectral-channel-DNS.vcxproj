@@ -63,7 +63,10 @@
   <ItemGroup>
     <CudaCompile Include="source\coefficient.cu" />
     <CudaCompile Include="source\nonlinear.cu" />
-    <CudaCompile Include="source\rhs.cu" />
+    <CudaCompile Include="source\rhs.cpp">
+      <DeploymentContent>false</DeploymentContent>
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <CudaCompile Include="source\RPCFKernels.cu" />
     <CudaCompile Include="source\transform.cu" />
     <CudaCompile Include="source\transpose.cu" />

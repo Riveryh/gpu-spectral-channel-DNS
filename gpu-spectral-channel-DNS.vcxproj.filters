@@ -162,9 +162,6 @@
     <CudaCompile Include="source\nonlinear.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="source\rhs.cu">
-      <Filter>Sources</Filter>
-    </CudaCompile>
     <CudaCompile Include="source\RPCFKernels.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
@@ -175,6 +172,9 @@
       <Filter>Sources</Filter>
     </CudaCompile>
     <CudaCompile Include="source\velocity.cu">
+      <Filter>Sources</Filter>
+    </CudaCompile>
+    <CudaCompile Include="source\rhs.cpp">
       <Filter>Sources</Filter>
     </CudaCompile>
   </ItemGroup>
