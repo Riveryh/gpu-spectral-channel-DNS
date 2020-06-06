@@ -2,7 +2,7 @@
 #include "../include/matrix_op.h"
 
 #define EIGEN_USE_MKL_ALL
-#include "eigen-3.3.7/Eigen/Dense"
+#include <Eigen/Dense>
 #include <complex>
 
 //
@@ -69,6 +69,7 @@ inline int m_multi_v_eigen(cuRPCF::complex* mat, cuRPCF::complex* v, const int N
 	Eigen::Map<CoefType> matrix(reinterpret_cast<std::complex<REAL>*>(mat), N, N);
 	Eigen::Map<VecType> vec(reinterpret_cast<std::complex<REAL>*>(v), N);
 	vec = matrix * vec;
+	return 0;
 }
 
 int m_multi_v(cuRPCF::complex* mat, cuRPCF::complex* v, const int N) {

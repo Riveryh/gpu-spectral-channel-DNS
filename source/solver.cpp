@@ -1,16 +1,17 @@
-#include "../include/solver.h"
-#include "../include/rhs.cuh"
-#include "malloc.h"
-#include "../include/matrix_op.h"
-#include "../include/velocity.h"
-#include "../include/coefficient.cuh"
-#include "../include/operation.h"
+#include <iostream>
 #include <cassert>
 #include <omp.h>
 #include <iostream>
 #include <time.h> 
-#include "pthread.h"
-#include"cublas_v2.h"
+#include <pthread.h>
+#include <cublas_v2.h>
+
+#include "../include/solver.h"
+#include "../include/rhs.cuh"
+#include "../include/matrix_op.h"
+#include "../include/velocity.h"
+#include "../include/coefficient.cuh"
+#include "../include/operation.h"
 #include "../include/transform_multi_gpu.h"
 #include "../include/cuRPCF.h"
 

@@ -5,3 +5,4 @@ thirdparty/
 x64/
 x86/
 packages/
+build/
