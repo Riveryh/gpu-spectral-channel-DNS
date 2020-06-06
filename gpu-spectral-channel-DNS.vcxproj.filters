@@ -9,173 +9,176 @@
       <UniqueIdentifier>{472d0514-68bc-4b06-bd7e-201ae649583a}</UniqueIdentifier>
       <Extensions>h;cuh</Extensions>
     </Filter>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{3f7c84ed-bcfe-4d22-a1b3-16b55b226ff6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cuRPCF.h">
+    <ClInclude Include="Tests\test_coef.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_getUVW.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_inverse.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_nonlinear.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_para_reading.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_rhs.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_transform.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\test_transpose.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+    <ClInclude Include="include\coefficient.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="data.h">
+    <ClInclude Include="include\cuRPCF.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="linear.h">
+    <ClInclude Include="include\data.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="main_test.h">
+    <ClInclude Include="include\linear.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="matrix_op.h">
+    <ClInclude Include="include\main_test.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="operation.h">
+    <ClInclude Include="include\matrix_op.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="output.h">
+    <ClInclude Include="include\nonlinear.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="parameters.h">
+    <ClInclude Include="include\operation.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="solver.h">
+    <ClInclude Include="include\output.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="statistics.h">
+    <ClInclude Include="include\parameters.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_coef.h">
+    <ClInclude Include="include\rhs.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_dt_0.h">
+    <ClInclude Include="include\RPCFKernels.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_getUVW.h">
+    <ClInclude Include="include\solver.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_inverse.h">
+    <ClInclude Include="include\statistics.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_nonlinear.h">
+    <ClInclude Include="include\transform.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_para_reading.h">
+    <ClInclude Include="include\transform_multi_gpu.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_rhs.h">
+    <ClInclude Include="include\transpose.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="test_transform.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="test_transpose.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="transform_multi_gpu.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="velocity.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="coefficient.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="nonlinear.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="rhs.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="RPCFKernels.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="transform.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="transpose.cuh">
+    <ClInclude Include="include\velocity.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="data.cpp">
+    <ClCompile Include="Tests\test_coef.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_getUVW.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_inverse.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_main.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_nonlinear.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_para_reading.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_rhs.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_transform.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\test_transpose.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="linear.cpp">
+    <ClCompile Include="source\linear.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="source\main.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="matrix_op.cpp">
+    <ClCompile Include="source\main_loop.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="operation.cpp">
+    <ClCompile Include="source\matrix_op.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="output.cpp">
+    <ClCompile Include="source\operation.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="recover.cpp">
+    <ClCompile Include="source\output.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="solver.cpp">
+    <ClCompile Include="source\recover.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="statistics.cpp">
+    <ClCompile Include="source\solver.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="test_coef.cpp">
+    <ClCompile Include="source\statistics.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="test_dt_0.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_getUVW.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_inverse.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_main.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_nonlinear.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_para_reading.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_rhs.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_transform.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="test_transpose.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="transform_multi_gpu.cpp">
+    <ClCompile Include="source\transform_multi_gpu.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="coefficient.cu">
+    <CudaCompile Include="source\coefficient.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="nonlinear.cu">
+    <CudaCompile Include="source\nonlinear.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="rhs.cu">
+    <CudaCompile Include="source\rhs.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="RPCFKernels.cu">
+    <CudaCompile Include="source\RPCFKernels.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="transform.cu">
+    <CudaCompile Include="source\transform.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="transpose.cu">
+    <CudaCompile Include="source\transpose.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
-    <CudaCompile Include="velocity.cu">
+    <CudaCompile Include="source\velocity.cu">
       <Filter>Sources</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>

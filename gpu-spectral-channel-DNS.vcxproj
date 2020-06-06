@@ -11,64 +11,66 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="coefficient.cuh" />
-    <ClInclude Include="cuRPCF.h" />
-    <ClInclude Include="data.h" />
-    <ClInclude Include="linear.h" />
-    <ClInclude Include="main_test.h" />
-    <ClInclude Include="matrix_op.h" />
-    <ClInclude Include="nonlinear.cuh" />
-    <ClInclude Include="operation.h" />
-    <ClInclude Include="output.h" />
-    <ClInclude Include="parameters.h" />
-    <ClInclude Include="rhs.cuh" />
-    <ClInclude Include="RPCFKernels.cuh" />
-    <ClInclude Include="solver.h" />
-    <ClInclude Include="statistics.h" />
-    <ClInclude Include="test_coef.h" />
-    <ClInclude Include="test_dt_0.h" />
-    <ClInclude Include="test_getUVW.h" />
-    <ClInclude Include="test_inverse.h" />
-    <ClInclude Include="test_nonlinear.h" />
-    <ClInclude Include="test_para_reading.h" />
-    <ClInclude Include="test_rhs.h" />
-    <ClInclude Include="test_transform.h" />
-    <ClInclude Include="test_transpose.h" />
-    <ClInclude Include="transform.cuh" />
-    <ClInclude Include="transform_multi_gpu.h" />
-    <ClInclude Include="transpose.cuh" />
-    <ClInclude Include="velocity.h" />
+    <ClInclude Include="include\coefficient.cuh" />
+    <ClInclude Include="include\cuRPCF.h" />
+    <ClInclude Include="include\data.h" />
+    <ClInclude Include="include\linear.h" />
+    <ClInclude Include="include\main_test.h" />
+    <ClInclude Include="include\matrix_op.h" />
+    <ClInclude Include="include\nonlinear.cuh" />
+    <ClInclude Include="include\operation.h" />
+    <ClInclude Include="include\output.h" />
+    <ClInclude Include="include\parameters.h" />
+    <ClInclude Include="include\rhs.cuh" />
+    <ClInclude Include="include\RPCFKernels.cuh" />
+    <ClInclude Include="include\solver.h" />
+    <ClInclude Include="include\statistics.h" />
+    <ClInclude Include="include\transform.cuh" />
+    <ClInclude Include="include\transform_multi_gpu.h" />
+    <ClInclude Include="include\transpose.cuh" />
+    <ClInclude Include="include\velocity.h" />
+    <ClInclude Include="Tests\test_coef.h" />
+    <ClInclude Include="Tests\test_getUVW.h" />
+    <ClInclude Include="Tests\test_inverse.h" />
+    <ClInclude Include="Tests\test_nonlinear.h" />
+    <ClInclude Include="Tests\test_para_reading.h" />
+    <ClInclude Include="Tests\test_rhs.h" />
+    <ClInclude Include="Tests\test_transform.h" />
+    <ClInclude Include="Tests\test_transpose.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="data.cpp" />
-    <ClCompile Include="linear.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="matrix_op.cpp" />
-    <ClCompile Include="operation.cpp" />
-    <ClCompile Include="output.cpp" />
-    <ClCompile Include="recover.cpp" />
-    <ClCompile Include="solver.cpp" />
-    <ClCompile Include="statistics.cpp" />
-    <ClCompile Include="test_coef.cpp" />
-    <ClCompile Include="test_dt_0.cpp" />
-    <ClCompile Include="test_getUVW.cpp" />
-    <ClCompile Include="test_inverse.cpp" />
-    <ClCompile Include="test_main.cpp" />
-    <ClCompile Include="test_nonlinear.cpp" />
-    <ClCompile Include="test_para_reading.cpp" />
-    <ClCompile Include="test_rhs.cpp" />
-    <ClCompile Include="test_transform.cpp" />
-    <ClCompile Include="test_transpose.cpp" />
-    <ClCompile Include="transform_multi_gpu.cpp" />
+    <ClCompile Include="source\data.cpp" />
+    <ClCompile Include="source\linear.cpp" />
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\main_loop.cpp" />
+    <ClCompile Include="source\matrix_op.cpp" />
+    <ClCompile Include="source\operation.cpp" />
+    <ClCompile Include="source\output.cpp" />
+    <ClCompile Include="source\recover.cpp" />
+    <ClCompile Include="source\solver.cpp" />
+    <ClCompile Include="source\statistics.cpp" />
+    <ClCompile Include="source\transform_multi_gpu.cpp" />
+    <ClCompile Include="Tests\test_coef.cpp" />
+    <ClCompile Include="Tests\test_getUVW.cpp" />
+    <ClCompile Include="Tests\test_inverse.cpp" />
+    <ClCompile Include="Tests\test_main.cpp" />
+    <ClCompile Include="Tests\test_nonlinear.cpp" />
+    <ClCompile Include="Tests\test_para_reading.cpp" />
+    <ClCompile Include="Tests\test_rhs.cpp" />
+    <ClCompile Include="Tests\test_transform.cpp" />
+    <ClCompile Include="Tests\test_transpose.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="coefficient.cu" />
-    <CudaCompile Include="nonlinear.cu" />
-    <CudaCompile Include="rhs.cu" />
-    <CudaCompile Include="RPCFKernels.cu" />
-    <CudaCompile Include="transform.cu" />
-    <CudaCompile Include="transpose.cu" />
-    <CudaCompile Include="velocity.cu" />
+    <CudaCompile Include="source\coefficient.cu" />
+    <CudaCompile Include="source\nonlinear.cu" />
+    <CudaCompile Include="source\rhs.cu" />
+    <CudaCompile Include="source\RPCFKernels.cu" />
+    <CudaCompile Include="source\transform.cu" />
+    <CudaCompile Include="source\transpose.cu" />
+    <CudaCompile Include="source\velocity.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C43D031B-8C15-4875-B8A4-BC94215E43FC}</ProjectGuid>
@@ -157,10 +159,6 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.2.targets" />
-    <Import Project="packages\intelopenmp.redist.win.2020.0.166\build\native\intelopenmp.redist.win.targets" Condition="Exists('packages\intelopenmp.redist.win.2020.0.166\build\native\intelopenmp.redist.win.targets')" />
-    <Import Project="packages\intelopenmp.devel.win.2020.0.166\build\native\intelopenmp.devel.win.targets" Condition="Exists('packages\intelopenmp.devel.win.2020.0.166\build\native\intelopenmp.devel.win.targets')" />
-    <Import Project="packages\inteltbb.redist.win.2020.0.166\build\native\inteltbb.redist.win.targets" Condition="Exists('packages\inteltbb.redist.win.2020.0.166\build\native\inteltbb.redist.win.targets')" />
-    <Import Project="packages\inteltbb.devel.win.2020.0.166\build\native\inteltbb.devel.win.targets" Condition="Exists('packages\inteltbb.devel.win.2020.0.166\build\native\inteltbb.devel.win.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
