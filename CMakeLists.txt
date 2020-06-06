@@ -12,34 +12,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 # -------------------------------  Denpendencies -------------------------------
 find_package(MKL REQUIRED)
 find_package(CUDAToolkit REQUIRED)
-set(DEPENDENCIES ${MKL_LIBRARIES} CUDA::cudart_static CUDA::cufft CUDA::cublas)
-
-# -------------------------------  Dealing with pthreads
-# -------------------------------
-if(WIN32)
-  set(PTHREADS_PATH
-      path/to/pthreads
-      CACHE PATH "The path to a win32 version pthreads.")
-
-  if(EXISTS ${PTHREADS_PATH}/include/pthread.h)
-    list(APPEND CMAKE_PREFIX_PATH ${PTHREADS_PATH})
-    find_package(PTHREADW32)
-  else()
-    message(
-      FATAL_ERROR
-        "Please specify PTHREADS_PATH as the directory of your win32 pthreads installation."
-    )
-  endif()
-
-  if(NOT PTHREADW32_FOUND)
-    message(FATAL_ERROR "PTHREADS_PATH invalid, please check again.")
-  endif()
-  set(DEPENDENCIES ${DEPENDENCIES} pthreadw32)
-else()
-  set(THREADS_PREFER_PTHREAD_FLAG ON)
-  find_package(Threads REQUIRED)
-  set(DEPENDENCIES ${DEPENDENCIES} Threads::Threads)
-endif()
+find_package(Threads REQUIRED)
+set(DEPENDENCIES ${MKL_LIBRARIES} CUDA::cudart_static CUDA::cufft CUDA::cublas Threads::Threads)
 
 # -------------------------------  Dealing with Eigen3
 # -------------------------------

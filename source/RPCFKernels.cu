@@ -20,7 +20,7 @@ __host__ void getDeviceInfo(problem& pb) {
 	int n_dev;
 	size_t free;
 	size_t total;
-	init_pthread(pb);
+	launch_subthread(pb);
 	cudaGetDevice(&dev_num);
 	cudaGetDeviceProperties(&prop, dev_num);
 	cudaMemGetInfo(&free, &total);
@@ -32,16 +32,16 @@ __host__ void getDeviceInfo(problem& pb) {
 	printf("GPU total memory = % .2f MB\n", (float)total / (1.024e6));
 	printf("GPU free  memory = % .2f MB\n", (float)free / (1.024e6));
 	printf("Total device number = :%d\n\n", n_dev);
-	for (int i = 0; i < NUM_GPU; i++) {
-		dev_id[i] = i%n_dev;
-		assert(dev_id[0] == dev_num);
-	}
-	for (int i = 0; i < n_dev; i++) {
-		cudaDeviceEnablePeerAccess(i, 0);
-	}
-	int accessibleTest;
-	cudaDeviceCanAccessPeer(&accessibleTest, dev_id[0], dev_id[1]);
-	if (accessibleTest != 1) { std::cerr << "peer access not supported" << std::endl; };
+	//for (int i = 0; i < NUM_GPU; i++) {
+	//	dev_id[i] = i%n_dev;
+	//	assert(dev_id[0] == dev_num);
+	//}
+	//for (int i = 0; i < n_dev; i++) {
+	//	cudaDeviceEnablePeerAccess(i, 0);
+	//}
+	//int accessibleTest;
+	//cudaDeviceCanAccessPeer(&accessibleTest, dev_id[0], dev_id[1]);
+	//if (accessibleTest != 1) { std::cerr << "peer access not supported" << std::endl; };
 }
 
 __host__ int allocDeviceMem(problem&  pb) {

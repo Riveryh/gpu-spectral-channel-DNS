@@ -6,6 +6,7 @@
 
 __host__ int get_rhs_v(problem& pb);
 __host__ int get_rhs_omega(problem& pb);
-void init_pthread(problem& pb);
+void launch_subthread(problem& pb);
+void synchronizeGPUsolver();
 
 

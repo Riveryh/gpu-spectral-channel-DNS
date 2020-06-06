@@ -3,7 +3,6 @@
 #include <omp.h>
 #include <iostream>
 #include <time.h> 
-#include <pthread.h>
 #include <cublas_v2.h>
 
 #include "../include/solver.h"
@@ -30,16 +29,8 @@ using namespace std;
 //	REAL* U0, REAL* dU0, REAL* ddU0, const REAL dt, const REAL Re);
 
 
-extern pthread_cond_t cond_malloc;
-extern pthread_mutex_t mutex_malloc;
 
 cublasHandle_t __cublas_handle;
-
-void synchronizeGPUsolver() {
-	//pthread_mutex_lock(&mutex_malloc);
-	pthread_cond_wait(&cond_malloc, &mutex_malloc);
-	pthread_mutex_unlock(&mutex_malloc);
-}
 
 int nextStep(problem& pb) {
 
