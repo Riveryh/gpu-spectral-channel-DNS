@@ -12,4 +12,4 @@ void cuCheck(cudaError_t ret, std::string s = "");
 
 
 //#define CURPCF_CUDA_PROFILING
-
+//#define SHOW_TRANSFORM_TIME

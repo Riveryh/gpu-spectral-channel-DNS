@@ -14,3 +14,5 @@ __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 
 __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& input,
 	cudaPitchedPtr& tPtr, int* dim, int* tDim);
+__host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& input,
+	cudaPitchedPtr& tPtr, int* dim, int* tDim);

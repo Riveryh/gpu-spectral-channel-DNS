@@ -144,7 +144,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 			cheby_s2p(tPtr, dim[0] / 2 + 1, dim[1] , dim[2], pd);
 
 		//transpose(dir, Ptr, tPtr, dim, tDim);
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(start_trans);
 #endif 
 
@@ -152,7 +152,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
 		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -163,7 +163,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		
 			setZeros((cuRPCF::complex*)Ptr.ptr, Ptr.pitch, dim3(dim[0], dim[1], dim[2]));
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -179,7 +179,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 			//(CUFFTREAL*)dev_buffer);
 		//cuCheck(cudaMemcpy(Ptr.ptr, dev_buffer, pSize, cudaMemcpyDeviceToDevice),"mem move");
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -233,14 +233,14 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		ASSERT(dir == FORWARD);
 		void* dev_buffer = get_fft_buffer_ptr();
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(start_trans);
 #endif
 		
 		res = CUFFTEXEC_R2C(planXYr2c, (CUFFTREAL*)Ptr.ptr,
 			(CUFFTCOMPLEX*)Ptr.ptr); 
 
-#ifdef CURPCF_CUDA_PROFILING	
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)	
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -260,13 +260,13 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(start_trans);
 #endif 
 		
 		normalize(Ptr, dim3(dim[0], dim[1], dim[2]), 1.0 / dim[0] / dim[1]);
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -282,7 +282,7 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -556,7 +556,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	cufftResult res;
 	cudaError_t err;
 	float time;
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 	cudaEventRecord(start_trans);
 #endif
 
@@ -569,7 +569,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 		assert(err == cudaSuccess);
 #endif
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -582,7 +582,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		assert(res == CUFFT_SUCCESS);
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -600,7 +600,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 		assert(err == cudaSuccess);
 #endif
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -616,7 +616,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 			assert(err == cudaSuccess);
 #endif
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 			cudaEventRecord(end_trans);
 			cudaEventSynchronize(end_trans);
 			cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -629,7 +629,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 				(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 			assert(res == CUFFT_SUCCESS);
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 			cudaEventRecord(end_trans);
 			cudaEventSynchronize(end_trans);
 			cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -647,7 +647,7 @@ __host__ void cheby_p2s(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 			assert(err == cudaSuccess);
 #endif
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 			cudaEventRecord(end_trans);
 			cudaEventSynchronize(end_trans);
 			cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -672,7 +672,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 
 	if(doPadding == Padding){
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(start_trans);
 #endif
 
@@ -683,7 +683,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 		assert(err == cudaSuccess);
 #endif	
 
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -697,7 +697,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 
-#ifdef CURPCF_CUDA_PROFILING		
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)		
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -710,7 +710,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 	}
 	else if(doPadding == No_Padding)
 	{
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(start_trans);
 #endif
 		cheby_pre_s2p_noPad<<<dim3(hnx,ny), mz/4 >>>((cuRPCF::complex*)tPtr.ptr, tPtr.pitch, hmx, my, mz);
@@ -718,7 +718,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 		err = cudaDeviceSynchronize();
 		assert(err == cudaSuccess);
 #endif
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);
@@ -732,7 +732,7 @@ __host__ void cheby_s2p(cudaPitchedPtr tPtr, int hmx, int my, int mz, Padding_mo
 			(CUFFTCOMPLEX*)tPtr.ptr, CUFFT_FORWARD);
 		ASSERT(res == CUFFT_SUCCESS);
 		
-#ifdef CURPCF_CUDA_PROFILING
+#if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
 		cudaEventSynchronize(end_trans);
 		cudaEventElapsedTime(&time, start_trans, end_trans);

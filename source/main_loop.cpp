@@ -1,12 +1,8 @@
 #include "../include/cuRPCF.h"
 #include "../include/solver.h"
 #include "../include/output.h"
-#include <cassert>
 #include "../include/statistics.h"
-#include <time.h>  
-#include <stdio.h>  
 #include <iostream>
-using namespace std;
 
 void run_simulation();
 
@@ -17,49 +13,42 @@ int main() {
 }
 
 void run_simulation() {
-	RPCF_Paras paras("parameter.txt");
+	std::string parameter_filename = "../input/parameter.txt";
+	std::cout << "Reading settings from " << parameter_filename << std::endl;
+	RPCF_Paras paras(parameter_filename);
 	//paras.numPara.dt = 0.0;
 	problem pb(paras);
-	cout << "init cuda" << endl;
+	std::cout << "init cuda" << std::endl;
 	getDeviceInfo(pb);
 	allocDeviceMem(pb);
-	cout << "init fft" << endl;
+	std::cout << "init fft" << std::endl;
 	initFFT(pb);
-	cout << "init solver" << endl;
+	std::cout << "init solver" << std::endl;
 	allocHostMemory(pb);
 	initAuxMatrix(pb);
-	cout << "init flow" << endl;
 
 	if (pb.para.stepPara.start_type == 0) {
 
+		std::cout << "init flow" << std::endl;
 		initFlow(pb);
 
-		cout << "output flow" << endl;
+		std::cout << "output initial flow field" << std::endl;
 		pb.currenStep = 0;
 		output_velocity(pb);
-		//output_velocity(pb);
 
-		cuRPCF::complex* tv = (cuRPCF::complex*)malloc(pb.tSize);
-
-
-		cout << "first step" << endl;
+		std::cout << "extra previous step" << std::endl;
+		//compute extra step to get "previous" step data for the actual first step
 		nextStep(pb);
-		//safeCudaFree(pb.dptr_tu.ptr);
-		//safeCudaFree(pb.dptr_tv.ptr);
-		//safeCudaFree(pb.dptr_tw.ptr);
-		//safeCudaFree(pb.dptr_tomega_x.ptr);
-		//safeCudaFree(pb.dptr_tomega_y.ptr);
-		//safeCudaFree(pb.dptr_tomega_z.ptr);
+
+		//re-allocate device memory
 		destroyMyCudaMalloc();
-
-		//nextStep(pb);
-
 		allocDeviceMem(pb);
 
-		cout << "init flow" << endl;
+		//std::cout << "init flow" << std::endl;
 		initFlow(pb);
 
-		cout << "init second step" << endl;
+		//real first step
+		std::cout << "first step" << std::endl;
 		nextStep(pb);
 		//output_velocity(pb);
 	}
@@ -74,7 +63,7 @@ void run_simulation() {
 	}
 	else 
 	{
-		cerr << "wrong start type" << endl;
+		std::cerr << "wrong start type" << std::endl;
 		exit(-1);
 	}
 
@@ -84,9 +73,9 @@ void run_simulation() {
 	cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
 	
 	//clock_t start_time, end_time;
-	cudaEvent_t start_trans, end_trans;
-	cudaEventCreate(&start_trans);
-	cudaEventCreate(&end_trans);
+	cudaEvent_t step_start_event, step_end_event;
+	cudaEventCreate(&step_start_event);
+	cudaEventCreate(&step_end_event);
 
 	double cost;
 	double total_cost = 0.0;
@@ -96,28 +85,24 @@ void run_simulation() {
 	for (int i = pb.para.stepPara.start_step;
 		i <= pb.para.stepPara.end_step; i++) 
 	{
-		std::cout << "step: " << i << std::endl;
-		//start_time = clock();
+		std::cout << std::endl << "STEP: " << i << std::endl;
 
-		cudaEventRecord(start_trans);
+		cudaEventRecord(step_start_event);
 
 		nextStep(pb);
 		//statistics(pb);
-		//end_time = clock();
 
-		cudaEventRecord(end_trans);
-		cudaEventSynchronize(end_trans);
-		cudaEventElapsedTime(&time, start_trans, end_trans);
+		cudaEventRecord(step_end_event);
+		cudaEventSynchronize(step_end_event);
+		cudaEventElapsedTime(&time, step_start_event, step_end_event);
 
-		//cost = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 		total_cost += time;
 		count++;
-		std::cout << "time_cost:" << time / 1000.0 << std::endl;
-		std::cout << "mean time cost:" << total_cost / count / 1000.0 << std::endl;
+		std::cout << "Time cost of current step:" << time / 1000.0 << std::endl;
+		std::cout << "Mean time cost per step:" << total_cost / count / 1000.0 << std::endl;
 		std::cout << "velocity(0,0,0):" << (pb.rhs_v->re) << " " << (pb.rhs_v->im) << std::endl;
 
 		if (i % pb.para.stepPara.save_internal == 0) {
-		//if (i > 320) {
 			std::cout << "[OUTPUT] WRINTING RESULTS" << std::endl;
 			output_velocity(pb);
 		}
@@ -125,7 +110,6 @@ void run_simulation() {
 			std::cout << "[OUTPUT] WRINTING RECOVERY FILES" << std::endl;
 			write_recover_data(pb);
 		}
-		//if (i == 340) exit(0);
 		pb.currenStep++;
 	}
 }

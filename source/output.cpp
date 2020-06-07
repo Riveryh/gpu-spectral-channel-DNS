@@ -7,6 +7,7 @@
 #include "../include/data.h"
 #include <iostream>
 #include <cstdlib>
+#include <direct.h>
 #include "../include/velocity.h"
 
 
@@ -67,6 +68,13 @@ void write_velocity(const char* filename, REAL* u, REAL* v, REAL* w,
 	size_t pitch, int px,int py, int pz) {
 	ofstream outfile;
 	outfile.open(filename, ios::binary);
+	if (!outfile.is_open())
+	{	
+		char dir_buffer[200];
+		std::cerr << "Cannot open output file:" << filename << std::endl;
+		std::cerr << "Current Directory:" << string(getcwd(dir_buffer, 200)) << std::endl;
+		exit(-1);
+	}
 	for(int k=0;k<pz;k++)	{
 		for (int j = 0; j < py; j++) {
 			//for (int i = 0; i < px; i++) {

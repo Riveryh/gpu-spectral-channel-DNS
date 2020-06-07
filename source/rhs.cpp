@@ -30,17 +30,7 @@ void save_zero_wave_number_lamb(problem& pb);
 void* func(void* _pb);
 
 void launch_subthread(problem& pb) {
-	if (subthread_inited == false) {
-		//pthread_cond_init(&cond_v, NULL);
-		//pthread_cond_init(&cond_nonlinear, NULL);
-		//pthread_cond_init(&cond_malloc, NULL);
-		//pthread_mutex_init(&mutex_nonlinear, NULL);
-		//pthread_mutex_init(&mutex_v, NULL);
-		//pthread_mutex_init(&mutex_malloc, NULL);
-		////pthread_mutex_lock(&mutex_nonlinear);
-		////pthread_mutex_lock(&mutex_v);
-		//pthread_create(&pid, NULL, func, &pb);
-		
+	if (subthread_inited == false) {		
 		sub_thread = std::thread(func, &pb);
 
 		subthread_inited = true;
@@ -51,9 +41,6 @@ void launch_subthread(problem& pb) {
 
 
 void synchronizeGPUsolver() {
-	//pthread_mutex_lock(&mutex_malloc);
-	/*pthread_cond_wait(&cond_malloc, &mutex_malloc);
-	pthread_mutex_unlock(&mutex_malloc);*/
 	std::unique_lock<std::mutex> lk_malloc(m_malloc);
 	if (Is_malloc_completed==true) {
 	}
@@ -82,11 +69,7 @@ void* func(void* _pb) {
 		float time;
 
 		//wating for starting signal of the main thread
-		//pthread_mutex_lock(&mutex_nonlinear);
-		//pthread_cond_wait(&cond_nonlinear,&mutex_nonlinear);
-		//pthread_mutex_unlock(&mutex_nonlinear);
-
-		std::cout << "Waiting for main nonlinear" << std::endl;
+		//std::cout << "Waiting for main nonlinear" << std::endl;
 		condition_nonlinear.wait(lk_nonlinear);
 		
 #ifdef CURPCF_CUDA_PROFILING
@@ -129,6 +112,7 @@ void* func(void* _pb) {
 		cudaEventRecord(start_non, 0);
 #endif
 
+		//copy memory
 		cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 		cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
 
@@ -189,15 +173,11 @@ void* func(void* _pb) {
 		cuCheck(myCudaMalloc(pb.dptr_tu, ZXY_3D), "allocate");
 
 		// Tell the main thread the computation is completed
-		//pthread_mutex_lock(&mutex_malloc);
-		//pthread_cond_signal(&cond_malloc);
-		//pthread_mutex_unlock(&mutex_malloc);
-
 		lk_malloc.lock();
-		std::cout << "sending malloc signal" << std::endl;
+		//std::cout << "sending malloc signal" << std::endl;
 		Is_malloc_completed = true;
 		condition_malloc.notify_one();
-		std::cout << "malloc signal sent" << std::endl;
+		//std::cout << "malloc signal sent" << std::endl;
 		lk_malloc.unlock();
 	}
 }
@@ -207,17 +187,9 @@ __host__ int get_rhs_v(problem& pb) {
 	std::unique_lock<std::mutex> lk_v(m_v);
 	std::unique_lock<std::mutex> lk_malloc(m_malloc);
 
-	
+	// Tell the GPU thread to start the next step
 	condition_nonlinear.notify_one();
 	lk_nonlinear.unlock();
-
-	std::cout << "nonlinear signal sent" << std::endl;
-
-	//pthread_mutex_lock(&mutex_nonlinear);
-	//pthread_mutex_lock(&mutex_v);
-	//pthread_mutex_lock(&mutex_malloc);
-	//pthread_cond_signal(&cond_nonlinear);
-	//pthread_mutex_unlock(&mutex_nonlinear);
 
 	cudaEventRecord(start_non);
 
@@ -225,10 +197,7 @@ __host__ int get_rhs_v(problem& pb) {
 
 	cudaEventRecord(end_non);
 
-	//waiting for the nonlinear term by GPU
-	//pthread_cond_wait(&cond_v, &mutex_v);
-	//pthread_mutex_unlock(&mutex_v);
-
+	//waiting for the nonlinear term results by GPU
 	condition_v.wait(lk_v);
 
 	//cudaEventRecord(end_non);

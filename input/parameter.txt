@@ -2,5 +2,5 @@
 4.0 2.0
 2600 0.015 0.005
 0 0 200000 1000 1000
-output
-recovery
+../output/output
+../output/recovery
