@@ -21,6 +21,14 @@ find_package(Threads REQUIRED)
 set(DEPENDENCIES ${MKL_LIBRARIES} CUDA::cudart_static CUDA::cufft CUDA::cublas
                  Threads::Threads)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  find_package(OpenMP)
+  if (OpenMP_CXX_FOUND)
+    message(STATUS "OpenMP found: ${${OpenMP_CXX_LIBRARY}}")
+    set(DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX OpenMP::OpenMP_C)
+  endif()
+endif()
+
 # -------------------------------  Eigen3  -------------------------------
 find_package(Eigen3 3.2 NO_MODULE)
 if(TARGET Eigen3::Eigen)

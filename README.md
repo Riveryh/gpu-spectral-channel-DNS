@@ -26,7 +26,9 @@ A cuda supported nVidia graph card is required to run the code.
 
 You will need CMake 3.17.
 
-It has been tested on {Visual Studio 2019 / Clang-8 / gcc5.4} + MKL 2020 + CUDA 10.2
+Tested on {Visual Studio 2019 / Clang-8 / gcc5.4 / icc} + MKL 2020 + CUDA 10.2
+
+On Linux, we recommend icc and clang-8 over gcc according to issues related to openmp.
 
 For example, on Linux:
 
@@ -35,12 +37,11 @@ cd gpu-spectral-channel-DNS
 mkdir build
 cd build
 
-# change your build settings in build.sh
-sh ../build.sh
-make -j8
-
 # you can modify parameters.txt for your need
 cp ../parameters.txt ./
+
+# change your build settings in build.sh, then
+sh ../build.sh
 ./gpu-spectral-channel-DNS
 ```
 
