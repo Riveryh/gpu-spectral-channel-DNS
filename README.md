@@ -27,7 +27,7 @@ A cuda supported nVidia graph card is required to run the code.
 You will need CMake 3.17.
 
 It has been tested on {Visual Studio 2019 / Clang-8 / gcc5.4} + MKL 2020 + CUDA 10.2
-  
+
 For example, on Linux:
 
 ``` bash
@@ -35,9 +35,8 @@ cd gpu-spectral-channel-DNS
 mkdir build
 cd build
 
-# you can substitute gcc with other compilers
-# you should specify an eigen3 dir to EIGEN3_DIR
-cmake -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -D EIGEN3_DIR=/tmp/thirdparty/eigen3.3 ..
+# change your build settings in build.sh
+sh ../build.sh
 make -j8
 
 # you can modify parameters.txt for your need

@@ -1,0 +1,1 @@
+cmake .. -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -D EIGEN3_DIR=/home/lqt/tmp/eigen

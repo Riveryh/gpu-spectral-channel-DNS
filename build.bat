@@ -1,0 +1,1 @@
+"C:\Program Files\CMake\bin\cmake.exe" .. -G "Visual Studio 16 2019" -D EIGEN3_DIR=E:\Development\thirdparty\eigen-eigen-323c052e1731
