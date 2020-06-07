@@ -1,6 +1,7 @@
 #pragma once
-#include "data.h"
 #include <string>
+
+#include "data.h"
 
 namespace RPCF{
 	//int read_parameter(Flow& fl, std::string& s);

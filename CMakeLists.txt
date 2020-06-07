@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.5)
 
 project(gpu-spectral-channel-DNS)
 enable_language(CUDA)
@@ -15,9 +15,8 @@ find_package(CUDAToolkit REQUIRED)
 find_package(Threads REQUIRED)
 set(DEPENDENCIES ${MKL_LIBRARIES} CUDA::cudart_static CUDA::cufft CUDA::cublas Threads::Threads)
 
-# -------------------------------  Dealing with Eigen3
-# -------------------------------
-find_package(Eigen3 3.3 NO_MODULE)
+# -------------------------------  Eigen3  -------------------------------
+find_package(Eigen3 3.2 NO_MODULE)
 if(TARGET Eigen3::Eigen)
   set(DEPENDENCIES ${DEPENDENCIES} Eigen3::Eigen)
 else()
@@ -35,8 +34,7 @@ else()
   endif()
 endif(TARGET Eigen3::Eigen)
 
-# -------------------------------  Define source files
-# -------------------------------
+# -------------------------------  Define sources  -------------------------------
 file(
   GLOB_RECURSE headers
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}

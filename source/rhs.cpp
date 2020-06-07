@@ -1,19 +1,18 @@
+#include <iostream>
+#include <time.h>  
+#include <cassert>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
+
 #include "../include/rhs.cuh"
 #include "../include/nonlinear.cuh"
 #include "../include/linear.h"
 #include "../include/cuRPCF.h"
 #include "../include/transform.cuh"
-#include <iostream>
-#include <time.h>  
-#include <cassert>
-
 
 
 bool subthread_inited = false;
-
-//using c++11 std thread library for multi-threading
-#include <mutex>
-#include <thread>
 
 std::condition_variable condition_v;
 std::condition_variable condition_nonlinear;

@@ -1,7 +1,12 @@
 #pragma once
 
-#define DEBUG
-//#undef DEBUG
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include <cmath>
+#include <iostream>
+#include <cstdlib>
+
+#include "parameters.h"
 
 #define REAL_DOUBLE
 //#define REAL_FLOAT
@@ -15,14 +20,8 @@
 #define REAL float
 #undef REAL_DOUBLE
 #endif
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include "parameters.h"
-#include <cmath>
-#include <malloc.h>
-#include <cstdlib>
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #define ASSERT(x) assert(x)
 #else
 #define ASSERT(x)
@@ -39,39 +38,39 @@ namespace cuRPCF{
 	struct complex {
 		REAL re;
 		REAL im;
-		__host__ __device__ cuRPCF::complex() {};
-		__host__ __device__ cuRPCF::complex(REAL ire, REAL iim) :re(ire), im(iim) {};
-		__host__ __device__ cuRPCF::complex& operator=(cuRPCF::complex c) {
+		__host__ __device__ complex() {};
+		__host__ __device__ complex(REAL ire, REAL iim) :re(ire), im(iim) {};
+		__host__ __device__ complex& operator=(complex c) {
 			this->re = c.re;
 			this->im = c.im;
 			return *this;
 		}
-		__host__ __device__ cuRPCF::complex& operator=(REAL r) {
+		__host__ __device__ complex& operator=(REAL r) {
 			this->re = r;
 			this->im = 0.0;
 			return *this;
 		}
-		__host__ __device__ cuRPCF::complex operator*(REAL r) {
+		__host__ __device__ complex operator*(REAL r) {
 			REAL tre = this->re * r;
 			REAL tim = this->im * r;
 			return cuRPCF::complex(tre, tim);
 		}
-		__host__ __device__ cuRPCF::complex operator*(cuRPCF::complex c) {
+		__host__ __device__ complex operator*(complex c) {
 			REAL tre = this->re * c.re - this->im * c.im;
 			REAL tim = this->re * c.im + this->im * c.re;
 			return cuRPCF::complex(tre, tim);
 		}
-		__host__ __device__ cuRPCF::complex operator+(cuRPCF::complex c) {
+		__host__ __device__ complex operator+(complex c) {
 			REAL tre = this->re + c.re;
 			REAL tim = this->im + c.im;
 			return cuRPCF::complex(tre, tim);
 		}
-		__host__ __device__ cuRPCF::complex operator-(cuRPCF::complex c) {
+		__host__ __device__ complex operator-(complex c) {
 			REAL tre = this->re - c.re;
 			REAL tim = this->im - c.im;
 			return cuRPCF::complex(tre, tim);
 		}
-		__host__ __device__ cuRPCF::complex operator+(REAL r) {
+		__host__ __device__ complex operator+(REAL r) {
 			REAL tre = this->re + r;
 			REAL tim = this->im;
 			return cuRPCF::complex(tre, tim);

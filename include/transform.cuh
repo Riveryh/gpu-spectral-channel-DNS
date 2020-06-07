@@ -1,10 +1,12 @@
 #pragma once 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include <cufft.h>
+
 #include "data.h"
-#include "cufft.h"
 #include "RPCFKernels.cuh"
 #include "transpose.cuh"
+
 extern cufftHandle planXYr2c, planXYc2r, planZ_pad;
 
 

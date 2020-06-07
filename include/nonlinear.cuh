@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+
 #include "data.h"
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
 #include "transform.cuh"
 
 __host__ int getNonlinear(problem& pb);
