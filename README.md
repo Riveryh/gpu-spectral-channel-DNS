@@ -1,17 +1,19 @@
 # gpu-spectral-channel-DNS
+
 A CUDA spectral DNS code for wall bounded channel flow or couette flow
 
 ## Introduction
 
-This code uses a traditional spectral method to solve NS equation in a channel. 
+This code uses a traditional spectral method to solve NS equation in a channel.
 Periodic boundary conditions are imposed on streamwise and spanwise direction.
 While non-slip boundary condition is used in wall-normal direction.
 Fourier expansions are used in spanwsie direction. Chebyshev polynomials are used in wall-normal direction.
 
-Currently, the computation of nonlinear part is mainly conducted on GPU, while the linear part is computated on CPU. 
+Currently, the computation of nonlinear part is mainly conducted on GPU, while the linear part is computated on CPU.
 And only ONE gpu will be used for acceleration.
 
 ## Environment Requirements
+
 CUDA Runtime : CUDA 9.0 or higher
 
 CUDA Library used: cufft
@@ -24,11 +26,8 @@ A cuda supported nVidia graph card is required to run the code.
 
 You will need CMake 3.17.
 
-It has been tested on
-
-* Visual Studio 2019 + MKL 2020 + CUDA 10.2
-* Clang-8 + MKL 2020 + CUDA 10.2
-
+It has been tested on {Visual Studio 2019 / Clang-8 / gcc5.4} + MKL 2020 + CUDA 10.2
+  
 For example, on Linux:
 
 ``` bash
@@ -36,9 +35,9 @@ cd gpu-spectral-channel-DNS
 mkdir build
 cd build
 
-# you can substitute clang with other compilers
+# you can substitute gcc with other compilers
 # you should specify an eigen3 dir to EIGEN3_DIR
-cmake -D CMAKE_C_COMPILER=clang-8 -D CMAKE_CXX_COMPILER=clang++-8 -D EIGEN3_DIR=/tmp/thirdparty/eigen3.3 ..
+cmake -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -D EIGEN3_DIR=/tmp/thirdparty/eigen3.3 ..
 make -j8
 
 # you can modify parameters.txt for your need
