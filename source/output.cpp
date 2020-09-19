@@ -7,7 +7,7 @@
 #include "../include/data.h"
 #include <iostream>
 #include <cstdlib>
-#include <direct.h>
+//#include <direct.h>
 #include "../include/velocity.h"
 
 
@@ -72,7 +72,7 @@ void write_velocity(const char* filename, REAL* u, REAL* v, REAL* w,
 	{	
 		char dir_buffer[200];
 		std::cerr << "Cannot open output file:" << filename << std::endl;
-		std::cerr << "Current Directory:" << string(getcwd(dir_buffer, 200)) << std::endl;
+		//std::cerr << "Current Directory:" << string(getcwd(dir_buffer, 200)) << std::endl;
 		exit(-1);
 	}
 	for(int k=0;k<pz;k++)	{

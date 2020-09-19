@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(gpu-spectral-channel-DNS)
-enable_language(CUDA)
+project(gpu-spectral-channel-DNS LANGUAGES CXX CUDA) 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -16,10 +15,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 # -------------------------------  Denpendencies -------------------------------
 find_package(MKL REQUIRED)
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDA REQUIRED)
 find_package(Threads REQUIRED)
-set(DEPENDENCIES ${MKL_LIBRARIES} CUDA::cudart_static CUDA::cufft CUDA::cublas
-                 Threads::Threads)
+set(DEPENDENCIES ${MKL_LIBRARIES} ${CUDA_cudart_static_LIBRARY} ${CUDA_CUFFT_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES}
+                Threads::Threads)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   find_package(OpenMP)
@@ -65,7 +64,7 @@ file(
   source/*.cu)
 
 # -------------------------------  Output -------------------------------
-include_directories(${MKL_INCLUDE_DIR} include)
+include_directories(${MKL_INCLUDE_DIR} ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} include)
 add_executable(gpu-spectral-channel-DNS ${src} ${cu_src} ${headers}
                                         ${cu_headers})
 
