@@ -14,7 +14,7 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 # -------------------------------  Denpendencies -------------------------------
-find_package(MKL REQUIRED)
+# find_package(MKL REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(Threads REQUIRED)
 set(DEPENDENCIES ${MKL_LIBRARIES} ${CUDA_cudart_static_LIBRARY} ${CUDA_CUFFT_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES}

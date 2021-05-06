@@ -18,31 +18,27 @@ CUDA Runtime : CUDA 9.0 or higher
 
 CUDA Library used: cufft
 
-Intel C++ compiler with mkl support is required.
-
-A cuda supported nVidia graph card is required to run the code.
+A cuda supported NVIDIA graphic card is required to run the code.
 
 ## Build & Run
 
 You will need CMake 3.17.
 
-Tested on {Visual Studio 2019 / Clang-8 / gcc5.4 / icc} + MKL 2020 + CUDA 10.2
+Tested on {Visual Studio 2019 / Clang-8 / gcc5.4 / icc} + CUDA 10.2 
 
 On Linux, we recommend icc and clang-8 over gcc according to issues related to openmp.
 
 For example, on Linux:
 
 ``` bash
-cd gpu-spectral-channel-DNS
 mkdir build
 cd build
+cmake ..
+make -j
+./gpu-spectral-channel-DNS
 
 # you can modify parameters.txt for your need
-cp ../parameters.txt ./
-
-# change your build settings in build.sh, then
-sh ../build.sh
-./gpu-spectral-channel-DNS
+vim ../input/parameters.txt
 ```
 
 ## Usage or Citation
