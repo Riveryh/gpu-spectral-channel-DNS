@@ -22,9 +22,9 @@ A cuda supported NVIDIA graphic card is required to run the code.
 
 ## Build & Run
 
-You will need CMake 3.17.
+You will need CMake 3.17. and Eigen
 
-Tested on {Visual Studio 2019 / Clang-8 / gcc5.4 / icc} + CUDA 10.2 
+Tested on {Visual Studio 2019 / Clang-8 / gcc5.4 / icc} + CUDA 10.2 or higher
 
 On Linux, we recommend icc and clang-8 over gcc according to issues related to openmp.
 
@@ -44,3 +44,8 @@ vim ../input/parameters.txt
 ## Usage or Citation
 
 You may contact riveryh[at]foxmail.com
+
+## Numerical method 
+The method is breifly introduced in this papers,
+https://link.springer.com/article/10.1007/s11433-018-9310-4 .
+For time integration, it's basically a second-order Adams-Bashforth scheme for the non-linear term and a second-order Crank-Nicolson scheme fothe linear time. The spatial numerical scheme uses Fourier bases for spanwise and streamwsie along with periodical boundary conditions. For wall-normal direction, the chebyshev function is used for non-slip boundary condtion. The dialiasing method is 3/2 padding.
