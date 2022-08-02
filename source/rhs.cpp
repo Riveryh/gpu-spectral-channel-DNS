@@ -23,6 +23,7 @@ std::mutex m_malloc;
 std::thread sub_thread;
 
 bool Is_malloc_completed = false;
+bool exit_now = false;
 
 cudaEvent_t start_non, end_non;
 
@@ -39,6 +40,13 @@ void launch_subthread(problem& pb) {
 	}
 }
 
+void terminate_subthread(){
+	std::unique_lock<std::mutex> lk_nonlinear(m_nonlinear);
+	exit_now = true;
+	condition_nonlinear.notify_one();
+	lk_nonlinear.unlock();
+	sub_thread.join();
+}
 
 void synchronizeGPUsolver() {
 	std::unique_lock<std::mutex> lk_malloc(m_malloc);
@@ -71,6 +79,7 @@ void* func(void* _pb) {
 		//wating for starting signal of the main thread
 		//std::cout << "Waiting for main nonlinear" << std::endl;
 		condition_nonlinear.wait(lk_nonlinear);
+		if(exit_now){printf("Sub thread terminate\n"); return nullptr;}
 		
 #ifdef CURPCF_CUDA_PROFILING
 		clock_t start_time, end_time;

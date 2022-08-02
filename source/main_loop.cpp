@@ -5,6 +5,7 @@
 #include <iostream>
 
 void run_simulation();
+void terminate_subthread();
 
 int main() {
 	run_simulation();
@@ -112,4 +113,6 @@ void run_simulation() {
 		}
 		pb.currenStep++;
 	}
+
+	terminate_subthread();
 }
