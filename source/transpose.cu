@@ -17,12 +17,12 @@ __global__ void transpose_forward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, di
 __global__ void transpose_backward_sm(cuRPCF::complex* u, cuRPCF::complex* tu, dim3 dim,
 	size_t pitch, size_t tPitch);
 
-// dim²ÎÊı±íÊ¾µÄÊÇxyzÅÅÁĞµÄÊı¾İµÄÎ¬¶È£¨Real¸ñÊ½£©£¬Êµ¼ÊÉÏÓÉÓÚtransposeÊ±´æ´¢µÄÊÇComplex¸ñÊ½£¬
-// Òò´ËÊµ¼ÊµÄÊı¾İÎ¬ÊıÎª 2*(dim[0]/2+1) x dim[1] x dim[2]
-// tDim²ÎÊı±íÊ¾µÄÊÇzxyÅÅÁĞµÄÊı¾İµÄÎ¬¶È£¨Real¸ñÊ½£©£¬Êµ¼ÊÉÏÓÉÓÚtransposeÊ±´æ´¢µÄÊÇComplex¸ñÊ½£¬
-// Òò´ËÊµ¼ÊµÄÊı¾İÎ¬ÊıÎª dim[2] x 2*(dim[0]/2+1) x dim[1] 
-// »ò tDim[0] x (tDim[1]/2+1)*2 x tDim[2]
-// Êµ¼ÊÉÏtDim²¢²»»áÊ¹ÓÃ£¬½ö¹©³ÌĞòÑéÖ¤
+// dimå‚æ•°è¡¨ç¤ºçš„æ˜¯xyzæ’åˆ—çš„æ•°æ®çš„ç»´åº¦ï¼ˆRealæ ¼å¼ï¼‰ï¼Œå®é™…ä¸Šç”±äºtransposeæ—¶å­˜å‚¨çš„æ˜¯Complexæ ¼å¼ï¼Œ
+// å› æ­¤å®é™…çš„æ•°æ®ç»´æ•°ä¸º 2*(dim[0]/2+1) x dim[1] x dim[2]
+// tDimå‚æ•°è¡¨ç¤ºçš„æ˜¯zxyæ’åˆ—çš„æ•°æ®çš„ç»´åº¦ï¼ˆRealæ ¼å¼ï¼‰ï¼Œå®é™…ä¸Šç”±äºtransposeæ—¶å­˜å‚¨çš„æ˜¯Complexæ ¼å¼ï¼Œ
+// å› æ­¤å®é™…çš„æ•°æ®ç»´æ•°ä¸º dim[2] x 2*(dim[0]/2+1) x dim[1] 
+// æˆ– tDim[0] x (tDim[1]/2+1)*2 x tDim[2]
+// å®é™…ä¸ŠtDimå¹¶ä¸ä¼šä½¿ç”¨ï¼Œä»…ä¾›ç¨‹åºéªŒè¯
 __host__ int transpose(DIRECTION dir, cudaPitchedPtr Ptr,
 	cudaPitchedPtr tPtr, int* dim, int* tDim) {
 	//storage of host temporal variable
