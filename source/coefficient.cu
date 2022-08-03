@@ -1,5 +1,5 @@
 #include "../include/data.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include "../include/coefficient.cuh"
 #include <cmath>
 #include <cassert>

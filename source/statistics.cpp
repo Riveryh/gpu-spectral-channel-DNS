@@ -7,7 +7,7 @@
 #define PITCHED_INCREMENT(npitch) \
 	npitch * (my*loop_index_k + loop_index_j) + loop_index_i
 #include "../include/transform.cuh"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <iostream>
 using namespace std;
 
@@ -38,12 +38,12 @@ void statistics(problem& pb) {
 	pb.hptr_omega_x = (REAL*)malloc(pb.size);
 	pb.hptr_omega_y = (REAL*)malloc(pb.size);
 	pb.hptr_omega_z = (REAL*)malloc(pb.size);
-	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.size, cudaMemcpyDeviceToHost), "memcpy");
+	CUDA_CHECK(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.size, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.size, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.size, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.size, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.size, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.size, cudaMemcpyDeviceToHost));
 
 #define MAX_FILED_NUMBER(u) statistic_max(u,pb.pitch,pb.mx,pb.my,pb.pz)
 

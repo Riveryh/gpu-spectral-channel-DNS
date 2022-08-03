@@ -7,6 +7,7 @@
 #include <sstream>
 #include "../include/parameters.h"
 #include "../include/transform_multi_gpu.h"
+#include "../include/util.h"
 
 using namespace std;
 
@@ -83,18 +84,6 @@ int RPCF::write_3d_to_file(char* filename,REAL* pu, int pitch, int nx, int ny, i
 }
 
 
-void cuCheck(cudaError_t ret, string s) {
-	if (ret == cudaSuccess) {
-		return;
-	}
-	else {
-		printf("cudaError at %s\n", s.c_str());
-		system("pause");
-		assert(false);
-		exit(ret);
-	}
-}
-
 bool isEqual(REAL a, REAL b, REAL precision ){
 	if (abs(a - b) <= precision) {
 		return true;
@@ -163,14 +152,14 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 	cudaExtent ext = make_cudaExtent(
 		sizeof(cuRPCF::complex)*(mx/2+1),my,pz
 	);
-	cuCheck(cudaMalloc3D(&testPtr, ext), "mem test");
+	CUDA_CHECK(cudaMalloc3D(&testPtr, ext));
 	__myPPitch = testPtr.pitch;
 	cudaFree(testPtr.ptr);
 
 	ext = make_cudaExtent(
 		sizeof(cuRPCF::complex)*mz, nx / 2 + 1, ny
 	);
-	cuCheck(cudaMalloc3D(&testPtr, ext), "mem test");
+	CUDA_CHECK(cudaMalloc3D(&testPtr, ext));
 	__myTPitch = testPtr.pitch;
 	cudaFree(testPtr.ptr);
 
@@ -183,15 +172,15 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 
 	// allocate the whole memory at one time to save time.
 	ext = make_cudaExtent(__myMaxMemorySize[0], 1, 1);
-	cuCheck(cudaSetDevice(dev_id[0]), "set device");
-	cuCheck(cudaMalloc3D(&__myPtr[0], ext), "my cuda malloc");
+	CUDA_CHECK(cudaSetDevice(dev_id[0]));
+	CUDA_CHECK(cudaMalloc3D(&__myPtr[0], ext));
 	//cuCheck(cudaMemset(__myPtr[0].ptr, -1, __myMaxMemorySize[0]), "memset");
 
 	// allocate the peer device memory
 	if (NUM_GPU > 1) {
 		ext = make_cudaExtent(__myMaxMemorySize[1], 1, 1);
-		cuCheck(cudaSetDevice(dev_id[1]), "set device");
-		cuCheck(cudaMalloc3D(&__myPtr[1], ext), "my cuda malloc");
+		CUDA_CHECK(cudaSetDevice(dev_id[1]));
+		CUDA_CHECK(cudaMalloc3D(&__myPtr[1], ext));
 	}
 	//cuCheck(cudaMemset(__myPtr[1].ptr, -1, __myMaxMemorySize[1]), "memset");
 
@@ -203,7 +192,7 @@ __host__ void initMyCudaMalloc(dim3 dims) {
 		__my_tMem_allocated[1] = 0;
 	}
 
-	cuCheck(cudaSetDevice(dev_id[0]), "set device");
+	CUDA_CHECK(cudaSetDevice(dev_id[0]));
 }
 
 __host__ void* get_fft_buffer_ptr(int dev_id) {
@@ -265,7 +254,7 @@ __host__ cudaError_t myCudaFree(cudaPitchedPtr& Ptr, myCudaMemType type, int dev
 __host__ void destroyMyCudaMalloc(int _dev_id) {
 	assert(_dev_id < NUM_GPU);
 	for (int i = 0; i < NUM_GPU; i++) {
-		cuCheck(cudaFree(__myPtr[dev_id[i]].ptr), "destroy allocator");
+		CUDA_CHECK(cudaFree(__myPtr[dev_id[i]].ptr));
 	}
 }
 

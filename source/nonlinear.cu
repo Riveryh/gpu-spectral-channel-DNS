@@ -1,6 +1,6 @@
 #include "../include/nonlinear.cuh"
 #include "assert.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <iostream>
 
 __host__ int addMeanFlow(problem& pb);
@@ -268,7 +268,7 @@ __global__ void addMeanFlowKernel(cudaPitchedPtr ptr, int px, int py, int pz) {
 //
 //__global__ void computeLambVectorKernekl _non(cudaPitchedPtrList ptrList,
 //	const int mx, const int my, const int pz) {
-//	//¿ÉÒÔºÏ²¢¼¸¸ölambÊ¸Á¿¼ÆËãµ½Ò»¸ökernelÖĞ
+//	//å¯ä»¥åˆå¹¶å‡ ä¸ªlambçŸ¢é‡è®¡ç®—åˆ°ä¸€ä¸ªkernelä¸­
 //	int ky = threadIdx.x + blockDim.x*blockIdx.x;
 //	int kz = threadIdx.y + blockDim.y*blockIdx.y;
 //	//const int py = my * 2 / 3;
@@ -365,7 +365,7 @@ __host__ int computeLambVector(problem & pb)
 
 __global__ void computeLambVectorKernel(cudaPitchedPtrList ptrList,
 	const int mx, const int my, const int pz, REAL Ro) {
-	//¿ÉÒÔºÏ²¢¼¸¸ölambÊ¸Á¿¼ÆËãµ½Ò»¸ökernelÖĞ
+	//å¯ä»¥åˆå¹¶å‡ ä¸ªlambçŸ¢é‡è®¡ç®—åˆ°ä¸€ä¸ªkernelä¸­
 	int ky = blockIdx.x;
 	int kz = blockIdx.y;
 	int kx = threadIdx.x;

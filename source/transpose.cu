@@ -1,7 +1,7 @@
 #include "../include/transpose.cuh"
 #include <cassert>
 #include <iostream>
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 
 #define TILE_DIM 8
 
@@ -136,7 +136,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 		transpose_forward<<<dim3(hnx,ny),mz/2+1>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 		
-		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		CUDA_CHECK(cudaDeviceSynchronize());
 		//cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
 		//safeCudaFree(Ptr.ptr);
 	}
@@ -154,7 +154,7 @@ __host__ int cuda_transpose(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		transpose_backward<<<dim3(hnx, ny), mz/2+1 >>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
-		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		CUDA_CHECK(cudaDeviceSynchronize());
 
 		//cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 		//safeCudaFree(tPtr.ptr);
@@ -191,7 +191,7 @@ __host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
 		transpose_forward_sm <<<nBlock, nThread>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
 
-		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		CUDA_CHECK(cudaDeviceSynchronize());
 		//cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
 		//safeCudaFree(Ptr.ptr);
 	}
@@ -209,7 +209,7 @@ __host__ int cuda_transpose_sm(DIRECTION dir, cudaPitchedPtr& Ptr,
 
 		transpose_backward_sm <<<nBlock, nThread>>>((cuRPCF::complex*)Ptr.ptr, (cuRPCF::complex*)tPtr.ptr,
 			dims, Ptr.pitch, tPtr.pitch);
-		cuCheck(cudaDeviceSynchronize(), "Transpose kernel");
+		CUDA_CHECK(cudaDeviceSynchronize());
 
 		//cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
 		//safeCudaFree(tPtr.ptr);

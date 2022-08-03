@@ -1,6 +1,6 @@
 #include "../include/output.h"
 #include "../include/transform.cuh"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -33,12 +33,12 @@ void output_velocity(problem & pb)
 	pb.hptr_omega_x = (REAL*)malloc(pb.pSize);
 	pb.hptr_omega_y = (REAL*)malloc(pb.pSize);
 	pb.hptr_omega_z = (REAL*)malloc(pb.pSize);
-	cuCheck(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.pSize, cudaMemcpyDeviceToHost),"memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.pSize, cudaMemcpyDeviceToHost), "memcpy");
+	CUDA_CHECK(cudaMemcpy(pb.hptr_u, pb.dptr_u.ptr, pb.pSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_v, pb.dptr_v.ptr, pb.pSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_w, pb.dptr_w.ptr, pb.pSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_x, pb.dptr_omega_x.ptr, pb.pSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_y, pb.dptr_omega_y.ptr, pb.pSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.hptr_omega_z, pb.dptr_omega_z.ptr, pb.pSize, cudaMemcpyDeviceToHost));
 
 	ostringstream ss;
 	ss << pb.currenStep;
@@ -172,7 +172,7 @@ void read_recover_data(problem& pb, char* filename) {
 	//	outfile.read((char*)pb.nonlinear_omega_y_p, pb.tSize);
 
 	// copy velocity and votricity to GPU and compute other components.
-	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice),"cpy");
-	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice), "cpy");
+	CUDA_CHECK(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice));
 	getUVW(pb);
 }

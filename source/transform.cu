@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "../include/operation.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <omp.h>
 #include "../include/transpose.cuh"
 #include <iostream>
@@ -148,9 +148,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		cudaEventRecord(start_trans);
 #endif 
 
-		cuCheck(myCudaMalloc(Ptr, XYZ_3D), "my cudaMalloc");
+		CUDA_CHECK(myCudaMalloc(Ptr, XYZ_3D));
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
-		cuCheck(myCudaFree(tPtr, ZXY_3D), "my cuda free at transform");
+		CUDA_CHECK(myCudaFree(tPtr, ZXY_3D));
 
 #if (defined CURPCF_CUDA_PROFILING) && (defined SHOW_TRANSFORM_TIME)
 		cudaEventRecord(end_trans);
@@ -275,9 +275,9 @@ __host__ int transform_3d_one(DIRECTION dir, cudaPitchedPtr& Ptr,
 		//transpose(FORWARD, Ptr, tPtr, dim, tDim);
 		cudaEventRecord(start_trans);
 #endif
-		cuCheck(myCudaMalloc(tPtr, ZXY_3D), "my cudaMalloc");
+		CUDA_CHECK(myCudaMalloc(tPtr, ZXY_3D));
 		cuda_transpose(dir, Ptr, tPtr, dim, tDim);
-		cuCheck(myCudaFree(Ptr, XYZ_3D), "my cuda free at transform");
+		CUDA_CHECK(myCudaFree(Ptr, XYZ_3D));
 
 		err = cudaDeviceSynchronize();
 		ASSERT(err == cudaSuccess);
@@ -381,7 +381,7 @@ __host__ void setZeros(cuRPCF::complex* ptr, size_t pitch, dim3 dims) {
 	setZerosKernel <<<dim3(dims.y,dims.z/2+1), dims.x/2+1 >>>((cuRPCF::complex*)ptr, pitch,
 		dim[0], dim[1], dim[2]);
 //#ifdef KERNEL_SYNCHRONIZED
-	cuCheck(cudaDeviceSynchronize(), "set zeros");
+	CUDA_CHECK(cudaDeviceSynchronize());
 //#endif
 }
 
@@ -774,13 +774,13 @@ __host__ void transform_backward_X6(problem& pb) {
 	setZerosKernel<<<nDim, nThread >>>((cuRPCF::complex*)Ptr.ptr, Ptr.pitch,
 		dim[0], dim[1], dim[2]*6);
 #ifdef KERNEL_SYNCHRONIZED
-	cuCheck(cudaDeviceSynchronize(), "set zeros");
+	CUDA_CHECK(cudaDeviceSynchronize());
 #endif
 	cufftResult_t res;
 	res = CUFFTEXEC_C2R(planXYc2r_X6, (CUFFTCOMPLEX*)pb.dptr_u.ptr,
 		(CUFFTREAL*)pb.dptr_u.ptr);
 	ASSERT(res == CUFFT_SUCCESS);
-	cuCheck(cudaDeviceSynchronize(),"fft");
+	CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 __host__ void transform_forward_X3(problem& pb) {
@@ -804,7 +804,7 @@ __host__ void transform_forward_X3(problem& pb) {
 	// THIS LAUNCH PARAMETER NEED TO BE CHANGED
 	normalizeKernel<<< dim_num, thread_num >>>
 		((REAL*)Ptr.ptr, Ptr.pitch, dim[0], dim[1], dim[2]*3, 1.0 / dim[0] / dim[1]);
-	cuCheck(cudaDeviceSynchronize(),"normalize X3");
+	CUDA_CHECK(cudaDeviceSynchronize());
 
 
 	cuda_transpose(FORWARD, pb.dptr_lamb_z, pb.dptr_tLamb_z, dim, tDim);

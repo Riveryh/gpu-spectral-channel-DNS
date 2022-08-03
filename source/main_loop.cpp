@@ -1,4 +1,4 @@
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include "../include/solver.h"
 #include "../include/output.h"
 #include "../include/statistics.h"
@@ -71,7 +71,7 @@ void run_simulation() {
 	//cuRPCF::complex* tv2 = pb.rhs_v;
 	cuRPCF::complex* tv2 = (cuRPCF::complex*)malloc(pb.tSize);
 	cuRPCF::complex* tv = (cuRPCF::complex*)malloc(pb.tSize);
-	cuCheck(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost), "cpy");
+	CUDA_CHECK(cudaMemcpy(tv, pb.dptr_tomega_y.ptr, pb.tSize, cudaMemcpyDeviceToHost));
 	
 	//clock_t start_time, end_time;
 	cudaEvent_t step_start_event, step_end_event;

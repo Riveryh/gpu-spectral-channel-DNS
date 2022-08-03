@@ -12,7 +12,7 @@
 #include "../include/coefficient.cuh"
 #include "../include/operation.h"
 #include "../include/transform_multi_gpu.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 
 using namespace std;
 //// compute multiply of matrix and vector
@@ -92,8 +92,8 @@ int nextStep(problem& pb) {
 
 	synchronizeGPUsolver();
 
-	cuCheck(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice),"cpy");
-	cuCheck(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice), "cpy");
+	CUDA_CHECK(cudaMemcpy(pb.dptr_tw.ptr, pb.rhs_v, pb.tSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(pb.dptr_tomega_z.ptr, pb.rhs_omega_y, pb.tSize, cudaMemcpyHostToDevice));
 
 	getUVW(pb);
 	//pb.currenStep++;
@@ -203,13 +203,13 @@ int initGPUSolver(problem& pb) {
 	}
 	size_t mSize = pb.nz * pb.nz * (pb.nx / 2 + 1)*pb.ny * sizeof(cuRPCF::complex);
 	size_t tSize = pb.tSize;
-	cuCheck(cudaSetDevice(dev_id[1]));
-	cuCheck(cudaMalloc(&__dev_coef_v, mSize*2 + tSize),"alloc solver data");
+	CUDA_CHECK(cudaSetDevice(dev_id[1]));
+	CUDA_CHECK(cudaMalloc(&__dev_coef_v, mSize*2 + tSize));
 	__dev_coef_omega = __dev_coef_v + mSize / sizeof(cuRPCF::complex);
 	__dev_rhs = __dev_coef_omega + mSize / sizeof(cuRPCF::complex);
-	cuCheck(cudaMemcpy(__dev_coef_v, pb.matrix_coeff_v, mSize, cudaMemcpyHostToDevice),"memcpy");
-	cuCheck(cudaMemcpy(__dev_coef_omega, pb.matrix_coeff_omega, mSize, cudaMemcpyHostToDevice), "memcpy");
-	cuCheck(cudaSetDevice(dev_id[0]));
+	CUDA_CHECK(cudaMemcpy(__dev_coef_v, pb.matrix_coeff_v, mSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(__dev_coef_omega, pb.matrix_coeff_omega, mSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaSetDevice(dev_id[0]));
 	return 0;
 }
 

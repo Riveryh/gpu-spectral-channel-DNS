@@ -4,7 +4,7 @@
 #include "../include/RPCFKernels.cuh"
 #include "../include/transform.cuh"
 #include "../include/operation.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <cstdlib>
 #include <math.h>
 #include <cassert>
@@ -75,12 +75,12 @@ __host__ int allocDeviceMem(problem&  pb) {
 	//cuCheck(cudaMalloc3D(&(pb.dptr_omega_y), pExtent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_omega_z), pExtent), "allocate");
 
-	cuCheck(myCudaMalloc(pb.dptr_u, XYZ_3D), "allocate");
-	cuCheck(myCudaMalloc(pb.dptr_v, XYZ_3D), "allocate");
-	cuCheck(myCudaMalloc(pb.dptr_w, XYZ_3D), "allocate");
-	cuCheck(myCudaMalloc(pb.dptr_omega_x, XYZ_3D), "allocate");
-	cuCheck(myCudaMalloc(pb.dptr_omega_y, XYZ_3D), "allocate");
-	cuCheck(myCudaMalloc(pb.dptr_omega_z, XYZ_3D), "allocate");
+	CUDA_CHECK(myCudaMalloc(pb.dptr_u, XYZ_3D));
+	CUDA_CHECK(myCudaMalloc(pb.dptr_v, XYZ_3D));
+	CUDA_CHECK(myCudaMalloc(pb.dptr_w, XYZ_3D));
+	CUDA_CHECK(myCudaMalloc(pb.dptr_omega_x, XYZ_3D));
+	CUDA_CHECK(myCudaMalloc(pb.dptr_omega_y, XYZ_3D));
+	CUDA_CHECK(myCudaMalloc(pb.dptr_omega_z, XYZ_3D));
 
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_x), extent), "allocate");
 	//cuCheck(cudaMalloc3D(&(pb.dptr_lamb_y), extent), "allocate");
@@ -407,8 +407,8 @@ __host__ int initFlow(problem& pb) {
 	transform_3d_one(FORWARD, pb.dptr_u, pb.dptr_tu, dim, tDim, No_Padding);
 	
 	//copy initial rhs_v and rhs_omeag_y
-	cuCheck(cudaMemcpy(pb.rhs_v, pb.dptr_tw.ptr, tSize, cudaMemcpyDeviceToHost), "memcpy");
-	cuCheck(cudaMemcpy(pb.rhs_omega_y, pb.dptr_tomega_z.ptr, tSize, cudaMemcpyDeviceToHost), "memcpy");
+	CUDA_CHECK(cudaMemcpy(pb.rhs_v, pb.dptr_tw.ptr, tSize, cudaMemcpyDeviceToHost));
+	CUDA_CHECK(cudaMemcpy(pb.rhs_omega_y, pb.dptr_tomega_z.ptr, tSize, cudaMemcpyDeviceToHost));
 	
 	getUVW(pb);
 
@@ -435,89 +435,6 @@ __host__ int initFlow(problem& pb) {
 //	return 0;
 //}
 
-
-__host__ __device__ void ddz(REAL* u, int N) {
-	REAL buffer[MAX_NZ*4];
-	REAL dmat;
-	for (int i = 0; i < N; i++) {
-		buffer[i] = 0;
-		for (int j = i+1; j < N; j=j+2) {
-			dmat = 2 * (j);
-			buffer[i] = buffer[i] + dmat * u[j];
-		}
-	}
-	u[0] = buffer[0] * 0.5;
-	for (int i = 1; i < N; i++) {
-		u[i] = buffer[i];
-	}
-}
-
-__host__ __device__ void ddz(cuRPCF::complex *u, int N) {
-	cuRPCF::complex buffer[MAX_NZ];
-	REAL dmat;
-	cuRPCF::complex buffer_u[MAX_NZ];
-	for (int i = 0; i < N; i++) {
-		buffer_u[i] = u[i];
-	}
-	for (int i = 0; i < N; i++) {
-		buffer[i] = cuRPCF::complex(0.0,0.0);
-		for (int j = i + 1; j < N; j = j + 2) {
-			dmat = 2 * REAL(j);
-			buffer[i] = buffer[i] + buffer_u[j] * dmat;
-		}
-	}
-	u[0] = buffer[0] * 0.5;
-	for (int i = 1; i < N; i++) {
-		u[i] = buffer[i];
-	}
-}
-
-
-__device__ void ddz_sm(REAL* u, int N, int kz) {
-	REAL buffer;
-	REAL dmat;
-	
-	//wait all threads to load data before computing
-	__syncthreads();
-
-	buffer = 0.0;
-	for (int j = kz + 1; j < N; j = j + 2) {
-		dmat = 2 * REAL(j);
-		buffer = buffer + u[j] * dmat;
-	}
-	//wait all threads to finish computation before overwriting array.
-	__syncthreads();
-	if (kz == 0) {
-		u[0] = buffer * 0.5;
-	}
-	else
-	{
-		u[kz] = buffer;
-	}
-}
-
-__device__ void ddz_sm(cuRPCF::complex *u, int N, int kz) {
-	cuRPCF::complex buffer;
-	REAL dmat;
-
-	//wait all threads to load data before computing
-	__syncthreads();
-
-	buffer = cuRPCF::complex(0.0,0.0);
-	for (int j = kz + 1; j < N; j = j + 2) {
-		dmat = 2 * REAL(j);
-		buffer = buffer + u[j] * dmat;
-	}	
-	//wait all threads to finish computation before overwriting array.
-	__syncthreads();
-	if (kz == 0) {
-		u[0] = buffer * 0.5;
-	}
-	else
-	{
-		u[kz] = buffer;
-	}
-}
 
 __host__ __device__
 void get_ialpha_ibeta(int kx, int ky, int ny,

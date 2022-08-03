@@ -1,6 +1,6 @@
 #include "../include/transform.cuh"
 #include "../include/transform_multi_gpu.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include <cassert>
 //#include "pthread.h"
 

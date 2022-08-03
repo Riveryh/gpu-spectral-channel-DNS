@@ -1,5 +1,5 @@
 #include "../include/velocity.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include "device_launch_parameters.h"
 #include "cuda_runtime.h"
 #include "device_functions.h"
@@ -74,7 +74,7 @@ int getUVW(problem& pb) {
 		(cuRPCF::complex*)pb.dptr_tw.ptr, (cuRPCF::complex*)pb.dptr_tomega_x.ptr, 
 		(cuRPCF::complex*)pb.dptr_tomega_y.ptr, (cuRPCF::complex*)pb.dptr_tomega_z.ptr,
 		pb.tPitch, pb.mx, pb.my, pb.mz, pb.aphi, pb.beta);
-	cuCheck(cudaDeviceSynchronize(), "get velocity kernel");
+	CUDA_CHECK(cudaDeviceSynchronize());
 	
 	cudaEventRecord(__stop, 0);
 	cudaEventSynchronize(__stop);

@@ -8,7 +8,7 @@
 #include "../include/rhs.cuh"
 #include "../include/nonlinear.cuh"
 #include "../include/linear.h"
-#include "../include/cuRPCF.h"
+#include "../include/util.h"
 #include "../include/transform.cuh"
 
 
@@ -122,8 +122,8 @@ void* func(void* _pb) {
 #endif
 
 		//copy memory
-		cuCheck(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
-		cuCheck(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost), "memcpy");
+		CUDA_CHECK(cudaMemcpy(pb.nonlinear_v, pb.dptr_tLamb_x.ptr, tsize, cudaMemcpyDeviceToHost));
+		CUDA_CHECK(cudaMemcpy(pb.nonlinear_omega_y, pb.dptr_tLamb_y.ptr, tsize, cudaMemcpyDeviceToHost));
 
 #ifdef CURPCF_CUDA_PROFILING
 		cudaEventRecord(end_non, 0);
@@ -157,9 +157,9 @@ void* func(void* _pb) {
 		//safeCudaFree(pb.dptr_tLamb_x.ptr);
 		//safeCudaFree(pb.dptr_tLamb_y.ptr);
 		//safeCudaFree(pb.dptr_tLamb_z.ptr);
-		cuCheck(myCudaFree(pb.dptr_tLamb_x, ZXY_3D),"my cuda free");
-		cuCheck(myCudaFree(pb.dptr_tLamb_y, ZXY_3D), "my cuda free");
-		cuCheck(myCudaFree(pb.dptr_tLamb_z, ZXY_3D), "my cuda free");
+		CUDA_CHECK(myCudaFree(pb.dptr_tLamb_x, ZXY_3D));
+		CUDA_CHECK(myCudaFree(pb.dptr_tLamb_y, ZXY_3D));
+		CUDA_CHECK(myCudaFree(pb.dptr_tLamb_z, ZXY_3D));
 
 		ASSERT(pb.dptr_tu.ptr == nullptr);
 		ASSERT(pb.dptr_tv.ptr == nullptr);
@@ -174,12 +174,12 @@ void* func(void* _pb) {
 		//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_x), tExtent), "allocate");
 		//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_y), tExtent), "allocate");
 		//cuCheck(cudaMalloc3D(&(pb.dptr_tomega_z), tExtent), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tomega_z, ZXY_3D), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tomega_y, ZXY_3D), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tomega_x, ZXY_3D), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tw, ZXY_3D), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tv, ZXY_3D), "allocate");
-		cuCheck(myCudaMalloc(pb.dptr_tu, ZXY_3D), "allocate");
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tomega_z, ZXY_3D));
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tomega_y, ZXY_3D));
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tomega_x, ZXY_3D));
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tw, ZXY_3D));
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tv, ZXY_3D));
+		CUDA_CHECK(myCudaMalloc(pb.dptr_tu, ZXY_3D));
 
 		// Tell the main thread the computation is completed
 		lk_malloc.lock();
